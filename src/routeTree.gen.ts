@@ -10,33 +10,338 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as CalendarRouteImport } from './routes/calendar'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as MyClubsRouteImport } from './routes/my-clubs'
+import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as ClubsNewRouteImport } from './routes/clubs/new'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as ClubsClubIdIndexRouteImport } from './routes/clubs/$clubId/index'
+import { Route as ClubsClubIdAnnouncementsRouteImport } from './routes/clubs/$clubId/announcements'
+import { Route as ClubsClubIdAttendanceRouteImport } from './routes/clubs/$clubId/attendance'
+import { Route as ClubsClubIdCalendarRouteImport } from './routes/clubs/$clubId/calendar'
+import { Route as ClubsClubIdChatRouteImport } from './routes/clubs/$clubId/chat'
+import { Route as ClubsClubIdDataRouteImport } from './routes/clubs/$clubId/data'
+import { Route as ClubsClubIdEventsRouteImport } from './routes/clubs/$clubId/events'
+import { Route as ClubsClubIdFormsRouteImport } from './routes/clubs/$clubId/forms'
+import { Route as ClubsClubIdFundsRouteImport } from './routes/clubs/$clubId/funds'
+import { Route as ClubsClubIdLeadershipRouteImport } from './routes/clubs/$clubId/leadership'
+import { Route as ClubsClubIdMembersRouteImport } from './routes/clubs/$clubId/members'
+import { Route as ClubsClubIdSettingsRouteImport } from './routes/clubs/$clubId/settings'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyClubsRoute = MyClubsRouteImport.update({
+  id: '/my-clubs',
+  path: '/my-clubs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ClubsNewRoute = ClubsNewRouteImport.update({
+  id: '/clubs/new',
+  path: '/clubs/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClubsClubIdIndexRoute = ClubsClubIdIndexRouteImport.update({
+  id: '/clubs/$clubId/',
+  path: '/clubs/$clubId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClubsClubIdAnnouncementsRoute =
+  ClubsClubIdAnnouncementsRouteImport.update({
+    id: '/clubs/$clubId/announcements',
+    path: '/clubs/$clubId/announcements',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ClubsClubIdAttendanceRoute = ClubsClubIdAttendanceRouteImport.update({
+  id: '/clubs/$clubId/attendance',
+  path: '/clubs/$clubId/attendance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClubsClubIdCalendarRoute = ClubsClubIdCalendarRouteImport.update({
+  id: '/clubs/$clubId/calendar',
+  path: '/clubs/$clubId/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClubsClubIdChatRoute = ClubsClubIdChatRouteImport.update({
+  id: '/clubs/$clubId/chat',
+  path: '/clubs/$clubId/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClubsClubIdDataRoute = ClubsClubIdDataRouteImport.update({
+  id: '/clubs/$clubId/data',
+  path: '/clubs/$clubId/data',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClubsClubIdEventsRoute = ClubsClubIdEventsRouteImport.update({
+  id: '/clubs/$clubId/events',
+  path: '/clubs/$clubId/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClubsClubIdFormsRoute = ClubsClubIdFormsRouteImport.update({
+  id: '/clubs/$clubId/forms',
+  path: '/clubs/$clubId/forms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClubsClubIdFundsRoute = ClubsClubIdFundsRouteImport.update({
+  id: '/clubs/$clubId/funds',
+  path: '/clubs/$clubId/funds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClubsClubIdLeadershipRoute = ClubsClubIdLeadershipRouteImport.update({
+  id: '/clubs/$clubId/leadership',
+  path: '/clubs/$clubId/leadership',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClubsClubIdMembersRoute = ClubsClubIdMembersRouteImport.update({
+  id: '/clubs/$clubId/members',
+  path: '/clubs/$clubId/members',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClubsClubIdSettingsRoute = ClubsClubIdSettingsRouteImport.update({
+  id: '/clubs/$clubId/settings',
+  path: '/clubs/$clubId/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/calendar': typeof CalendarRoute
+  '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
+  '/my-clubs': typeof MyClubsRoute
+  '/notifications': typeof NotificationsRoute
+  '/onboarding': typeof OnboardingRoute
+  '/settings': typeof SettingsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/clubs/new': typeof ClubsNewRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/clubs/$clubId/announcements': typeof ClubsClubIdAnnouncementsRoute
+  '/clubs/$clubId/attendance': typeof ClubsClubIdAttendanceRoute
+  '/clubs/$clubId/calendar': typeof ClubsClubIdCalendarRoute
+  '/clubs/$clubId/chat': typeof ClubsClubIdChatRoute
+  '/clubs/$clubId/data': typeof ClubsClubIdDataRoute
+  '/clubs/$clubId/events': typeof ClubsClubIdEventsRoute
+  '/clubs/$clubId/forms': typeof ClubsClubIdFormsRoute
+  '/clubs/$clubId/funds': typeof ClubsClubIdFundsRoute
+  '/clubs/$clubId/leadership': typeof ClubsClubIdLeadershipRoute
+  '/clubs/$clubId/members': typeof ClubsClubIdMembersRoute
+  '/clubs/$clubId/settings': typeof ClubsClubIdSettingsRoute
+  '/clubs/$clubId/': typeof ClubsClubIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/calendar': typeof CalendarRoute
+  '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
+  '/my-clubs': typeof MyClubsRoute
+  '/notifications': typeof NotificationsRoute
+  '/onboarding': typeof OnboardingRoute
+  '/settings': typeof SettingsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/clubs/new': typeof ClubsNewRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/clubs/$clubId/announcements': typeof ClubsClubIdAnnouncementsRoute
+  '/clubs/$clubId/attendance': typeof ClubsClubIdAttendanceRoute
+  '/clubs/$clubId/calendar': typeof ClubsClubIdCalendarRoute
+  '/clubs/$clubId/chat': typeof ClubsClubIdChatRoute
+  '/clubs/$clubId/data': typeof ClubsClubIdDataRoute
+  '/clubs/$clubId/events': typeof ClubsClubIdEventsRoute
+  '/clubs/$clubId/forms': typeof ClubsClubIdFormsRoute
+  '/clubs/$clubId/funds': typeof ClubsClubIdFundsRoute
+  '/clubs/$clubId/leadership': typeof ClubsClubIdLeadershipRoute
+  '/clubs/$clubId/members': typeof ClubsClubIdMembersRoute
+  '/clubs/$clubId/settings': typeof ClubsClubIdSettingsRoute
+  '/clubs/$clubId': typeof ClubsClubIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/calendar': typeof CalendarRoute
+  '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
+  '/my-clubs': typeof MyClubsRoute
+  '/notifications': typeof NotificationsRoute
+  '/onboarding': typeof OnboardingRoute
+  '/settings': typeof SettingsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/clubs/new': typeof ClubsNewRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/clubs/$clubId/announcements': typeof ClubsClubIdAnnouncementsRoute
+  '/clubs/$clubId/attendance': typeof ClubsClubIdAttendanceRoute
+  '/clubs/$clubId/calendar': typeof ClubsClubIdCalendarRoute
+  '/clubs/$clubId/chat': typeof ClubsClubIdChatRoute
+  '/clubs/$clubId/data': typeof ClubsClubIdDataRoute
+  '/clubs/$clubId/events': typeof ClubsClubIdEventsRoute
+  '/clubs/$clubId/forms': typeof ClubsClubIdFormsRoute
+  '/clubs/$clubId/funds': typeof ClubsClubIdFundsRoute
+  '/clubs/$clubId/leadership': typeof ClubsClubIdLeadershipRoute
+  '/clubs/$clubId/members': typeof ClubsClubIdMembersRoute
+  '/clubs/$clubId/settings': typeof ClubsClubIdSettingsRoute
+  '/clubs/$clubId/': typeof ClubsClubIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/calendar'
+    | '/login'
+    | '/mcp'
+    | '/my-clubs'
+    | '/notifications'
+    | '/onboarding'
+    | '/settings'
+    | '/.well-known/oauth-protected-resource'
+    | '/clubs/new'
+    | '/.lovable/oauth/consent'
+    | '/clubs/$clubId/announcements'
+    | '/clubs/$clubId/attendance'
+    | '/clubs/$clubId/calendar'
+    | '/clubs/$clubId/chat'
+    | '/clubs/$clubId/data'
+    | '/clubs/$clubId/events'
+    | '/clubs/$clubId/forms'
+    | '/clubs/$clubId/funds'
+    | '/clubs/$clubId/leadership'
+    | '/clubs/$clubId/members'
+    | '/clubs/$clubId/settings'
+    | '/clubs/$clubId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin'
+    | '/calendar'
+    | '/login'
+    | '/mcp'
+    | '/my-clubs'
+    | '/notifications'
+    | '/onboarding'
+    | '/settings'
+    | '/.well-known/oauth-protected-resource'
+    | '/clubs/new'
+    | '/.lovable/oauth/consent'
+    | '/clubs/$clubId/announcements'
+    | '/clubs/$clubId/attendance'
+    | '/clubs/$clubId/calendar'
+    | '/clubs/$clubId/chat'
+    | '/clubs/$clubId/data'
+    | '/clubs/$clubId/events'
+    | '/clubs/$clubId/forms'
+    | '/clubs/$clubId/funds'
+    | '/clubs/$clubId/leadership'
+    | '/clubs/$clubId/members'
+    | '/clubs/$clubId/settings'
+    | '/clubs/$clubId'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/calendar'
+    | '/login'
+    | '/mcp'
+    | '/my-clubs'
+    | '/notifications'
+    | '/onboarding'
+    | '/settings'
+    | '/.well-known/oauth-protected-resource'
+    | '/clubs/new'
+    | '/.lovable/oauth/consent'
+    | '/clubs/$clubId/announcements'
+    | '/clubs/$clubId/attendance'
+    | '/clubs/$clubId/calendar'
+    | '/clubs/$clubId/chat'
+    | '/clubs/$clubId/data'
+    | '/clubs/$clubId/events'
+    | '/clubs/$clubId/forms'
+    | '/clubs/$clubId/funds'
+    | '/clubs/$clubId/leadership'
+    | '/clubs/$clubId/members'
+    | '/clubs/$clubId/settings'
+    | '/clubs/$clubId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  CalendarRoute: typeof CalendarRoute
+  LoginRoute: typeof LoginRoute
+  McpRoute: typeof McpRoute
+  MyClubsRoute: typeof MyClubsRoute
+  NotificationsRoute: typeof NotificationsRoute
+  OnboardingRoute: typeof OnboardingRoute
+  SettingsRoute: typeof SettingsRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  ClubsNewRoute: typeof ClubsNewRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
+  ClubsClubIdAnnouncementsRoute: typeof ClubsClubIdAnnouncementsRoute
+  ClubsClubIdAttendanceRoute: typeof ClubsClubIdAttendanceRoute
+  ClubsClubIdCalendarRoute: typeof ClubsClubIdCalendarRoute
+  ClubsClubIdChatRoute: typeof ClubsClubIdChatRoute
+  ClubsClubIdDataRoute: typeof ClubsClubIdDataRoute
+  ClubsClubIdEventsRoute: typeof ClubsClubIdEventsRoute
+  ClubsClubIdFormsRoute: typeof ClubsClubIdFormsRoute
+  ClubsClubIdFundsRoute: typeof ClubsClubIdFundsRoute
+  ClubsClubIdLeadershipRoute: typeof ClubsClubIdLeadershipRoute
+  ClubsClubIdMembersRoute: typeof ClubsClubIdMembersRoute
+  ClubsClubIdSettingsRoute: typeof ClubsClubIdSettingsRoute
+  ClubsClubIdIndexRoute: typeof ClubsClubIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +353,196 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-clubs': {
+      id: '/my-clubs'
+      path: '/my-clubs'
+      fullPath: '/my-clubs'
+      preLoaderRoute: typeof MyClubsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubs/new': {
+      id: '/clubs/new'
+      path: '/clubs/new'
+      fullPath: '/clubs/new'
+      preLoaderRoute: typeof ClubsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubs/$clubId/': {
+      id: '/clubs/$clubId/'
+      path: '/clubs/$clubId'
+      fullPath: '/clubs/$clubId/'
+      preLoaderRoute: typeof ClubsClubIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubs/$clubId/announcements': {
+      id: '/clubs/$clubId/announcements'
+      path: '/clubs/$clubId/announcements'
+      fullPath: '/clubs/$clubId/announcements'
+      preLoaderRoute: typeof ClubsClubIdAnnouncementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubs/$clubId/attendance': {
+      id: '/clubs/$clubId/attendance'
+      path: '/clubs/$clubId/attendance'
+      fullPath: '/clubs/$clubId/attendance'
+      preLoaderRoute: typeof ClubsClubIdAttendanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubs/$clubId/calendar': {
+      id: '/clubs/$clubId/calendar'
+      path: '/clubs/$clubId/calendar'
+      fullPath: '/clubs/$clubId/calendar'
+      preLoaderRoute: typeof ClubsClubIdCalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubs/$clubId/chat': {
+      id: '/clubs/$clubId/chat'
+      path: '/clubs/$clubId/chat'
+      fullPath: '/clubs/$clubId/chat'
+      preLoaderRoute: typeof ClubsClubIdChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubs/$clubId/data': {
+      id: '/clubs/$clubId/data'
+      path: '/clubs/$clubId/data'
+      fullPath: '/clubs/$clubId/data'
+      preLoaderRoute: typeof ClubsClubIdDataRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubs/$clubId/events': {
+      id: '/clubs/$clubId/events'
+      path: '/clubs/$clubId/events'
+      fullPath: '/clubs/$clubId/events'
+      preLoaderRoute: typeof ClubsClubIdEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubs/$clubId/forms': {
+      id: '/clubs/$clubId/forms'
+      path: '/clubs/$clubId/forms'
+      fullPath: '/clubs/$clubId/forms'
+      preLoaderRoute: typeof ClubsClubIdFormsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubs/$clubId/funds': {
+      id: '/clubs/$clubId/funds'
+      path: '/clubs/$clubId/funds'
+      fullPath: '/clubs/$clubId/funds'
+      preLoaderRoute: typeof ClubsClubIdFundsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubs/$clubId/leadership': {
+      id: '/clubs/$clubId/leadership'
+      path: '/clubs/$clubId/leadership'
+      fullPath: '/clubs/$clubId/leadership'
+      preLoaderRoute: typeof ClubsClubIdLeadershipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubs/$clubId/members': {
+      id: '/clubs/$clubId/members'
+      path: '/clubs/$clubId/members'
+      fullPath: '/clubs/$clubId/members'
+      preLoaderRoute: typeof ClubsClubIdMembersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubs/$clubId/settings': {
+      id: '/clubs/$clubId/settings'
+      path: '/clubs/$clubId/settings'
+      fullPath: '/clubs/$clubId/settings'
+      preLoaderRoute: typeof ClubsClubIdSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  CalendarRoute: CalendarRoute,
+  LoginRoute: LoginRoute,
+  McpRoute: McpRoute,
+  MyClubsRoute: MyClubsRoute,
+  NotificationsRoute: NotificationsRoute,
+  OnboardingRoute: OnboardingRoute,
+  SettingsRoute: SettingsRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  ClubsNewRoute: ClubsNewRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
+  ClubsClubIdAnnouncementsRoute: ClubsClubIdAnnouncementsRoute,
+  ClubsClubIdAttendanceRoute: ClubsClubIdAttendanceRoute,
+  ClubsClubIdCalendarRoute: ClubsClubIdCalendarRoute,
+  ClubsClubIdChatRoute: ClubsClubIdChatRoute,
+  ClubsClubIdDataRoute: ClubsClubIdDataRoute,
+  ClubsClubIdEventsRoute: ClubsClubIdEventsRoute,
+  ClubsClubIdFormsRoute: ClubsClubIdFormsRoute,
+  ClubsClubIdFundsRoute: ClubsClubIdFundsRoute,
+  ClubsClubIdLeadershipRoute: ClubsClubIdLeadershipRoute,
+  ClubsClubIdMembersRoute: ClubsClubIdMembersRoute,
+  ClubsClubIdSettingsRoute: ClubsClubIdSettingsRoute,
+  ClubsClubIdIndexRoute: ClubsClubIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
