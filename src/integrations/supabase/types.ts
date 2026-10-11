@@ -1389,6 +1389,57 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          link_path: string | null
+          read_at: string | null
+          school_id: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          link_path?: string | null
+          read_at?: string | null
+          school_id?: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          link_path?: string | null
+          read_at?: string | null
+          school_id?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_type: Database["public"]["Enums"]["account_type"]
@@ -1828,6 +1879,18 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_club_overview: {
+        Args: never
+        Returns: {
+          administrator_count: number
+          club_id: string
+          created_at: string
+          founder_name: string
+          member_count: number
+          name: string
+          status: Database["public"]["Enums"]["club_status"]
+        }[]
+      }
       application_review_packet: {
         Args: { target_application: string }
         Returns: Json
@@ -2022,6 +2085,26 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      notify_club_leaders: {
+        Args: {
+          body?: string
+          link_path?: string
+          note_type: Database["public"]["Enums"]["notification_type"]
+          target_club: string
+          title: string
+        }
+        Returns: undefined
+      }
+      notify_user: {
+        Args: {
+          body?: string
+          link_path?: string
+          note_type: Database["public"]["Enums"]["notification_type"]
+          target_user: string
+          title: string
+        }
+        Returns: undefined
       }
       propose_table_structure: { Args: { intent_text: string }; Returns: Json }
       publish_form: {
@@ -2219,6 +2302,23 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      upcoming_events: {
+        Args: { limit_count?: number }
+        Returns: {
+          club_id: string
+          club_name: string
+          conflict_count: number
+          ends_at: string
+          id: string
+          kind: Database["public"]["Enums"]["event_kind"]
+          location: string
+          my_rsvp: Database["public"]["Enums"]["rsvp_status"]
+          priority: Database["public"]["Enums"]["event_priority"]
+          rsvp_enabled: boolean
+          starts_at: string
+          title: string
+        }[]
+      }
       veto_rsvp: {
         Args: { correction_reason?: string; target_attendance: string }
         Returns: {
@@ -2282,6 +2382,17 @@ export type Database = {
       form_status: "draft" | "published" | "closed"
       grade_level: "freshman" | "sophomore" | "junior" | "senior" | "other"
       membership_status: "pending" | "active" | "rejected" | "removed"
+      notification_type:
+        | "join_request"
+        | "join_accepted"
+        | "event_reminder"
+        | "rsvp"
+        | "form_assignment"
+        | "leadership_eligible"
+        | "leadership_application"
+        | "admin_club_change"
+        | "announcement"
+        | "role_message"
       question_type:
         | "short_answer"
         | "long_answer"
@@ -2469,6 +2580,18 @@ export const Constants = {
       form_status: ["draft", "published", "closed"],
       grade_level: ["freshman", "sophomore", "junior", "senior", "other"],
       membership_status: ["pending", "active", "rejected", "removed"],
+      notification_type: [
+        "join_request",
+        "join_accepted",
+        "event_reminder",
+        "rsvp",
+        "form_assignment",
+        "leadership_eligible",
+        "leadership_application",
+        "admin_club_change",
+        "announcement",
+        "role_message",
+      ],
       question_type: [
         "short_answer",
         "long_answer",
