@@ -136,19 +136,23 @@ function DataContent() {
 
   // PRD 27: a row stores a member id, not a frozen copy of their name, so the
   // name is resolved at read time against profiles.
+  //
+  // The table and the id set are part of the key: without them, switching
+  // tables inside the stale window served the previous table's names.
+  const memberIds = [
+    ...new Set(dataRows.map((row) => row.member_id).filter((id): id is string => Boolean(id))),
+  ];
+
   const memberNames = useQuery({
-    queryKey: ["club", clubId, "data-table-member-names"],
+    queryKey: ["club", clubId, "data-table-member-names", activeTableId, memberIds],
     queryFn: async (): Promise<ProfileRow[]> => {
       const supabase = getSupabaseClient();
-      const ids = [
-        ...new Set(dataRows.map((row) => row.member_id).filter((id): id is string => Boolean(id))),
-      ];
-      if (ids.length === 0) return [];
-      const { data, error } = await supabase.from("profiles").select("*").in("id", ids);
+      if (memberIds.length === 0) return [];
+      const { data, error } = await supabase.from("profiles").select("*").in("id", memberIds);
       if (error) throw error;
       return (data ?? []) as ProfileRow[];
     },
-    enabled: dataRows.length > 0,
+    enabled: memberIds.length > 0,
   });
 
   const nameById = useMemo(
@@ -162,7 +166,12 @@ function DataContent() {
   );
 
   const invalidate = () => {
-    void queryClient.invalidateQueries({ queryKey: ["club", clubId, "data-table"] });
+    // These have to be real key prefixes. ["club", clubId, "data-table"] is not
+    // a prefix of "data-table-columns" / "data-table-rows", so it invalidated
+    // nothing and the table kept rendering pre-mutation rows.
+    void queryClient.invalidateQueries({ queryKey: ["club", clubId, "data-table-columns"] });
+    void queryClient.invalidateQueries({ queryKey: ["club", clubId, "data-table-rows"] });
+    void queryClient.invalidateQueries({ queryKey: ["club", clubId, "data-table-member-names"] });
     void queryClient.invalidateQueries({ queryKey: ["club", clubId, "data-tables"] });
   };
 

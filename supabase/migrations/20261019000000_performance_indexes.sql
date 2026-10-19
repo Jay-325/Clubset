@@ -1,0 +1,66 @@
+-- ============================================================================
+-- Joinin :: 10 Performance -- indexes for the two unbounded read paths
+--
+-- Additive only. No table, column, policy, grant, constraint or data change:
+-- two plain btree indexes, both `if not exists` so re-running is a no-op.
+--
+-- Why exactly these two:
+--   * Every other foreign key, filter and sort used by the application is
+--     already served by an index, or by the leading column of a composite or
+--     unique index. The audit walked every WHERE / JOIN / ORDER BY in
+--     src/lib/queries.ts, src/lib/hooks/*, the route query blocks and the RPC
+--     bodies; the rest are covered.
+--   * An index costs writes and storage, so only the two reads that scan an
+--     unbounded, ever-growing table are indexed here.
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- 1. App shell -> the notification list.
+--
+-- src/lib/queries.ts :: useNotifications()
+--   select * from notifications
+--   order by created_at desc
+--   limit 50                          -- RLS adds: user_id = auth.uid()
+--
+-- This is the most frequently executed read in the app: AppShell mounts on
+-- every route, so every page load reads this list.
+--
+-- The only existing index on the table is notifications_user_unread_idx, which
+-- is PARTIAL (`where read_at is null`). The application never filters on
+-- read_at -- it derives the unread badge in the browser -- so that index cannot
+-- serve this query. Without a usable index the planner falls back to a
+-- sequential scan of a table that grows with every announcement, RSVP and join
+-- request school-wide.
+--
+-- (user_id, created_at desc) matches the RLS predicate plus the sort, so the
+-- plan becomes an index scan that stops after 50 rows.
+--
+-- Rollback: drop index if exists public.notifications_user_created_idx;
+-- ----------------------------------------------------------------------------
+create index if not exists notifications_user_created_idx
+  on public.notifications (user_id, created_at desc);
+
+-- ----------------------------------------------------------------------------
+-- 2. Discovery -> the "Coming up" list.
+--
+-- supabase/migrations/20261003001201_10756f18-....sql :: public.upcoming_events()
+--   from events e join clubs c on c.id = e.club_id
+--   where public.is_club_member(e.club_id)
+--     and e.starts_at >= now() - interval '1 day'
+--   order by e.starts_at
+--   limit 20
+--
+-- The only btree on events is (club_id, starts_at). club_id is not a constant
+-- here -- membership is per user and `is_club_member()` is a function call --
+-- so the index cannot bound the scan. The GiST index covers tstzrange overlap,
+-- not a `starts_at >= constant` comparison. Without this index the query reads
+-- every event ever created, filters, then sorts to find 20 rows.
+--
+-- (starts_at) lets the planner seek to `now() - 1 day` and walk forward in
+-- starts_at order, which is exactly the access pattern: range bound plus
+-- matching ORDER BY plus LIMIT.
+--
+-- Rollback: drop index if exists public.events_starts_at_idx;
+-- ----------------------------------------------------------------------------
+create index if not exists events_starts_at_idx
+  on public.events (starts_at);

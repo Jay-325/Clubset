@@ -17,28 +17,49 @@ export function useClubContext(clubId: string) {
     queryKey: ["club-context", clubId],
     queryFn: async (): Promise<ClubContext | null> => {
       const supabase = getSupabaseClient();
-      const { data: userData } = await supabase.auth.getUser();
+
+      // Two round trips, not five. The club read does not depend on the signed
+      // in user, so it runs alongside `getUser()`. The three permission reads
+      // do not depend on each other either, so they run together in a second
+      // batch. Every club page gates its first paint on this hook, so each
+      // removed round trip is removed from the critical path of all of them.
+      const [{ data: userData }, clubResult] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.from("clubs").select("*").eq("id", clubId).single(),
+      ]);
+
       const userId = userData.user?.id;
       if (!userId) return null;
 
-      const [{ data: club, error: clubError }, { data: membership }] = await Promise.all([
-        supabase.from("clubs").select("*").eq("id", clubId).single(),
+      const { data: club, error: clubError } = clubResult;
+      if (clubError) throw clubError;
+      if (!club) return null;
+
+      const [
+        { data: membership },
+        { data: assignments },
+        { data: profile },
+        { data: linkedAdmin },
+      ] = await Promise.all([
         supabase
           .from("memberships")
           .select("*")
           .eq("club_id", clubId)
           .eq("user_id", userId)
           .maybeSingle(),
+        supabase
+          .from("role_assignments")
+          .select("leadership_roles(permissions)")
+          .eq("club_id", clubId)
+          .eq("user_id", userId),
+        supabase.from("profiles").select("account_type").eq("id", userId).single(),
+        supabase
+          .from("club_administrators")
+          .select("administrator_id")
+          .eq("club_id", clubId)
+          .eq("administrator_id", userId)
+          .maybeSingle(),
       ]);
-
-      if (clubError) throw clubError;
-      if (!club) return null;
-
-      const { data: assignments } = await supabase
-        .from("role_assignments")
-        .select("leadership_roles(permissions)")
-        .eq("club_id", clubId)
-        .eq("user_id", userId);
 
       const permissions: ClubPermission[] = [];
       for (const assignment of assignments ?? []) {
@@ -49,19 +70,6 @@ export function useClubContext(clubId: string) {
         ).leadership_roles;
         if (role) permissions.push(...role.permissions);
       }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("account_type")
-        .eq("id", userId)
-        .single();
-
-      const { data: linkedAdmin } = await supabase
-        .from("club_administrators")
-        .select("administrator_id")
-        .eq("club_id", clubId)
-        .eq("administrator_id", userId)
-        .maybeSingle();
 
       return {
         club,

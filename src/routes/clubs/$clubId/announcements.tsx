@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { can } from "@/lib/auth/permissions";
 import { useClubContext } from "@/lib/hooks/use-club";
+import { useViewerId } from "@/lib/queries";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { AnnouncementRow, ProfileRow, TablesInsert } from "@/lib/types/database";
 
@@ -64,14 +65,7 @@ function AnnouncementsContent() {
     if (search.new === "1") setComposing(true);
   }, [search.new]);
 
-  const viewer = useQuery({
-    queryKey: ["viewer-id"],
-    queryFn: async (): Promise<string | null> => {
-      const supabase = getSupabaseClient();
-      const { data } = await supabase.auth.getUser();
-      return data.user?.id ?? null;
-    },
-  });
+  const viewer = useViewerId();
 
   const announcements = useQuery({
     queryKey: ["club", clubId, "announcements"],
@@ -94,17 +88,20 @@ function AnnouncementsContent() {
   const rows = announcements.data ?? [];
   const viewerId = viewer.data ?? null;
 
+  // Part of the cache key: a newly posted announcement adds an author, and the
+  // name lookup has to follow it instead of serving the previous id set.
+  const authorIds = [...new Set(rows.map((row) => row.author_id))];
+
   const authors = useQuery({
-    queryKey: ["club", clubId, "announcement-authors"],
+    queryKey: ["club", clubId, "announcement-authors", authorIds],
     queryFn: async (): Promise<ProfileRow[]> => {
       const supabase = getSupabaseClient();
-      const ids = [...new Set(rows.map((row) => row.author_id))];
-      if (ids.length === 0) return [];
-      const { data, error } = await supabase.from("profiles").select("*").in("id", ids);
+      if (authorIds.length === 0) return [];
+      const { data, error } = await supabase.from("profiles").select("*").in("id", authorIds);
       if (error) throw error;
       return (data ?? []) as ProfileRow[];
     },
-    enabled: rows.length > 0,
+    enabled: authorIds.length > 0,
   });
 
   const nameById = new Map(

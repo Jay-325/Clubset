@@ -22,6 +22,7 @@ import {
   SUGGESTED_ROLES,
 } from "@/lib/domain";
 import { useClubContext } from "@/lib/hooks/use-club";
+import { useViewerId } from "@/lib/queries";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type {
   ApplicationStatus,
@@ -87,14 +88,7 @@ function LeadershipContent() {
   const [roleError, setRoleError] = useState<string | null>(null);
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
 
-  const viewer = useQuery({
-    queryKey: ["viewer-id"],
-    queryFn: async (): Promise<string | null> => {
-      const supabase = getSupabaseClient();
-      const { data } = await supabase.auth.getUser();
-      return data.user?.id ?? null;
-    },
-  });
+  const viewer = useViewerId();
 
   const roles = useQuery({
     queryKey: ["club", clubId, "leadership-roles"],
@@ -194,7 +188,11 @@ function LeadershipContent() {
   });
 
   const invalidate = () => {
-    void queryClient.invalidateQueries({ queryKey: ["club", clubId, "leadership"] });
+    // Prefixes have to match real keys: ["club", clubId, "leadership"] is not a
+    // prefix of "leadership-roles" / "leadership-applications", so it matched
+    // nothing and the page kept showing stale roles and applications.
+    void queryClient.invalidateQueries({ queryKey: ["club", clubId, "leadership-roles"] });
+    void queryClient.invalidateQueries({ queryKey: ["club", clubId, "leadership-applications"] });
     void queryClient.invalidateQueries({ queryKey: ["club", clubId, "eligible-roles"] });
   };
 

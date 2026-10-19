@@ -80,27 +80,28 @@ function ChatContent() {
   });
 
   // Sender names live on profiles, which RLS opens to fellow club members, so
-  // the lookup list is read once and keyed by user id.
+  // the lookup list is read once and keyed by user id. The profile join is done
+  // in the same request; it used to be a second round trip on every club page.
   const senders = useQuery({
     queryKey: ["club", clubId, "sender-names"],
     queryFn: async (): Promise<Array<{ id: string; full_name: string }>> => {
       const supabase = getSupabaseClient();
-      const { data: memberRows, error: memberError } = await supabase
+      const { data, error } = await supabase
         .from("memberships")
-        .select("user_id")
+        .select("user_id, profiles(id, full_name)")
         .eq("club_id", clubId)
         .eq("status", "active");
-      if (memberError) throw memberError;
-
-      const userIds = ((memberRows ?? []) as Array<{ user_id: string }>).map((row) => row.user_id);
-      if (userIds.length === 0) return [];
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .in("id", userIds);
       if (error) throw error;
-      return (data ?? []) as Array<{ id: string; full_name: string }>;
+
+      // The generated Relationships map is empty, so PostgREST cannot infer the
+      // embedded shape; the cast is scoped to this join and RLS still decides
+      // which profile rows are returned.
+      return (data ?? [])
+        .map(
+          (row) =>
+            (row as unknown as { profiles: { id: string; full_name: string } | null }).profiles,
+        )
+        .filter((person): person is { id: string; full_name: string } => person !== null);
     },
     enabled: Boolean(clubId),
   });

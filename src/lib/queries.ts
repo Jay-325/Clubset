@@ -63,6 +63,27 @@ export function useAdminActivation() {
   });
 }
 
+/**
+ * The signed-in user's id.
+ *
+ * Three routes used to declare this query and its `getUser()` round trip
+ * independently. They share the `["viewer-id"]` key so only one request is in
+ * flight, and the long staleTime keeps later route mounts from asking the auth
+ * server again -- the id only changes on sign-in/sign-out, and sign-out clears
+ * the whole query cache.
+ */
+export function useViewerId() {
+  return useQuery({
+    queryKey: ["viewer-id"],
+    queryFn: async (): Promise<string | null> => {
+      const supabase = getSupabaseClient();
+      const { data } = await supabase.auth.getUser();
+      return data.user?.id ?? null;
+    },
+    staleTime: 5 * 60_000,
+  });
+}
+
 export function useSignIn() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -155,33 +176,61 @@ export interface ClubFilters {
   commitment?: CommitmentLevel | null;
 }
 
+/**
+ * Canonical form of the discovery filters.
+ *
+ * React Query keys are hashed, so two call sites that ask the same question
+ * must build the same object or they become two separate requests. The Main
+ * page used to call `search_clubs` twice with identical arguments -- once for
+ * the discovery list and once for recommendations -- because their keys
+ * differed even though their arguments did not. Normalising here keeps those
+ * callers on one cache entry, so the RPC runs once.
+ */
+function normalizeClubFilters(filters: ClubFilters) {
+  return {
+    search: filters.search?.trim() || null,
+    type: filters.type ?? null,
+    field: filters.field ?? null,
+    commitment: filters.commitment ?? null,
+  };
+}
+
+type NormalizedClubFilters = ReturnType<typeof normalizeClubFilters>;
+
+/** Stable reference: `select` identity must not change per render. */
+function selectRecommended(clubs: ClubSearchResult[]): ClubSearchResult[] {
+  return clubs.filter((club) => club.match_reasons.length > 0);
+}
+
+async function fetchClubSearch(filters: NormalizedClubFilters): Promise<ClubSearchResult[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("search_clubs", {
+    search_text: filters.search,
+    filter_type: filters.type,
+    filter_field: filters.field,
+    filter_commitment: filters.commitment,
+  });
+  if (error) throw error;
+  return data ?? [];
+}
+
 export function useClubSearch(filters: ClubFilters = {}) {
+  const normalized = normalizeClubFilters(filters);
   return useQuery({
-    queryKey: ["clubs", "search", filters],
-    queryFn: async (): Promise<ClubSearchResult[]> => {
-      const supabase = getSupabaseClient();
-      const { data, error } = await supabase.rpc("search_clubs", {
-        search_text: filters.search?.trim() || null,
-        filter_type: filters.type ?? null,
-        filter_field: filters.field ?? null,
-        filter_commitment: filters.commitment ?? null,
-      });
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryKey: ["clubs", "search", normalized],
+    queryFn: () => fetchClubSearch(normalized),
   });
 }
 
 /** PRD 21: recommendations carry their reasons so the UI can explain them. */
 export function useRecommendedClubs() {
+  const normalized = normalizeClubFilters({});
   return useQuery({
-    queryKey: ["clubs", "recommended"],
-    queryFn: async (): Promise<ClubSearchResult[]> => {
-      const supabase = getSupabaseClient();
-      const { data, error } = await supabase.rpc("search_clubs", {});
-      if (error) throw error;
-      return (data ?? []).filter((club) => club.match_reasons.length > 0);
-    },
+    queryKey: ["clubs", "search", normalized],
+    queryFn: () => fetchClubSearch(normalized),
+    // The recommendation list is the same discovery result, ranked by match
+    // reason. Selecting here keeps the shared cache entry untouched.
+    select: selectRecommended,
   });
 }
 
@@ -595,7 +644,7 @@ export function useMarkNotificationRead() {
 // Administrator (PRD 37)
 // ---------------------------------------------------------------------------
 
-export function useAdminClubOverview() {
+export function useAdminClubOverview(enabled = true) {
   return useQuery({
     queryKey: ["admin", "clubs"],
     queryFn: async (): Promise<AdminClubOverviewRow[]> => {
@@ -604,6 +653,9 @@ export function useAdminClubOverview() {
       if (error) throw error;
       return data ?? [];
     },
+    // Only administrators can read this; without the guard every signed-in
+    // visitor to /admin fired an RPC that RLS then rejected (and retried).
+    enabled,
   });
 }
 

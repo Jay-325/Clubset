@@ -187,8 +187,12 @@ function InternalClubPage() {
   const { clubId } = useParams({ from: "/clubs/$clubId/" });
   const context = useClubContext(clubId);
 
+  // The club home page shows a 20-row summary; the announcements page shows the
+  // full list. Separate cache entries (same prefix, so invalidating
+  // ["club", clubId, "announcements"] still refreshes both) keep one route from
+  // rendering the other's row set.
   const announcements = useQuery({
-    queryKey: ["club", clubId, "announcements"],
+    queryKey: ["club", clubId, "announcements", "recent"],
     queryFn: async (): Promise<AnnouncementRow[]> => {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase

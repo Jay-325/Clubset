@@ -51,8 +51,11 @@ function AttendanceContent() {
   const { clubId } = useParams({ from: "/clubs/$clubId/attendance" });
   const context = useClubContext(clubId);
 
+  // "recent" keeps this 30-row review list in its own cache entry. It shares a
+  // key prefix with `useClubEvents` (which returns the full, ascending list), so
+  // the two no longer overwrite each other's shape when a route swaps.
   const events = useQuery({
-    queryKey: ["club", clubId, "events"],
+    queryKey: ["club", clubId, "events", "recent"],
     queryFn: async (): Promise<EventRow[]> => {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase

@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { can } from "@/lib/auth/permissions";
 import { QUESTION_TYPE_LABELS } from "@/lib/domain";
 import { useClubContext } from "@/lib/hooks/use-club";
+import { useViewerId } from "@/lib/queries";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type {
   FormQuestionRow,
@@ -102,14 +103,7 @@ function FormsContent() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [responseError, setResponseError] = useState<string | null>(null);
 
-  const viewer = useQuery({
-    queryKey: ["viewer-id"],
-    queryFn: async (): Promise<string | null> => {
-      const supabase = getSupabaseClient();
-      const { data } = await supabase.auth.getUser();
-      return data.user?.id ?? null;
-    },
-  });
+  const viewer = useViewerId();
 
   const forms = useQuery({
     queryKey: ["club", clubId, "forms"],

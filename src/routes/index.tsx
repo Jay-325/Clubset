@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AlertTriangle, CalendarDays, MapPin, Search, Sparkles, Users } from "lucide-react";
 
 import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth/context";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useClubSearch, useRecommendedClubs, useUpcomingEvents } from "@/lib/queries";
 import {
   CLUB_TYPE_LABELS,
@@ -49,10 +50,13 @@ function MainContent() {
   const { profile } = useAuth();
   const navigate = useNavigate();
 
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [type, setType] = useState<string>(ALL);
   const [field, setField] = useState<string>(ALL);
   const [commitment, setCommitment] = useState<string>(ALL);
+
+  // The input updates immediately; the query only follows once typing pauses.
+  const search = useDebouncedValue(searchInput);
 
   const clubSearch = useClubSearch({
     search: search || undefined,
@@ -67,15 +71,18 @@ function MainContent() {
   // PRD 21: recommendations are only shown separately when there is a profile
   // to base them on.
   const showRecommendations =
-    !search &&
+    !searchInput &&
     type === ALL &&
     field === ALL &&
     commitment === ALL &&
     (profile?.interests.length ?? 0) > 0;
 
-  const recommended = (recommendations.data ?? []).filter(
-    (club) => !(clubSearch.data ?? []).some((result) => result.id === club.id),
-  );
+  // Both lists are filtered on every render of this page, including while the
+  // student is typing, so the join is kept off the keystroke path.
+  const recommended = useMemo(() => {
+    const discovered = new Set((clubSearch.data ?? []).map((result) => result.id));
+    return (recommendations.data ?? []).filter((club) => !discovered.has(club.id));
+  }, [recommendations.data, clubSearch.data]);
 
   return (
     <>
@@ -184,8 +191,8 @@ function MainContent() {
             <Input
               className="pl-8"
               placeholder="Search clubs"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
               aria-label="Search clubs"
             />
           </div>

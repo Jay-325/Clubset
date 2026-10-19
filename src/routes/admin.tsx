@@ -37,7 +37,9 @@ function AdminPage() {
 
 function AdminContent() {
   const { profile } = useAuth();
-  const overview = useAdminClubOverview();
+  // Visitors who are not administrators never reach the review queue, so they
+  // should not ask the database for it either.
+  const overview = useAdminClubOverview(profile?.account_type === "administrator");
 
   if (profile?.account_type !== "administrator") {
     return (
