@@ -58,57 +58,28 @@ export function useAdminLogin() {
  *   Administrator Login -> emailed link -> Supabase confirms the email
  *   -> authenticated session -> activate_administrator() -> profile.account_type
  *
- * This hook is the second-to-last hop and it was previously never called from
- * anywhere, so the role could never actually be granted: an allowlisted
- * teacher could sign in and still be a student forever.
+ * This was previously a hook that nothing called, so the role could never
+ * actually be granted: an allowlisted teacher could sign in and stay a student
+ * forever. It is now a plain async function invoked by AuthProvider, which
+ * wraps every route -- the emailed link may land on any URL (the client sets
+ * detectSessionInUrl), so activation cannot be tied to a single page.
  *
  * Everything security-relevant happens in the database, not here. The RPC
  * takes no arguments, derives the identity from auth.uid(), and grants nothing
  * unless the caller's *verified* auth email matches an active
  * public.admin_allowlist row. The client cannot choose an email, a target user
  * or an account type; it can only ask "may I activate?".
- */
-export function useAdminActivation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (): Promise<ProfileRow> => {
-      const supabase = getSupabaseClient();
-      const { data, error } = await supabase.rpc("activate_administrator");
-      if (error) throw error;
-      return data as ProfileRow;
-    },
-    onSuccess: async () => {
-      // The profile row is the app's view of account_type, so refresh it and
-      // the administrator-only query before the UI re-renders.
-      await queryClient.invalidateQueries({ queryKey: ["profile"] });
-      await queryClient.invalidateQueries({ queryKey: ["admin", "clubs"] });
-    },
-  });
-}
-
-/**
- * True when the signed-in session is an email-confirmed Supabase user.
  *
- * The database independently enforces this (activate_administrator() reads
- * auth.users and refuses unverified callers), but the UI uses it to avoid
- * offering the activation button before the emailed link has been opened.
- *
- * This reads the session directly rather than through `useAuth()` on purpose:
- * `src/lib/auth/context.tsx` is a consumer of this module, so depending on it
- * here would create an import cycle.
+ * Returns "activated" when the caller is now an administrator, "refused" when
+ * the email is simply not allowlisted (the normal outcome for a student), and
+ * throws on any other error.
  */
-export function useIsEmailVerified() {
-  return useQuery({
-    queryKey: ["auth", "email-verified"],
-    queryFn: async (): Promise<boolean> => {
-      const supabase = getSupabaseClient();
-      const { data } = await supabase.auth.getUser();
-      const user = data.user;
-      if (!user) return false;
-      return Boolean(user.email_confirmed_at ?? user.confirmed_at);
-    },
-    staleTime: 5 * 60_000,
-  });
+export async function requestAdministratorActivation(): Promise<"activated" | "refused"> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc("activate_administrator");
+  if (!error) return "activated";
+  if (/allowlist/i.test(error.message)) return "refused";
+  throw error;
 }
 
 /**
