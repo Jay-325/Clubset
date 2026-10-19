@@ -70,6 +70,36 @@ touches imports. The current baseline is: `index-*.js` 367.76 kB
 - Memoise only when there is a concrete mechanism (context value identity,
   per-keystroke work). Do not blanket-`useMemo`/`memo` as a habit.
 
+### Function grant invariant (learned the hard way — do not regress)
+
+PostgreSQL evaluates an RLS policy **as the querying role**. Its own docs:
+
+> users who are using a given policy must be able to access any tables or
+> functions referenced in the expression or they will simply receive a
+> permission denied error when attempting to query the table that has row-level
+> security enabled.
+
+So a blanket `revoke execute ... from anon` over every function in `public`
+**breaks RLS for signed-out visitors** with `42501 permission denied for
+function <helper>`, even though no policy is wrong. `20261003001241` did exactly
+that; `20261019000100` restores the eight policy predicates.
+
+Rules that follow:
+
+- Any function referenced inside a **policy expression** must keep `EXECUTE` for
+  **every role that can query the table**, including `anon`. It is a predicate,
+  not an endpoint — the policy returning false *is* the denial.
+- Any function that **writes** (`activate_administrator`, `handle_new_auth_user`)
+  must have `EXECUTE` revoked from `public, anon` and granted only to
+  `authenticated`/`service_role` (plus the trigger owner where relevant).
+- Never "harden" grants by looping over `pg_proc` and revoking broadly. Enumerate
+  the functions you mean, and classify each as *policy predicate* or *endpoint*.
+- After changing any grant, prove it live: a signed-out `GET /rest/v1/<table>`
+  must return `200` with zero rows, **not** `42501`. A `42501` on an anon read is
+  the signature of this bug.
+- `has_club_permission` takes `(uuid, public.club_permission)` — the enum, not
+  `text`. A grant naming the wrong signature silently does nothing.
+
 ## 3. Database rules
 
 - **Migrations only.** Never run DDL against the live project by hand, and never

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GraduationCap, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/auth/context";
-import { useAdminLogin, useSignIn } from "@/lib/queries";
+import { useAdminActivation, useAdminLogin, useIsEmailVerified, useSignIn } from "@/lib/queries";
 
 /**
  * PRD 40: two login paths, but the path chosen here grants NOTHING. The
@@ -29,23 +29,64 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { session, isConfigured } = useAuth();
+  const { session, isConfigured, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { next } = Route.useSearch();
   const [mode, setMode] = useState<"student" | "administrator">("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [activationError, setActivationError] = useState<string | null>(null);
 
   const signIn = useSignIn();
   const adminLogin = useAdminLogin();
+  const activateAdministrator = useAdminActivation();
+  const emailVerified = useIsEmailVerified();
+
+  // PRD 5: finishing the administrator handshake.
+  //
+  // The emailed link lands the teacher back here with a confirmed session but
+  // still account_type 'student'. The role is granted only by the database --
+  // this simply asks it to run the check once the email is actually verified.
+  // A non-allowlisted or unverified user gets an error, not a role, and the
+  // attempt is harmless either way: activate_administrator() is idempotent and
+  // refuses anyone whose verified email is not on the allowlist.
+  const activationAttempted = useRef(false);
+  useEffect(() => {
+    if (!session) {
+      activationAttempted.current = false;
+      return;
+    }
+    if (profile?.account_type === "administrator") return;
+    if (emailVerified.data !== true) return;
+    if (activationAttempted.current) return;
+    activationAttempted.current = true;
+
+    activateAdministrator
+      .mutateAsync()
+      .then(() => refreshProfile())
+      .catch((error: unknown) => {
+        // Not allowlisted is the common, expected case -- it is not an error
+        // the teacher needs to see mid-sign-in. Anything else is surfaced.
+        const text = error instanceof Error ? error.message : String(error);
+        if (!/allowlist/i.test(text)) setActivationError(text);
+      });
+  }, [session, profile?.account_type, emailVerified.data, activateAdministrator, refreshProfile]);
 
   useEffect(() => {
     if (next) sessionStorage.setItem("joinin_next", next);
   }, [next]);
 
+  // Stay on this page until the administrator handshake has settled, so the
+  // redirect below cannot race the activation RPC and strand the teacher on a
+  // student landing page.
+  const activationPending =
+    Boolean(session && profile?.account_type !== "administrator" && emailVerified.data === true) ||
+    activateAdministrator.isPending;
+
   useEffect(() => {
     if (!session) return;
+    if (activationPending) return;
     const target = next ?? sessionStorage.getItem("joinin_next");
     sessionStorage.removeItem("joinin_next");
     if (!target) {
@@ -64,7 +105,7 @@ function LoginPage() {
       }
     }
     void navigate({ to: "/" });
-  }, [session, navigate, next]);
+  }, [session, navigate, next, activationPending]);
 
   const handleStudentLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -196,9 +237,9 @@ function LoginPage() {
             </p>
           ) : null}
 
-          {signIn.error || adminLogin.error ? (
+          {signIn.error || adminLogin.error || activationError ? (
             <p className="mt-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {(signIn.error ?? adminLogin.error)?.message}
+              {(signIn.error ?? adminLogin.error)?.message ?? activationError}
             </p>
           ) : null}
         </CardContent>
