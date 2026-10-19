@@ -25,6 +25,13 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Local agent tooling config. opencode.json points this workspace at a remote
+# MCP endpoint for the linked Supabase project and is machine/agent-local; it
+# must never travel with the repository (Lovable syncs the branch).
+opencode.json
+opencode.jsonc
+opencode.local.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
