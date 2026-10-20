@@ -9,5 +9,15 @@
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "cf/@cf/zai-org/glm-4.7-flash",
     "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "131072",
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
+  },
+  "enabledPlugins": {
+    "ponytail@ponytail": true
+  },
+  "pluginConfigs": {
+    "ponytail@ponytail": {
+      "options": {
+        "level": "full"
+      }
+    }
   }
 }
