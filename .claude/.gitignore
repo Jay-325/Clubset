@@ -1,0 +1,3 @@
+# Claude Code local settings - never commit auth tokens
+settings.json
+settings.local.json
