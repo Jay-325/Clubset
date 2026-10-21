@@ -1,14 +1,9 @@
 {
   "env": {
     "ANTHROPIC_BASE_URL": "http://localhost:20128",
-    "ANTHROPIC_AUTH_TOKEN": "omniroute",
-    "ANTHROPIC_MODEL": "cf/@cf/zai-org/glm-4.7-flash",
-    "ANTHROPIC_SMALL_FAST_MODEL": "cf/@cf/zai-org/glm-4.7-flash",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "cf/@cf/zai-org/glm-4.7-flash",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "cf/@cf/zai-org/glm-4.7-flash",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "cf/@cf/zai-org/glm-4.7-flash",
-    "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "131072",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
+    "ANTHROPIC_AUTH_TOKEN": "sk-0994fa5d1f055aec-7032f3-df777944",
+    "ANTHROPIC_MODEL": "JayP",
+    "ANTHROPIC_API_KEY": ""
   },
   "enabledPlugins": {
     "ponytail@ponytail": true
