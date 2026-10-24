@@ -32,6 +32,15 @@ opencode.json
 opencode.jsonc
 opencode.local.json
 
+# Agent skill data caches. The skill definitions themselves live in
+# .agents/skills/ and ARE tracked; only the per-run data directories below
+# are local state and must not travel with the repository.
+.agents/answers/
+.agents/summaries/
+.agents/run-logs/
+.agents/handoff/
+.agents/test-logs/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
