@@ -12,7 +12,7 @@ const oauth = () => (getSupabaseClient().auth as unknown as { oauth: OAuthApi })
 
 export const Route = createFileRoute("/.lovable/oauth/consent")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Connect an app — Joinin" }] }),
+  head: () => ({ meta: [{ title: "Connect an app — Clubset" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
     authorization_id: typeof s["authorization_id"] === "string" ? s["authorization_id"] : "",
   }),
@@ -59,7 +59,7 @@ function Consent() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md space-y-4 rounded-lg border bg-card p-6 text-card-foreground">
-        <h1 className="text-xl font-semibold">Connect {name} to Joinin</h1>
+        <h1 className="text-xl font-semibold">Connect {name} to Clubset</h1>
         <p className="text-sm text-muted-foreground">
           {name} will be able to read your clubs, events and announcements as you.
         </p>

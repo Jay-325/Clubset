@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMarkNotificationRead, useNotifications } from "@/lib/queries";
 
 /**
- * PRD 36: Joinin centralizes important notifications in one place so students
+ * PRD 36: Clubset centralizes important notifications in one place so students
  * do not have to check five different screens.
  */
 export const Route = createFileRoute("/notifications")({

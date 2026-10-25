@@ -46,7 +46,7 @@ function LoginPage() {
   // to return to /login, so this page no longer performs it.
 
   useEffect(() => {
-    if (next) sessionStorage.setItem("joinin_next", next);
+    if (next) sessionStorage.setItem("clubset_next", next);
   }, [next]);
 
   // Stay on this page briefly while the provider's activation handshake may
@@ -59,8 +59,8 @@ function LoginPage() {
   useEffect(() => {
     if (!session) return;
     if (activationPending) return;
-    const target = next ?? sessionStorage.getItem("joinin_next");
-    sessionStorage.removeItem("joinin_next");
+    const target = next ?? sessionStorage.getItem("clubset_next");
+    sessionStorage.removeItem("clubset_next");
     if (!target) {
       void navigate({ to: "/" });
       return;
@@ -110,7 +110,7 @@ function LoginPage() {
           <CardHeader>
             <CardTitle>Connect Supabase to continue</CardTitle>
             <CardDescription>
-              Joinin needs a Supabase project before it can store accounts and clubs. Copy{" "}
+              Clubset needs a Supabase project before it can store accounts and clubs. Copy{" "}
               <code className="rounded bg-muted px-1 py-0.5">.env.example</code> to{" "}
               <code className="rounded bg-muted px-1 py-0.5">.env</code> and set{" "}
               <code className="rounded bg-muted px-1 py-0.5">VITE_SUPABASE_URL</code> and{" "}
@@ -126,7 +126,7 @@ function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl">Joinin</CardTitle>
+          <CardTitle className="text-2xl">Clubset</CardTitle>
           <CardDescription>
             Communication, membership, events, attendance, finances and forms for your school clubs
             -- in one place.

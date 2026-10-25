@@ -260,7 +260,7 @@ _Reports client errors to the Lovable error channel._
 - L27 `export function reportLovableError`
 
 ### src/lib/mcp/index.ts
-_MCP server definition: registers the Joinin tools._
+_MCP server definition: registers the Clubset tools._
 - L8 `export default defineMcp(...)`
 
 ### src/lib/mcp/supabase.ts

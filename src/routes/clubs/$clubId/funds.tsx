@@ -95,7 +95,7 @@ function FundsContent() {
         title="Club funds"
         description={
           canManage
-            ? "Add money in or money out. Joinin keeps the balance up to date for you."
+            ? "Add money in or money out. Clubset keeps the balance up to date for you."
             : "A summary of the club's money."
         }
       />
@@ -233,7 +233,7 @@ function QuickAdd({ clubId }: { clubId: string }) {
       <CardHeader>
         <CardTitle className="text-base">Add a transaction</CardTitle>
         <CardDescription>
-          What was it, how much, and what category. Joinin updates the balance automatically.
+          What was it, how much, and what category. Clubset updates the balance automatically.
         </CardDescription>
       </CardHeader>
       <CardContent>

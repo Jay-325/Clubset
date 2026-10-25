@@ -69,7 +69,7 @@ function OnboardingPage() {
           <CardHeader>
             <CardTitle>Set up your profile</CardTitle>
             <CardDescription>
-              This helps Joinin show you clubs you would actually enjoy. You can change it later in
+              This helps Clubset show you clubs you would actually enjoy. You can change it later in
               Settings.
             </CardDescription>
           </CardHeader>

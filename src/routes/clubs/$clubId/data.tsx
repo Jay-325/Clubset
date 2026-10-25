@@ -35,7 +35,7 @@ import type {
 /**
  * PRD 26/28: structured tables, always started from a template or from a
  * plain-English description. There is deliberately no blank grid anywhere on
- * this page -- "Joinin should not become Excel" (PRD 26/44).
+ * this page -- "Clubset should not become Excel" (PRD 26/44).
  */
 export const Route = createFileRoute("/clubs/$clubId/data")({
   component: DataPage,
@@ -261,8 +261,8 @@ function DataContent() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Joinin keeps this area permission-gated so a member is never shown a blank spreadsheet
-              to fill in.
+              Clubset keeps this area permission-gated so a member is never shown a blank
+              spreadsheet to fill in.
             </p>
           </CardContent>
         </Card>
@@ -286,7 +286,7 @@ function DataContent() {
           <CardHeader>
             <CardTitle className="text-base">Start from a template</CardTitle>
             <CardDescription>
-              Pick what you want to track and Joinin builds the columns for you.
+              Pick what you want to track and Clubset builds the columns for you.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -328,7 +328,7 @@ function DataContent() {
           <CardHeader>
             <CardTitle className="text-base">What are you trying to track?</CardTitle>
             <CardDescription>
-              Say it in your own words and Joinin will suggest a structure to review.
+              Say it in your own words and Clubset will suggest a structure to review.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -412,7 +412,7 @@ function DataContent() {
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Nothing is created until you approve it -- Joinin proposes, you decide.
+                Nothing is created until you approve it -- Clubset proposes, you decide.
               </p>
             )}
           </CardContent>

@@ -220,7 +220,7 @@ function EventRow({ event }: { event: UpcomingEventResult }) {
           </p>
         ) : null}
 
-        {/* PRD 15: Joinin never RSVPs on the student's behalf -- the buttons
+        {/* PRD 15: Clubset never RSVPs on the student's behalf -- the buttons
             are the only thing that writes an attendance expectation. */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Button

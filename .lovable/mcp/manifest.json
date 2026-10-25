@@ -11,9 +11,9 @@
   },
   "mcp": {
     "server": {
-      "name": "joinin",
+      "name": "clubset",
       "version": "0.1.0",
-      "title": "Joinin"
+      "title": "Clubset"
     },
     "tools": [
       {

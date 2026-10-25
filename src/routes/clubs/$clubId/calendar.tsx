@@ -171,7 +171,7 @@ function EventRow({ event, overlaps: hasOverlap }: { event: ClubEventRow; overla
         {hasOverlap ? (
           <p className="mt-3 flex items-start gap-1.5 rounded-md bg-amber-500/10 px-2 py-1.5 text-xs text-amber-700 dark:text-amber-400">
             <AlertTriangle className="mt-0.5 size-3 shrink-0" />
-            Overlaps another event. One of them needs to move -- Joinin will not pick for you.
+            Overlaps another event. One of them needs to move -- Clubset will not pick for you.
           </p>
         ) : null}
       </CardContent>

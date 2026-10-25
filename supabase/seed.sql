@@ -1,5 +1,5 @@
 -- ============================================================================
--- Joinin :: Development seed
+-- Clubset :: Development seed
 --
 -- Creates one school and an administrator allowlist entry so the Administrator
 -- Login path (PRD 5) can be exercised locally.

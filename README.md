@@ -1,9 +1,9 @@
-# Joinin
+# Clubset
 
 School club management and discovery. Communication, membership, events,
 attendance, finances, forms, and data tables in one student-friendly system.
 
-> **Joinin should do the complicated work behind the scenes so students only
+> **Clubset should do the complicated work behind the scenes so students only
 > have to make simple decisions.**
 
 ---
@@ -118,7 +118,7 @@ change; do not treat the two as equivalent.
 
 ## The attendance model
 
-This is the part of Joinin that differs most from a normal calendar RSVP
+This is the part of Clubset that differs most from a normal calendar RSVP
 (PRD 16–18, 47):
 
 ```

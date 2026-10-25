@@ -1,4 +1,4 @@
-# Joinin — Schema / Migration Reconciliation Report
+# Clubset — Schema / Migration Reconciliation Report
 
 Status: **REPO-SIDE COMPLETE — LIVE VERIFICATION BLOCKED**
 Project ref: `omcddzmtjqhrsxdxiewn`

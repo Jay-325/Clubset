@@ -1,4 +1,4 @@
-# Joinin — schema, RLS & index audit
+# Clubset — schema, RLS & index audit
 
 **Date:** 2026-10-24
 **Scope:** `supabase/migrations/*.sql`, cross-checked read-only against the live

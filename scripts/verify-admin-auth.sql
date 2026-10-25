@@ -1,5 +1,5 @@
 -- ===========================================================================
--- Joinin :: administrator-authorization verification harness
+-- Clubset :: administrator-authorization verification harness
 --
 -- !!! DEVELOPMENT / LOCAL STACK ONLY. NEVER RUN AGAINST PRODUCTION. !!!
 -- It inserts four throwaway auth users (arinjaypal@gmail.com plus three

@@ -74,7 +74,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-4">
           <Link to="/" className="flex items-center gap-2 font-semibold">
             <LayoutGrid className="size-5 text-primary" />
-            Joinin
+            Clubset
           </Link>
 
           <nav className="hidden flex-1 items-center gap-1 sm:flex">

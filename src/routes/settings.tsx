@@ -80,7 +80,10 @@ function SettingsContent() {
 
   return (
     <>
-      <PageHeader title="Settings" description="Your account and how Joinin finds clubs for you." />
+      <PageHeader
+        title="Settings"
+        description="Your account and how Clubset finds clubs for you."
+      />
 
       <Card>
         <CardHeader>
@@ -241,7 +244,7 @@ function SettingsContent() {
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>Account</CardTitle>
-          <CardDescription>Sign out of Joinin on this device.</CardDescription>
+          <CardDescription>Sign out of Clubset on this device.</CardDescription>
         </CardHeader>
         <CardContent>
           <Button

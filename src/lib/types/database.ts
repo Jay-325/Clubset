@@ -1,5 +1,5 @@
 /**
- * Database types for Joinin.
+ * Database types for Clubset.
  *
  * Normally produced by `supabase gen types typescript`. Hand-maintained here so
  * the repo is self-contained, and kept in sync with supabase/migrations/*.
