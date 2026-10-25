@@ -114,7 +114,7 @@ function LoginPage() {
               <code className="rounded bg-muted px-1 py-0.5">.env.example</code> to{" "}
               <code className="rounded bg-muted px-1 py-0.5">.env</code> and set{" "}
               <code className="rounded bg-muted px-1 py-0.5">VITE_SUPABASE_URL</code> and{" "}
-              <code className="rounded bg-muted px-1 py-0.5">VITE_SUPABASE_ANON_KEY</code>.
+              <code className="rounded bg-muted px-1 py-0.5">VITE_SUPABASE_PUBLISHABLE_KEY</code>.
             </CardDescription>
           </CardHeader>
         </Card>
