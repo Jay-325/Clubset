@@ -306,11 +306,7 @@ function DataContent() {
                     createTable.mutate({ name: template.name, templateKey: template.key })
                   }
                 >
-                  {createTable.isPending ? (
-                    <SkeletonSpinner />
-                  ) : (
-                    <Plus className="size-4" />
-                  )}
+                  {createTable.isPending ? <SkeletonSpinner /> : <Plus className="size-4" />}
                   Use this
                 </Button>
               </div>
@@ -341,11 +337,7 @@ function DataContent() {
                 maxLength={200}
               />
               <Button type="submit" disabled={propose.isPending || intent.trim().length === 0}>
-                {propose.isPending ? (
-                  <SkeletonSpinner />
-                ) : (
-                  <Sparkles className="size-4" />
-                )}
+                {propose.isPending ? <SkeletonSpinner /> : <Sparkles className="size-4" />}
                 Suggest
               </Button>
             </form>
@@ -390,11 +382,7 @@ function DataContent() {
 
                 <div className="flex gap-2">
                   <Button size="sm" disabled={createTable.isPending} onClick={handleApprove}>
-                    {createTable.isPending ? (
-                      <SkeletonSpinner />
-                    ) : (
-                      <Plus className="size-4" />
-                    )}
+                    {createTable.isPending ? <SkeletonSpinner /> : <Plus className="size-4" />}
                     Approve and create
                   </Button>
                   <Button

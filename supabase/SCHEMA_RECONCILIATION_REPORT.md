@@ -48,6 +48,7 @@ live schema (see §3).
   declared as code and must exist via the dashboard/API.
 
 ### Environment
+
 `.env` defines: `SUPABASE_PROJECT_ID`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`,
 `VITE_SUPABASE_PROJECT_ID`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_URL`.
 `.env.example` documents only `VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY`
@@ -60,10 +61,10 @@ live schema (see §3).
 
 Two timestamp series coexist:
 
-| Series | Files | Nature |
-| --- | --- | --- |
-| `20260101*` | 14 | Hand-authored, descriptive names. Base 03/05 are **idempotent** (guarded with `do $$ if not exists`). |
-| `20261003*` | 7 (UUID names) | Lovable-generated. Later, and **not idempotent** in general. |
+| Series      | Files          | Nature                                                                                                |
+| ----------- | -------------- | ----------------------------------------------------------------------------------------------------- |
+| `20260101*` | 14             | Hand-authored, descriptive names. Base 03/05 are **idempotent** (guarded with `do $$ if not exists`). |
+| `20261003*` | 7 (UUID names) | Lovable-generated. Later, and **not idempotent** in general.                                          |
 
 Per the task, the live DB migration history **stops at `20261003000536`**.
 
@@ -99,14 +100,14 @@ migration is required.
 
 ## 4. What each unapplied migration does
 
-| Migration | Change | Risk if applied as-is to current live |
-| --- | --- | --- |
-| `...0659` | Consolidated events/RSVP/attendance (+ security-invoker view). | **Duplicate-object error** if events schema already exists (see §3). Also still carries the `finalize_attendance` bug. |
-| `...0812` | `alter table public.dues enable row level security;` | Safe. Fixes a live P0 (dues table fully readable/writable). |
-| `...0858` | Recreates `apply_table_template` as **SECURITY INVOKER** + revokes anon. | Safe. Removes a live privilege-escalation shortcut. |
-| `...0954` | Rewrites `check_eligibility` to authorize the caller; revokes anon on `check_eligibility`, `eligible_roles_for`, `application_review_packet`. | Safe. Fixes live P0 (any user could read any student's standing). |
+| Migration | Change                                                                                                                                                                                        | Risk if applied as-is to current live                                                                                                                        |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `...0659` | Consolidated events/RSVP/attendance (+ security-invoker view).                                                                                                                                | **Duplicate-object error** if events schema already exists (see §3). Also still carries the `finalize_attendance` bug.                                       |
+| `...0812` | `alter table public.dues enable row level security;`                                                                                                                                          | Safe. Fixes a live P0 (dues table fully readable/writable).                                                                                                  |
+| `...0858` | Recreates `apply_table_template` as **SECURITY INVOKER** + revokes anon.                                                                                                                      | Safe. Removes a live privilege-escalation shortcut.                                                                                                          |
+| `...0954` | Rewrites `check_eligibility` to authorize the caller; revokes anon on `check_eligibility`, `eligible_roles_for`, `application_review_packet`.                                                 | Safe. Fixes live P0 (any user could read any student's standing).                                                                                            |
 | `...1201` | Notifications enum+table+RLS, notification triggers, `search_clubs` fix (commitment_hours + ORDER BY), `upcoming_events`, `admin_club_overview`, audit triggers, `receipts` storage policies. | Mostly safe, **but** `create type public.notification_type` / `create table public.notifications` are unguarded and may collide if a partial version exists. |
-| `...1241` | Dynamic pass revoking `EXECUTE` from `public`/`anon` on **every** function in `public`, granting `authenticated`/`service_role`. | Safe and desirable. Closes the anon-executable advisor findings. |
+| `...1241` | Dynamic pass revoking `EXECUTE` from `public`/`anon` on **every** function in `public`, granting `authenticated`/`service_role`.                                                              | Safe and desirable. Closes the anon-executable advisor findings.                                                                                             |
 
 ---
 
@@ -115,31 +116,31 @@ migration is required.
 All calls originate from `src/lib/queries.ts` unless noted. "Repo def" = migration
 that creates the function. "Live" is marked `?` until MCP auth.
 
-| RPC | Called at | Repo def | Live? |
-| --- | --- | --- | --- |
-| `activate_administrator` | queries.ts:58 | 0001 / 0200 | ? |
-| `search_clubs` | queries.ts:163,181 | 0009 / 0210 / 0220 / **1201** | ? |
-| `create_club` | queries.ts:256 | 0002 | ? |
-| `submit_club_for_review` | queries.ts:311 | 0002 | ? |
-| `review_club` | queries.ts:328 | 0002 | ? |
-| `review_membership` | queries.ts:402 | 0002 | ? |
-| `upcoming_events` | queries.ts:426 | **1201 only** | likely **MISSING** |
-| `set_rsvp` | queries.ts:495 | 0003 / 0659 | ? |
-| `veto_rsvp` | queries.ts:532 | 0003 / 0659 | ? |
-| `finalize_attendance` | queries.ts:547 | 0003 / 0659 | ? (buggy) |
-| `admin_club_overview` | queries.ts:603 | **1201 only** | likely **MISSING** |
-| `correct_attendance` | attendance.tsx:162 | 0003 / 0659 | ? |
-| `add_manual_attendance` | attendance.tsx:177 | 0003 / 0659 | ? |
-| `attendance_stats` | attendance.tsx:444 | 0003 / 0659 | ? |
-| `apply_table_template` | data.tsx:189 | 0007 / 0858 | ? |
-| `propose_table_structure` | data.tsx:209 | 0007 | ? |
-| `publish_form` | forms.tsx:219 | 0006 | ? |
-| `submit_form_response` | forms.tsx:228 | 0006 | ? |
-| `add_transaction` | funds.tsx:211 | 0005 | ? |
-| `mark_dues_paid` | funds.tsx:349 | 0005 | ? |
-| `eligible_roles_for` | leadership.tsx:186 | 0008 / 0954 | ? |
-| `review_application` | leadership.tsx:230 | 0008 | ? |
-| `apply_for_role` | leadership.tsx:243 | 0008 | ? |
+| RPC                       | Called at          | Repo def                      | Live?              |
+| ------------------------- | ------------------ | ----------------------------- | ------------------ |
+| `activate_administrator`  | queries.ts:58      | 0001 / 0200                   | ?                  |
+| `search_clubs`            | queries.ts:163,181 | 0009 / 0210 / 0220 / **1201** | ?                  |
+| `create_club`             | queries.ts:256     | 0002                          | ?                  |
+| `submit_club_for_review`  | queries.ts:311     | 0002                          | ?                  |
+| `review_club`             | queries.ts:328     | 0002                          | ?                  |
+| `review_membership`       | queries.ts:402     | 0002                          | ?                  |
+| `upcoming_events`         | queries.ts:426     | **1201 only**                 | likely **MISSING** |
+| `set_rsvp`                | queries.ts:495     | 0003 / 0659                   | ?                  |
+| `veto_rsvp`               | queries.ts:532     | 0003 / 0659                   | ?                  |
+| `finalize_attendance`     | queries.ts:547     | 0003 / 0659                   | ? (buggy)          |
+| `admin_club_overview`     | queries.ts:603     | **1201 only**                 | likely **MISSING** |
+| `correct_attendance`      | attendance.tsx:162 | 0003 / 0659                   | ?                  |
+| `add_manual_attendance`   | attendance.tsx:177 | 0003 / 0659                   | ?                  |
+| `attendance_stats`        | attendance.tsx:444 | 0003 / 0659                   | ?                  |
+| `apply_table_template`    | data.tsx:189       | 0007 / 0858                   | ?                  |
+| `propose_table_structure` | data.tsx:209       | 0007                          | ?                  |
+| `publish_form`            | forms.tsx:219      | 0006                          | ?                  |
+| `submit_form_response`    | forms.tsx:228      | 0006                          | ?                  |
+| `add_transaction`         | funds.tsx:211      | 0005                          | ?                  |
+| `mark_dues_paid`          | funds.tsx:349      | 0005                          | ?                  |
+| `eligible_roles_for`      | leadership.tsx:186 | 0008 / 0954                   | ?                  |
+| `review_application`      | leadership.tsx:230 | 0008                          | ?                  |
+| `apply_for_role`          | leadership.tsx:243 | 0008                          | ?                  |
 
 **P1:** `upcoming_events` and `admin_club_overview` are defined **only** in the
 unapplied `...1201`. If live is truly at `...0536`, these two RPCs **do not
@@ -153,7 +154,9 @@ confirmed live and, if missing, remediated.
 Severity: P0 = security/authorization/data integrity; P1 = core functionality.
 
 ### 6.1 P1 — `finalize_attendance` references a non-existent column
+
 `20260101000003` (applied) line 487 and `20261003000659` line 456:
+
 ```sql
 update public.attendance
 set status = 'attended', finalized_by = auth.uid(), finalized_at = now()
@@ -161,45 +164,58 @@ where event_id = target_event
   and status = 'rsvp_pending'
   and attendance_finalized_at is null;   -- ← column is `finalized_at`
 ```
+
 `attendance_finalized_at` does not exist ⇒ the RPC raises at runtime. Finalizing
 attendance (and therefore finalized-attendance-driven eligibility) is broken.
 
 ### 6.2 P0 — Membership self-accept via direct table update
+
 `20260101000002_clubs.sql` `memberships_update_leader`:
+
 ```sql
 using (user_id = auth.uid() or has_club_permission(...) or is_club_admin(...))
 with check (user_id = auth.uid() or has_club_permission(...) or is_club_admin(...))
 ```
+
 `user_id = auth.uid()` satisfies the `with check`, so a student can update **their
 own** membership row and set `status = 'active'` directly (bypassing
 `review_membership`). Membership acceptance must not be self-service.
 
 ### 6.3 P0 — Founder can self-approve / arbitrarily change club status
+
 `clubs_update_leader` (`20260101000002`):
+
 ```sql
 using (founder_id = auth.uid() or has_club_permission(id,'manage_settings') or is_club_admin(id))
 with check (school_id = public.current_school_id())
 ```
+
 The founder matches `using` and only `school_id` is checked, so a founder can
 `update clubs set status='approved'` directly, skipping administrator review.
 
 ### 6.4 P0 — `is_club_admin()` grants every same-school administrator control of every club
+
 `20260101000002`:
+
 ```sql
 ... or (public.is_administrator() and exists (
   select 1 from public.clubs c where c.id = target_club and c.school_id = public.current_school_id()))
 ```
+
 So any school administrator is treated as a full club administrator (finances,
 membership, attendance, leadership, events) for **all** clubs in the school.
 The PRD/prompt require distinguishing **school administrator** (oversight/approval)
 from **linked club administrator** (assigned per club) via `club_administrators`.
 
 ### 6.5 P0 — `can_read_club()` exposes private club data to every same-school user
+
 `20260101000002`:
+
 ```sql
 select is_club_member(...) or is_club_admin(...) or exists (
   select 1 from public.clubs c where c.id = target_club and c.school_id = public.current_school_id())
 ```
+
 `can_read_club` gates: `announcements`, `leadership_roles`, `role_assignments`,
 `club_administrators`, `club_verifications`, `eligibility_requirements`,
 `application_questions`, `transactions`, `budgets`, `forms`, `data_tables` /
@@ -208,14 +224,17 @@ therefore read private announcements, finances, events, data tables, etc. The
 public welcome surface must be separated from private content.
 
 ### 6.6 P0 — Administrator activation has Ridgeway fallback + domain-only grant
+
 `20260101000200` (applied):
+
 - Auto-grants `account_type='administrator'` to **any** `@fairfieldschools.net` /
   `@fairfieldschools.org` address, even with **no allowlist row**.
 - Falls back to `where s.slug = 'ridgeway'` to pick the school for such users.
-The prompt requires: allowlist remains authoritative; exact/normalized matching;
-no lookalike domains; **no Ridgeway fallback**; do not fabricate schools.
+  The prompt requires: allowlist remains authoritative; exact/normalized matching;
+  no lookalike domains; **no Ridgeway fallback**; do not fabricate schools.
 
 ### 6.7 P0 — Founder bootstrap circular dependency
+
 `leadership_roles_write` / `role_assignments_write` require
 `has_club_permission(...,'manage_leadership')` or `is_club_admin`. A newly created
 club's founder holds **no role** and is not a linked administrator, so the founder
@@ -223,10 +242,13 @@ cannot create leadership roles or assign leadership. There is no initial
 founder/club-leader grant. This is the exact circular dependency the task names.
 
 ### 6.8 P0 — `review_application` misuses `is_review_supervisor` as authorization
+
 `20260101000008`:
+
 ```sql
 if not ( exists(role assignment for caller) or role_is_supervisor or has_club_permission(...) or is_club_admin(...) ) then raise ...
 ```
+
 `role_is_supervisor` is a property of the **role**, not proof the **caller** is the
 supervisor. Any signed-in user can review any application whose role has
 `is_review_supervisor = true`. (Also `review_application` is SECURITY INVOKER, so
@@ -235,29 +257,35 @@ plus automatic `role_assignments` insert then depends on RLS; the bug is the
 authorization predicate.)
 
 ### 6.9 P0 — `apply_table_template` SECURITY DEFINER (live)
+
 `20260101000007`: `security definer`, callable to write `data_table_columns`.
 Fixed by unapplied `...0858` (→ security invoker). Live remains exposed.
 
 ### 6.10 P0 — `dues` row level security never enabled (live)
+
 `20260101000005` creates `dues_select` / `dues_write` policies but never
 `alter table public.dues enable row level security;`. Fixed by unapplied `...0812`.
 Until then the `dues` table is fully readable/writable by any signed-in user.
 
 ### 6.11 P0 — `check_eligibility` leaks any student's standing (live)
+
 `20260101000008` `check_eligibility(role, student_id)` and `eligible_roles_for(student_id)`
 are SECURITY DEFINER and take an arbitrary `student_id`. Fixed by unapplied `...0954`.
 
 ### 6.12 P1 — Anonymous-executable SECURITY DEFINER functions
+
 `...0536` (applied) already revoked anon on 5 core helpers, but many other
 helpers (`create_club`, `review_club`, `set_rsvp`, `add_transaction`, …) still
 default to `PUBLIC`/`anon` EXECUTE until unapplied `...1241`. Advised to apply.
 
 ### 6.13 P1 — Notification triggers/functions absent in live
+
 All `notify_*` functions and their triggers live **only** in unapplied `...1201`.
 So join requests, acceptance, RSVPs, announcements, etc. currently produce **no**
 notifications in live.
 
 ### 6.14 P1 — Onboarding cannot set `school_id`
+
 `handle_new_auth_user` only assigns `school_id` when the signup email matches an
 `admin_allowlist` row. Normal students get `school_id = null`. The hardened
 `profiles_update_self_safe` policy (`20260101000300`) forbids changing
@@ -266,18 +294,21 @@ cannot complete school-scoped onboarding. Needs a safe, domain→school assignme
 path (no Ridgeway hardcoding).
 
 ### 6.15 P2 — RLS init-plan / perf advisories
+
 `profiles_update_self_safe` uses correlated `select ... from public.profiles`
 subqueries in its `with check`; flagged class of "auth RLS initialization plan"
 warnings. Unindexed FKs likely remain (e.g., `club_administrators.administrator_id`,
 `role_assignments.user_id` is covered, etc.). Address **after** correctness.
 
 ### 6.16 P2 — Storage receipts bucket not declared as code
+
 `config.toml` has no `[storage.buckets]`, and `...1201` states the bucket "is
 created through the storage API". The `receipts` bucket must be verified to
 exist and be **private** live before claiming receipt uploads work. The frontend
 currently has **no** upload/download code — it only displays `receipt_path`.
 
 ### 6.17 P3 — Doc/UI drift
+
 `README.md` and `login.tsx` still tell users to configure `VITE_SUPABASE_ANON_KEY`
 instead of `VITE_SUPABASE_PUBLISHABLE_KEY`; `README.md` references the removed
 `ms.rivera@ridgeway.edu` seed.
@@ -285,16 +316,18 @@ instead of `VITE_SUPABASE_PUBLISHABLE_KEY`; `README.md` references the removed
 ---
 
 ## 7. Ridgeway residue to remove (per task)
+
 - `20260101000100` — deletes `ms.rivera@ridgeway.edu`, inserts allowlist row under `slug='ridgeway'`.
 - `20260101000200` — denylist of `ms.rivera@ridgeway.edu`; Ridgeway fallback in `activate_administrator`.
 - `supabase/seed.sql` — seeds `Ridgeway High School` / `ridgeway.edu` + `arinjaypal@gmail.com` allowlist.
 - `README.md` — instructs `ms.rivera@ridgeway.edu`.
-These are **already-applied history**; a corrective migration (not an edit of applied
-files) is required, plus a decision on the development seed.
+  These are **already-applied history**; a corrective migration (not an edit of applied
+  files) is required, plus a decision on the development seed.
 
 ---
 
 ## 8. Pending live verification checklist (requires MCP auth)
+
 1. Dump `supabase_migrations.schema_migrations`; confirm the applied set and exact stop point.
 2. Enumerate live tables/columns/enums/functions/triggers/policies/grants.
 3. Confirm whether `events`/`rsvps`/`attendance` already exist (decides whether `...0659` can apply at all).
@@ -308,6 +341,7 @@ files) is required, plus a decision on the development seed.
 ---
 
 ## 9. Recommended corrective plan (not yet executed)
+
 1. **Authenticate MCP**, complete §8, then finalize this report with live facts.
 2. Produce a **reconciliation migration** that makes `...0659` unnecessary/safe
    (guarded), rather than replaying the unguarded file.
@@ -325,6 +359,7 @@ files) is required, plus a decision on the development seed.
 ---
 
 ## 10. Explicit statement
+
 No live database change has been made. No migration has been replayed. No feature
 has been marked "working". Every §6 item is a static/repository finding pending
 live confirmation. Production readiness is **not** claimed.

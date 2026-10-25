@@ -251,11 +251,7 @@ function ChatContent() {
               disabled={send.isPending}
             />
             <Button type="submit" disabled={send.isPending || draft.trim().length === 0}>
-              {send.isPending ? (
-                <SkeletonSpinner />
-              ) : (
-                <Send className="size-4" />
-              )}
+              {send.isPending ? <SkeletonSpinner /> : <Send className="size-4" />}
               Send
             </Button>
           </form>

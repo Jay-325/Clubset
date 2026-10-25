@@ -1,4 +1,5 @@
 <!-- LOVABLE:BEGIN -->
+
 > [!IMPORTANT]
 > This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
 > published git history — force pushing, or rebasing/amending/squashing commits
@@ -7,6 +8,7 @@
 >
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
+
 <!-- LOVABLE:END -->
 
 # Performance & Security Rules
@@ -51,7 +53,7 @@ touches imports. The current baseline is: `index-*.js` 367.76 kB
   reads `ids`, `activeId`, `viewerId`, or a filter, it belongs in the key.
   Omitting it is how stale rows get rendered after switching tables or forms.
 - **Invalidation prefixes must be real key prefixes.** `["club", clubId,
-  "leadership"]` does **not** cover `["club", clubId, "leadership-roles"]`.
+"leadership"]` does **not** cover `["club", clubId, "leadership-roles"]`.
   A no-op `invalidateQueries` is a correctness bug, not a performance
   opportunity — fix it and accept the extra refetch.
 - **Never serialise independent reads.** Batch with `Promise.all`. A hook that
@@ -88,12 +90,12 @@ Rules that follow:
 
 - Any function referenced inside a **policy expression** must keep `EXECUTE` for
   **every role that can query the table**, including `anon`. It is a predicate,
-  not an endpoint — the policy returning false *is* the denial.
+  not an endpoint — the policy returning false _is_ the denial.
 - Any function that **writes** (`activate_administrator`, `handle_new_auth_user`)
   must have `EXECUTE` revoked from `public, anon` and granted only to
   `authenticated`/`service_role` (plus the trigger owner where relevant).
 - Never "harden" grants by looping over `pg_proc` and revoking broadly. Enumerate
-  the functions you mean, and classify each as *policy predicate* or *endpoint*.
+  the functions you mean, and classify each as _policy predicate_ or _endpoint_.
 - After changing any grant, prove it live: a signed-out `GET /rest/v1/<table>`
   must return `200` with zero rows, **not** `42501`. A `42501` on an anon read is
   the signature of this bug.
@@ -106,7 +108,7 @@ Rules that follow:
   edit a migration that has already been applied. Add a new timestamped file in
   `supabase/migrations/`.
 - **Additive and idempotent.** Use `create index if not exists`, `create table if
-  not exists`, `drop policy if exists` before `create policy`. No destructive
+not exists`, `drop policy if exists` before `create policy`. No destructive
   statements without an explicit rollback comment.
 - **An index needs a named query and an access pattern.** In the migration
   comment, write the exact query, why the existing indexes cannot serve it, and
@@ -114,7 +116,7 @@ Rules that follow:
   writes and storage on every row.
 - **Match the access pattern.** Equality columns first, then the range or sort
   column: `(user_id, created_at desc)` serves `where user_id = $1 order by
-  created_at desc limit 50`; a partial index cannot serve a query that does not
+created_at desc limit 50`; a partial index cannot serve a query that does not
   carry the partial predicate.
 - **Do not drop indexes, constraints, policies or columns** without a
   DESTRUCTIVE CHANGE note and a rollback plan.

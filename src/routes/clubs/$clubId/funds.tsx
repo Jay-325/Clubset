@@ -309,11 +309,7 @@ function QuickAdd({ clubId }: { clubId: string }) {
           </div>
 
           <Button type="submit" disabled={!valid || mutation.isPending}>
-            {mutation.isPending ? (
-              <SkeletonSpinner />
-            ) : (
-              <Plus className="size-4" />
-            )}
+            {mutation.isPending ? <SkeletonSpinner /> : <Plus className="size-4" />}
             Save
           </Button>
 

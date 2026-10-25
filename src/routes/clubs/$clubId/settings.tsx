@@ -494,11 +494,7 @@ function SettingsContent() {
         ) : null}
 
         <Button type="submit" disabled={save.isPending}>
-          {save.isPending ? (
-            <SkeletonSpinner />
-          ) : (
-            <Save className="size-4" />
-          )}
+          {save.isPending ? <SkeletonSpinner /> : <Save className="size-4" />}
           Save settings
         </Button>
       </form>

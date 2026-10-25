@@ -299,11 +299,7 @@ function CreateEventForm({ clubId, defaultRsvp }: { clubId: string; defaultRsvp:
           ) : null}
 
           <Button type="submit" disabled={createEvent.isPending}>
-            {createEvent.isPending ? (
-              <SkeletonSpinner />
-            ) : (
-              <Plus className="size-4" />
-            )}
+            {createEvent.isPending ? <SkeletonSpinner /> : <Plus className="size-4" />}
             Create Event
           </Button>
         </form>
