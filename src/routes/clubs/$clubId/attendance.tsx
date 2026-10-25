@@ -246,11 +246,7 @@ function AttendanceReview({ event, clubId }: { event: EventRow; clubId: string }
               onClick={() => finalize.mutate(event.id)}
               disabled={finalize.isPending}
             >
-              {finalize.isPending ? (
-                <SkeletonSpinner />
-              ) : (
-                <Check className="size-4" />
-              )}
+              {finalize.isPending ? <SkeletonSpinner /> : <Check className="size-4" />}
               Confirm and finalize attendance
             </Button>
           ) : null}
@@ -354,11 +350,7 @@ function AttendanceReview({ event, clubId }: { event: EventRow; clubId: string }
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleVeto} disabled={veto.isPending}>
-              {veto.isPending ? (
-                <SkeletonSpinner />
-              ) : (
-                <UserX className="size-4" />
-              )}
+              {veto.isPending ? <SkeletonSpinner /> : <UserX className="size-4" />}
               Veto RSVP
             </Button>
           </DialogFooter>

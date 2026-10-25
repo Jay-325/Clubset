@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { getSupabaseClient } from "@/lib/supabase/client";
 
 type OAuthApi = {
-  getAuthorizationDetails: (id: string) => Promise<{ data: any; error: { message: string } | null }>;
+  getAuthorizationDetails: (
+    id: string,
+  ) => Promise<{ data: any; error: { message: string } | null }>;
   approveAuthorization: (id: string) => Promise<{ data: any; error: { message: string } | null }>;
   denyAuthorization: (id: string) => Promise<{ data: any; error: { message: string } | null }>;
 };
@@ -19,7 +21,8 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
   beforeLoad: async ({ search, location }) => {
     if (!search.authorization_id) throw new Error("Missing authorization_id");
     const { data } = await getSupabaseClient().auth.getSession();
-    if (!data.session) throw redirect({ to: "/login", search: { next: location.pathname + location.searchStr } });
+    if (!data.session)
+      throw redirect({ to: "/login", search: { next: location.pathname + location.searchStr } });
   },
   loader: async ({ location }) => {
     const id = new URLSearchParams(location.search).get("authorization_id")!;
@@ -31,7 +34,9 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
   },
   component: Consent,
   errorComponent: ({ error }) => (
-    <main className="p-8 text-foreground">Could not load this request: {String((error as Error)?.message ?? error)}</main>
+    <main className="p-8 text-foreground">
+      Could not load this request: {String((error as Error)?.message ?? error)}
+    </main>
   ),
 });
 
@@ -63,10 +68,18 @@ function Consent() {
         <p className="text-sm text-muted-foreground">
           {name} will be able to read your clubs, events and announcements as you.
         </p>
-        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        )}
         <div className="flex gap-2">
-          <Button disabled={busy} onClick={() => decide(true)}>Approve</Button>
-          <Button variant="outline" disabled={busy} onClick={() => decide(false)}>Deny</Button>
+          <Button disabled={busy} onClick={() => decide(true)}>
+            Approve
+          </Button>
+          <Button variant="outline" disabled={busy} onClick={() => decide(false)}>
+            Deny
+          </Button>
         </div>
       </div>
     </main>

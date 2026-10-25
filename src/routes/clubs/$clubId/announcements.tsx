@@ -243,11 +243,7 @@ function AnnouncementsContent() {
               ) : null}
 
               <Button type="submit" disabled={create.isPending}>
-                {create.isPending ? (
-                  <SkeletonSpinner />
-                ) : (
-                  <Megaphone className="size-4" />
-                )}
+                {create.isPending ? <SkeletonSpinner /> : <Megaphone className="size-4" />}
                 Post to the club
               </Button>
             </form>
@@ -299,11 +295,7 @@ function AnnouncementsContent() {
                       disabled={remove.isPending}
                       onClick={() => remove.mutate(announcement.id)}
                     >
-                      {remove.isPending ? (
-                        <SkeletonSpinner />
-                      ) : (
-                        <Trash2 className="size-4" />
-                      )}
+                      {remove.isPending ? <SkeletonSpinner /> : <Trash2 className="size-4" />}
                       Delete
                     </Button>
                   ) : null}

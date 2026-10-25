@@ -365,8 +365,7 @@ function VerificationStep({ clubId, onDone }: { clubId: string; onDone: () => vo
                 variant="outline"
                 className="w-full"
               >
-                {verify.isPending ? <SkeletonSpinner /> : null}I am one of
-                the verifiers
+                {verify.isPending ? <SkeletonSpinner /> : null}I am one of the verifiers
               </Button>
             </>
           ) : (
