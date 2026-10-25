@@ -41,6 +41,15 @@ opencode.local.json
 .agents/handoff/
 .agents/test-logs/
 
+# Legacy Claude Code runtime state. Skills now live in the user profile
+# (~/.config/opencode/skills), but these paths remain covered so a stray run
+# from an older session cannot commit caches or captured tool output.
+.claude/answers/
+.claude/summaries/
+.claude/run-logs/
+.claude/handoff/
+.claude/test-logs/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

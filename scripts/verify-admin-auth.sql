@@ -39,14 +39,14 @@ where table_schema = 'public' and udt_name = 'rsvp_status';
 select s.slug, al.email, al.revoked_at
 from public.admin_allowlist al join public.schools s on s.id = al.school_id
 order by al.created_at;
--- expect: ridgeway / arinjaypal@gmail.com / null (revoked_at is NULL)
+-- expect: fairfield / arinjaypal@gmail.com / null (revoked_at is NULL)
 
 \echo '=== V4: create throwaway auth users (fires on_auth_user_created -> profile) ==='
 insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
   ('00000000-0000-0000-0000-000000000000', '11111111-1111-1111-1111-111111111111', 'authenticated', 'authenticated', 'arinjaypal@gmail.com', crypt('pw', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
-  ('00000000-0000-0000-0000-000000000000', '22222222-2222-2222-2222-222222222222', 'authenticated', 'authenticated', 'teacher@fairfieldschools.net', crypt('pw', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
-  ('00000000-0000-0000-0000-000000000000', '33333333-3333-3333-3333-333333333333', 'authenticated', 'authenticated', 'student@fairfieldschools.org', crypt('pw', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', '22222222-2222-2222-2222-222222222222', 'authenticated', 'authenticated', 'teacher@example.net', crypt('pw', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', '33333333-3333-3333-3333-333333333333', 'authenticated', 'authenticated', 'student@example.org', crypt('pw', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
   ('00000000-0000-0000-0000-000000000000', '44444444-4444-4444-4444-444444444444', 'authenticated', 'authenticated', 'random@example.com', crypt('pw', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now())
 on conflict (id) do nothing;
 
@@ -60,12 +60,12 @@ select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-1111111
 select email, account_type from public.activate_administrator();
 -- expect: arinjaypal@gmail.com | administrator
 
-\echo '=== TEST 2 (expect FAIL 42501): teacher@fairfieldschools.net ==='
+\echo '=== TEST 2 (expect FAIL 42501): teacher@example.net ==='
 select set_config('request.jwt.claims', '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}', false);
 select public.activate_administrator();
 -- expect: ERROR ... not on the administrator allowlist (SQLSTATE 42501)
 
-\echo '=== TEST 3 (expect FAIL 42501): student@fairfieldschools.org ==='
+\echo '=== TEST 3 (expect FAIL 42501): student@example.org ==='
 select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', false);
 select public.activate_administrator();
 -- expect: ERROR ... not on the administrator allowlist (SQLSTATE 42501)

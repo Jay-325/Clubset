@@ -51,8 +51,8 @@ disable "Confirm email" so magic links work without a real inbox.
 
 ### 3. Create the first administrator
 
-`supabase/seed.sql` inserts an allowlist entry for
-`ms.rivera@ridgeway.edu`. After signing in with that address, activate the role:
+`supabase/seed.sql` inserts exactly one allowlist entry, for
+`arinjaypal@gmail.com`. After signing in with that address, activate the role:
 
 ```sql
 select public.activate_administrator();

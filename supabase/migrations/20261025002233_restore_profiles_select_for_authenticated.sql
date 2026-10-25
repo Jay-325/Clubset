@@ -1,0 +1,61 @@
+-- ============================================================================
+-- Joinin :: 2026-10-25 -- restore SELECT on public.profiles for signed-in users
+--
+-- SYMPTOM
+--   Every signed-in screen that reads profiles failed with
+--
+--     42501 permission denied for table profiles
+--
+--   Verified live as the real role before this change:
+--     has_table_privilege('authenticated','public.profiles','select') = false
+--     has_column_privilege(... 'grade'/'email'/'account_type')         = false
+--     set role authenticated; select * from public.profiles            -> 42501
+--
+--   The application reads profiles with select("*")
+--   (src/lib/auth/context.tsx:48, src/lib/queries.ts:175, announcements,
+--   attendance, data, leadership) and with embedded column lists that include
+--   grade or email (src/lib/queries.ts:433,454,585), and account_type
+--   (src/lib/hooks/use-club.ts:55). PostgreSQL rejects select("*") when the
+--   role holds only column-level grants, so the profile load itself failed.
+--
+-- WHY THIS IS THE SMALLER RISK
+--   The row-level control was already in place and is unchanged:
+--     profiles_select_school: id = auth.uid()
+--                             OR (school_id is not null
+--                                 AND school_id = current_school_id())
+--   So a signed-in user can read their own row or rows of their OWN school --
+--   exactly what the policy already declares as intended. The column-only
+--   grants contradicted that policy and broke the client. Granting table-level
+--   SELECT makes the privilege match the policy instead of adding new reach
+--   beyond it: a school peer could already be authorized by RLS.
+--
+--   Write access is deliberately NOT widened:
+--     * UPDATE remains restricted to avatar_url, full_name (self only, via
+--       profiles_update_self_safe).
+--     * INSERT/DELETE are not granted to authenticated.
+--     * anon keeps NO select privilege: signed-out reads still return 42501.
+--     * school_id / account_type / grade remain non-updatable by the user, so
+--       no one can promote themselves to administrator through this table.
+--
+--   Residual exposure accepted by the owner: same-school users can read a
+--   peer's email, grade and account_type through PostgREST. Scope is one
+--   school; no cross-school read is possible.
+--
+-- ALTERNATIVE REJECTED
+--   Granting only grade/email/account_type and rewriting every select("*") to
+--   an explicit list was rejected: nine call sites, string column names that
+--   typecheck cannot verify, and one missed site leaves a screen broken.
+--
+-- ROLLBACK
+--   revoke select on public.profiles from authenticated;
+--   (restores the column-level grants recorded live before this migration;
+--    the three-column grants id/full_name/avatar_url are untouched by both)
+--
+-- Not destructive: adds a privilege, changes no row, policy or column.
+-- ============================================================================
+
+begin;
+
+grant select on public.profiles to authenticated;
+
+commit;
