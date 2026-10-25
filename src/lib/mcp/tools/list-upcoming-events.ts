@@ -31,6 +31,9 @@ export default defineTool({
       starts_at: String(e.starts_at),
       ends_at: String(e.ends_at),
     }));
-    return { content: [{ type: "text", text: JSON.stringify(events) }], structuredContent: { events } };
+    return {
+      content: [{ type: "text", text: JSON.stringify(events) }],
+      structuredContent: { events },
+    };
   },
 });

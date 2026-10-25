@@ -19,31 +19,31 @@ cannot use any index. **Medium** = defence-in-depth and data-hygiene gaps.
 
 ## 1. Summary
 
-| # | Finding | Severity | Where |
-|---|---------|----------|-------|
-| C1 | Membership self-accept still in the repo; live is patched manually | Critical | `20260101000002_clubs.sql:424` |
-| C2 | `can_read_club()` grants every student in the school access to club financials and data tables | Critical | `20260101000002_clubs.sql:288` |
-| C3 | `finalize_attendance()` references a non-existent column | Critical | `20260101000003_events_attendance.sql:487` |
-| C4 | `attendance_corrections` has no INSERT policy → correction flow always 42501 | Critical | `20260101000003_events_attendance.sql:714` |
-| H1 | `review_application()` uses a *role property* as caller authorization | High | `20260101000008_leadership.sql:305` |
-| H2 | `review_application()` cannot update the application row at all | High | `20260101000008_leadership.sql:478` |
-| H3 | `form_responses` has no UPDATE policy but `submit_form_response()` upserts | High | `20260101000006_forms.sql:173` |
-| H4 | `apply_table_template()` always raises (ambiguous `template_key`) | High | `20260101000007_data_tables.sql:116` |
-| H5 | `record_audit`, `notify_user`, `notify_club_leaders` are callable by any signed-in user | High | grants, live-verified |
-| H6 | 24 policies call `auth.uid()` per row instead of `(select auth.uid())` | High | many |
-| H7 | `search_clubs` uses `ILIKE '%…%'`; the GIN `tsvector` index cannot serve it | High | `20261003001201:…`, `src/lib/queries.ts:167` |
-| H8 | 30 foreign keys have no index | High | catalog |
-| M1 | `is_club_admin()` gives every school administrator control of every club | Medium | `20260101000002_clubs.sql:229` |
-| M2 | `profiles_select_school` exposes every student's email to every student | Medium | `20260101000001_core_schema.sql:294` |
-| M3 | `clubs_update_leader` WITH CHECK only asserts `school_id` | Medium | `20260101000002_clubs.sql:330` |
-| M4 | `leadership_applications` INSERT policy allows any `status` | Medium | `20260101000008_leadership.sql:474` |
-| M5 | Personal address hard-coded in a migration | Medium | `20261019000200_authorize_administrator.sql` |
-| M6 | No `force row level security` anywhere | Medium | `20260101000001_core_schema.sql:287` |
-| M7 | `clubs_fields_idx` cannot serve `filter_field = any(c.fields)` | Medium | `20260101000002_clubs.sql` |
-| L1 | `profiles_email_idx` is functional (`lower(email)`), queries are not | Low | `20260101000001_core_schema.sql:79` |
-| L2 | `admin_allowlist_lookup_idx` does not match the actual lookup | Low | `20260101000001_core_schema.sql:103` |
-| L3 | Index creation is not `CONCURRENTLY` | Low | all migrations |
-| L4 | No statement-timeout guidance in the repo | Low | — |
+| #   | Finding                                                                                        | Severity | Where                                        |
+| --- | ---------------------------------------------------------------------------------------------- | -------- | -------------------------------------------- |
+| C1  | Membership self-accept still in the repo; live is patched manually                             | Critical | `20260101000002_clubs.sql:424`               |
+| C2  | `can_read_club()` grants every student in the school access to club financials and data tables | Critical | `20260101000002_clubs.sql:288`               |
+| C3  | `finalize_attendance()` references a non-existent column                                       | Critical | `20260101000003_events_attendance.sql:487`   |
+| C4  | `attendance_corrections` has no INSERT policy → correction flow always 42501                   | Critical | `20260101000003_events_attendance.sql:714`   |
+| H1  | `review_application()` uses a _role property_ as caller authorization                          | High     | `20260101000008_leadership.sql:305`          |
+| H2  | `review_application()` cannot update the application row at all                                | High     | `20260101000008_leadership.sql:478`          |
+| H3  | `form_responses` has no UPDATE policy but `submit_form_response()` upserts                     | High     | `20260101000006_forms.sql:173`               |
+| H4  | `apply_table_template()` always raises (ambiguous `template_key`)                              | High     | `20260101000007_data_tables.sql:116`         |
+| H5  | `record_audit`, `notify_user`, `notify_club_leaders` are callable by any signed-in user        | High     | grants, live-verified                        |
+| H6  | 24 policies call `auth.uid()` per row instead of `(select auth.uid())`                         | High     | many                                         |
+| H7  | `search_clubs` uses `ILIKE '%…%'`; the GIN `tsvector` index cannot serve it                    | High     | `20261003001201:…`, `src/lib/queries.ts:167` |
+| H8  | 30 foreign keys have no index                                                                  | High     | catalog                                      |
+| M1  | `is_club_admin()` gives every school administrator control of every club                       | Medium   | `20260101000002_clubs.sql:229`               |
+| M2  | `profiles_select_school` exposes every student's email to every student                        | Medium   | `20260101000001_core_schema.sql:294`         |
+| M3  | `clubs_update_leader` WITH CHECK only asserts `school_id`                                      | Medium   | `20260101000002_clubs.sql:330`               |
+| M4  | `leadership_applications` INSERT policy allows any `status`                                    | Medium   | `20260101000008_leadership.sql:474`          |
+| M5  | Personal address hard-coded in a migration                                                     | Medium   | `20261019000200_authorize_administrator.sql` |
+| M6  | No `force row level security` anywhere                                                         | Medium   | `20260101000001_core_schema.sql:287`         |
+| M7  | `clubs_fields_idx` cannot serve `filter_field = any(c.fields)`                                 | Medium   | `20260101000002_clubs.sql`                   |
+| L1  | `profiles_email_idx` is functional (`lower(email)`), queries are not                           | Low      | `20260101000001_core_schema.sql:79`          |
+| L2  | `admin_allowlist_lookup_idx` does not match the actual lookup                                  | Low      | `20260101000001_core_schema.sql:103`         |
+| L3  | Index creation is not `CONCURRENTLY`                                                           | Low      | all migrations                               |
+| L4  | No statement-timeout guidance in the repo                                                      | Low      | —                                            |
 
 ---
 
@@ -79,9 +79,9 @@ memberships_update_leader | UPDATE | {authenticated}
 There are also three objects that exist **only in the live database** and in no
 migration:
 
-* function `guard_membership_self_update()`
-* trigger `memberships_guard_self_update` on `public.memberships`
-* policy `memberships_leave_self` (`UPDATE`, self, `pending|active → removed`)
+- function `guard_membership_self_update()`
+- trigger `memberships_guard_self_update` on `public.memberships`
+- policy `memberships_leave_self` (`UPDATE`, self, `pending|active → removed`)
 
 Consequences: `supabase db reset`, CI, and any new environment are vulnerable;
 `supabase migration list` reports no difference; nobody reviewing the repo can
@@ -109,19 +109,19 @@ select public.is_club_member(target_club)
 The third branch makes the helper true for **every signed-in user in the
 school**, and the helper is the SELECT predicate for:
 
-| Table | Policy | Line |
-|-------|--------|------|
-| `transactions` | `transactions_select` | `20260101000005_finances.sql:156` |
-| `budgets` | `budgets_select` | `20260101000005_finances.sql:185` |
-| `events` | `events_select` | `20260101000003_events_attendance.sql:616` |
-| `forms`, `form_questions` | `forms_select`, `form_questions_select` | `20260101000006_forms.sql:196, 216` |
-| `data_tables`, `data_table_columns`, `data_table_rows` | `*_select` | `20260101000007_data_tables.sql:217, 229, 257` |
-| `announcements` | `announcements_select` | `20260101000002_clubs.sql:439` |
-| `club_administrators` | `club_admins_select` | `20260101000002_clubs.sql:351` |
-| `leadership_roles`, `role_assignments` | `*_select` | `20260101000002_clubs.sql:385, 394` |
-| `club_verifications` | `club_verifications_select` | `20260101000002_clubs.sql:362` |
-| `chat_banners` | `chat_banners_select` | `20260101000004_chat.sql:62` |
-| `application_questions` | `application_questions_select` | `20260101000008_leadership.sql:489` |
+| Table                                                  | Policy                                  | Line                                           |
+| ------------------------------------------------------ | --------------------------------------- | ---------------------------------------------- |
+| `transactions`                                         | `transactions_select`                   | `20260101000005_finances.sql:156`              |
+| `budgets`                                              | `budgets_select`                        | `20260101000005_finances.sql:185`              |
+| `events`                                               | `events_select`                         | `20260101000003_events_attendance.sql:616`     |
+| `forms`, `form_questions`                              | `forms_select`, `form_questions_select` | `20260101000006_forms.sql:196, 216`            |
+| `data_tables`, `data_table_columns`, `data_table_rows` | `*_select`                              | `20260101000007_data_tables.sql:217, 229, 257` |
+| `announcements`                                        | `announcements_select`                  | `20260101000002_clubs.sql:439`                 |
+| `club_administrators`                                  | `club_admins_select`                    | `20260101000002_clubs.sql:351`                 |
+| `leadership_roles`, `role_assignments`                 | `*_select`                              | `20260101000002_clubs.sql:385, 394`            |
+| `club_verifications`                                   | `club_verifications_select`             | `20260101000002_clubs.sql:362`                 |
+| `chat_banners`                                         | `chat_banners_select`                   | `20260101000004_chat.sql:62`                   |
+| `application_questions`                                | `application_questions_select`          | `20260101000008_leadership.sql:489`            |
 
 So any student can read every club's ledger and budget, every club's
 `data_table_rows` (PRD 26-29 — that is where member-collected PII lands), and
@@ -162,8 +162,8 @@ covers it). One-line migration.
 
 `supabase/migrations/20260101000003_events_attendance.sql`
 
-* table `188-203`, `alter table … enable row level security` at `609`
-* only policy: `attendance_corrections_select` at `714-724`
+- table `188-203`, `alter table … enable row level security` at `609`
+- only policy: `attendance_corrections_select` at `714-724`
 
 `correct_attendance()` inserts at `:363` and `veto_rsvp()` writes the same table,
 and both are `security invoker` — so RLS applies to the caller. With no INSERT
@@ -284,7 +284,7 @@ returning * into result;
 ```
 
 Policies at `:242-256` are SELECT and INSERT only. `(form_id, user_id)` is
-unique, so the *second* submission — the normal edit path — always takes the
+unique, so the _second_ submission — the normal edit path — always takes the
 `do update` branch, which requires an UPDATE policy → `42501`.
 
 **Fix:** add
@@ -327,19 +327,19 @@ aborts, so neither the column insert nor the table update persists.
 
 Verified live:
 
-| function | `security definer` | `anon` EXECUTE | `authenticated` EXECUTE |
-|----------|:--:|:--:|:--:|
-| `record_audit` | yes | no | **yes** |
-| `notify_user` | yes | no | **yes** |
-| `notify_club_leaders` | yes | no | **yes** |
+| function              | `security definer` | `anon` EXECUTE | `authenticated` EXECUTE |
+| --------------------- | :----------------: | :------------: | :---------------------: |
+| `record_audit`        |        yes         |       no       |         **yes**         |
+| `notify_user`         |        yes         |       no       |         **yes**         |
+| `notify_club_leaders` |        yes         |       no       |         **yes**         |
 
 None of these is a policy predicate, so `authenticated` does not need EXECUTE.
 As it stands any signed-in user can:
 
-* `POST /rest/v1/rpc/record_audit` with arbitrary `action` / `entity_type` /
+- `POST /rest/v1/rpc/record_audit` with arbitrary `action` / `entity_type` /
   `entity_id` / `details` → forge rows in `audit_logs`, which is the table the
   app treats as the record of what happened;
-* `POST /rest/v1/rpc/notify_user` with an arbitrary `user_id`, `title`, `body`
+- `POST /rest/v1/rpc/notify_user` with an arbitrary `user_id`, `title`, `body`
   and `link` → inject notifications into any inbox, which is a ready-made
   phishing surface (`link` is rendered in the app shell).
 
@@ -441,18 +441,18 @@ argument is access-pattern, not a timing.
 Verified live: `pg_constraint` FKs where no valid index has that column as its
 leading key. The ones on read/write hot paths:
 
-| table.column | why it matters |
-|---|---|
-| `transactions.created_by` | delete of a profile scans the ledger |
-| `dues.user_id`, `dues.transaction_id` | `useMyDues` filters by user |
-| `form_responses.user_id` | the unique key leads with `form_id` |
-| `leadership_applications.applicant_id` | "my applications" per user |
-| `attendance_corrections.attendance_id` | correction lookup |
-| `role_assignments.user_id`, `.assigned_by` | permission checks per request |
-| `events.created_by` | cascade on profile delete |
-| `clubs.founder_id` | `clubs_update_leader` |
-| `announcements.author_id` | feed join |
-| `notifications.school_id` | the only unbounded table |
+| table.column                               | why it matters                       |
+| ------------------------------------------ | ------------------------------------ |
+| `transactions.created_by`                  | delete of a profile scans the ledger |
+| `dues.user_id`, `dues.transaction_id`      | `useMyDues` filters by user          |
+| `form_responses.user_id`                   | the unique key leads with `form_id`  |
+| `leadership_applications.applicant_id`     | "my applications" per user           |
+| `attendance_corrections.attendance_id`     | correction lookup                    |
+| `role_assignments.user_id`, `.assigned_by` | permission checks per request        |
+| `events.created_by`                        | cascade on profile delete            |
+| `clubs.founder_id`                         | `clubs_update_leader`                |
+| `announcements.author_id`                  | feed join                            |
+| `notifications.school_id`                  | the only unbounded table             |
 
 Also unindexed: `admin_allowlist.created_by`, `admin_verifications.allowlist_id`,
 `admin_verifications.school_id`, `attendance.finalized_by`,
@@ -474,20 +474,23 @@ the cascade that justifies each. Low-risk, additive, `if not exists`.
 ## 4. Medium
 
 ### M1 — `is_club_admin()` makes every school administrator an all-powerful club admin
+
 `20260101000002_clubs.sql:229-248`. It is the `or` branch of essentially every
 write policy (`manage_finances`, `manage_forms`, `manage_leadership`,
 `manage_membership`, `manage_data_tables`). The PRD gives administrators a
-*verification* role; this gives them edit rights over every club's ledger and
+_verification_ role; this gives them edit rights over every club's ledger and
 data tables. Consider a narrower `can_verify_club()` for the review workflow and
 keep `is_club_admin()` for true emergency access, documented as such.
 
 ### M2 — `profiles_select_school` exposes every student's email
+
 `20260101000001_core_schema.sql:294-299`. Any signed-in user reads `email`,
 `account_type`, `grade_level`, `commitment_hours` for the whole school. If the
 member directory is intended, expose it through a view with a restricted column
 list instead of the base table.
 
 ### M3 — `clubs_update_leader` WITH CHECK only asserts `school_id`
+
 `20260101000002_clubs.sql:330-337`. A founder or `manage_settings` holder can
 set `status = 'approved'` or reassign `founder_id`. Production is saved by the
 `clubs_guard_status` trigger (`20261020021156`), but that trigger keys off
@@ -495,12 +498,14 @@ set `status = 'approved'` or reassign `founder_id`. Production is saved by the
 Repeat the invariant in the policy: `status = (select status from clubs where id = clubs.id)`.
 
 ### M4 — `leadership_applications` INSERT policy allows any `status`
+
 `20260101000008_leadership.sql:474-476` only checks `applicant_id = auth.uid()`.
 A student can insert a row already marked `status='accepted'`, with
 `reviewed_by` and `reviewed_at` set. It grants no role, but it pollutes reviewer
 queues and the audit narrative. Add `and status = 'draft'`.
 
 ### M5 — Personal address hard-coded in a migration
+
 `20261019000200_authorize_administrator.sql` inserts `arinjaypal@gmail.com` into
 `public.admin_allowlist`. That is VCS-visible PII, and every fresh environment
 grants that account administrator rights. Move the row to `supabase/seed.sql`
@@ -508,6 +513,7 @@ grants that account administrator rights. Move the row to `supabase/seed.sql`
 revocation path.
 
 ### M6 — No `force row level security`
+
 `20260101000001_core_schema.sql:287-291` is the only enable block in the repo and
 `force` appears nowhere. Everything runs through PostgREST today, so this is not
 exploitable, but any `security definer` function owned by `postgres` silently
@@ -515,6 +521,7 @@ ignores RLS. Worth stating as an invariant next to the grant invariant in
 `AGENTS.md`.
 
 ### M7 — `clubs_fields_idx` cannot serve the query it was added for
+
 `gin (fields)` only accelerates array operators (`@>`, `<@`, `&&`). The filter
 in `search_clubs` is `filter_field = any (c.fields)`, which is not one of those,
 so the index is write-only. Either rewrite the predicate as
@@ -524,17 +531,17 @@ so the index is write-only. Either rewrite the predicate as
 
 ## 5. Low
 
-* **L1** `profiles_email_idx` is `lower(email)` (`20260101000001:79`) but the RLS
+- **L1** `profiles_email_idx` is `lower(email)` (`20260101000001:79`) but the RLS
   subqueries filter `email = …`. Functional index, non-functional match.
-* **L2** `admin_allowlist_lookup_idx` is on `email` (`20260101000001:103`) while
+- **L2** `admin_allowlist_lookup_idx` is on `email` (`20260101000001:103`) while
   `activate_administrator()` looks up `lower(email)`, and the unique index leads
   with `school_id`. Neither index serves the lookup. The table is tiny, so this
   is bookkeeping rather than performance.
-* **L3** Every `create index` in the migrations is non-concurrent. Fine at
+- **L3** Every `create index` in the migrations is non-concurrent. Fine at
   current sizes; on a table with traffic it takes an `ACCESS EXCLUSIVE`-class
   lock. State the reason in the migration comment before adding an index to a
   live table.
-* **L4** Live `statement_timeout = 120s`, `idle_in_transaction_session_timeout = 0`.
+- **L4** Live `statement_timeout = 120s`, `idle_in_transaction_session_timeout = 0`.
   No repo guidance; consider documenting the expected maximum for RPCs.
 
 ---
@@ -556,7 +563,7 @@ and one object differs:
    the `user_id = auth.uid()` branch (C1).
 
 `grep -r guard_membership_self_update supabase/` → no matches. A `supabase db
-reset` will produce a database that is *weaker* than production, and
+reset` will produce a database that is _weaker_ than production, and
 `supabase migration list` will report it as identical.
 
 **Fix:** one "reconcile live memberships policy" migration, written to be
@@ -569,20 +576,20 @@ function … ; drop trigger if exists … ; create trigger …`).
 
 Worth recording, so a future change does not regress it:
 
-* RLS is enabled on **every** table in `public`, and no RLS-enabled table lacks a
+- RLS is enabled on **every** table in `public`, and no RLS-enabled table lacks a
   policy (both verified live: zero rows returned).
-* The `42501 permission denied for function` regression from `20261003001241` is
+- The `42501 permission denied for function` regression from `20261003001241` is
   fixed — the eight policy predicates keep EXECUTE for `anon`
   (`20261019000100_restore_rls_policy_helper_grants.sql`).
-* `notifications_user_created_idx (user_id, created_at desc)` and
+- `notifications_user_created_idx (user_id, created_at desc)` and
   `events_starts_at_idx` exist and match their queries exactly.
-* `messages_club_time_idx (club_id, created_at desc)`,
+- `messages_club_time_idx (club_id, created_at desc)`,
   `attendance_corrections_event_idx (event_id, created_at desc)` and
   `attendance_corrections_user_idx (user_id, created_at desc)` are correctly
   ordered (equality first, then range).
-* Every `security definer` function sets `search_path`.
-* `dues` RLS was enabled retroactively (`20261003000812`) and is live.
-* `check_eligibility` / `eligible_roles_for` are scoped to the caller
+- Every `security definer` function sets `search_path`.
+- `dues` RLS was enabled retroactively (`20261003000812`) and is live.
+- `check_eligibility` / `eligible_roles_for` are scoped to the caller
   (`20261003000954`) — the earlier "read another student's activity" hole is
   closed.
 

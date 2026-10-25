@@ -10,13 +10,13 @@ attendance, finances, forms, and data tables in one student-friendly system.
 
 ## Stack
 
-| Layer | Choice |
-| --- | --- |
-| Framework | TanStack Start (SSR, file-based routing, React 19) |
-| Build | Vite 8 + Nitro (Cloudflare Workers target) |
-| UI | shadcn/ui (new-york, slate) + Tailwind v4 |
-| Data | Supabase (Postgres + Auth + Storage + Realtime) |
-| Authorization | Row Level Security + Postgres functions |
+| Layer         | Choice                                             |
+| ------------- | -------------------------------------------------- |
+| Framework     | TanStack Start (SSR, file-based routing, React 19) |
+| Build         | Vite 8 + Nitro (Cloudflare Workers target)         |
+| UI            | shadcn/ui (new-york, slate) + Tailwind v4          |
+| Data          | Supabase (Postgres + Auth + Storage + Realtime)    |
+| Authorization | Row Level Security + Postgres functions            |
 
 ---
 
@@ -70,9 +70,9 @@ possible.
 
 ## Environment variables
 
-| Variable | Purpose |
-| --- | --- |
-| `VITE_SUPABASE_URL` | Supabase project URL |
+| Variable                        | Purpose                                                                                |
+| ------------------------------- | -------------------------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | Supabase project URL                                                                   |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Public publishable (anon) key. `VITE_SUPABASE_ANON_KEY` is accepted as a legacy alias. |
 
 If neither is set, the build falls back to the checked-in public config in
@@ -109,17 +109,17 @@ change; do not treat the two as equivalent.
 
 ## Schema layout
 
-| Migration | Contents |
-| --- | --- |
-| `01_core_schema` | Schools, profiles, admin allowlist, auth helpers |
-| `02_clubs` | Clubs, 3-student verification, memberships, roles, audit log |
-| `03_events_attendance` | Events, RSVPs, attendance, corrections, conflicts |
-| `04_chat` | Group chat, banners, role messaging |
-| `05_finances` | Transactions, budgets, dues, balance view |
-| `06_forms` | Forms, questions, responses |
-| `07_data_tables` | Tables, columns, rows, templates |
-| `08_leadership` | Roles, eligibility, applications |
-| `09_notifications` | Notifications, discovery, admin views, storage |
+| Migration              | Contents                                                     |
+| ---------------------- | ------------------------------------------------------------ |
+| `01_core_schema`       | Schools, profiles, admin allowlist, auth helpers             |
+| `02_clubs`             | Clubs, 3-student verification, memberships, roles, audit log |
+| `03_events_attendance` | Events, RSVPs, attendance, corrections, conflicts            |
+| `04_chat`              | Group chat, banners, role messaging                          |
+| `05_finances`          | Transactions, budgets, dues, balance view                    |
+| `06_forms`             | Forms, questions, responses                                  |
+| `07_data_tables`       | Tables, columns, rows, templates                             |
+| `08_leadership`        | Roles, eligibility, applications                             |
+| `09_notifications`     | Notifications, discovery, admin views, storage               |
 
 `src/lib/types/database.ts` mirrors this schema and can be regenerated with
 `npx supabase gen types typescript --project-id <ref>`.
@@ -149,10 +149,10 @@ Event → RSVP → expected attendance → meeting → leader corrects → final
 
 ## Scripts
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Start the dev server |
-| `npm run build` | Production build |
-| `npm run test` | Run the test suite |
-| `npm run lint` | ESLint |
-| `npm run format` | Prettier |
+| Command          | Purpose              |
+| ---------------- | -------------------- |
+| `npm run dev`    | Start the dev server |
+| `npm run build`  | Production build     |
+| `npm run test`   | Run the test suite   |
+| `npm run lint`   | ESLint               |
+| `npm run format` | Prettier             |
