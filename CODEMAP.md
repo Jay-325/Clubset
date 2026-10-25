@@ -132,19 +132,25 @@ src/test/
 ## Files
 
 ### scripts/check-sql.ts
+
 _Parses every migration with the real Postgres grammar (definition-of-done gate)._
 
 ### scripts/sql-error.ts
+
 _SQL error formatting and position reporting helpers._
 
 ### src/components/app-shell.tsx
+
 _RequireAuth gate, four-tab navigation shell, and page header._
+
 - L24 `export function RequireAuth`
 - L64 `export function AppShell`
 - L149 `export function PageHeader`
 
 ### src/components/ui/
+
 _shadcn/ui + Radix primitives (46 files; each exports its namesake component)._
+
 - `accordion`, `alert-dialog`, `alert`, `aspect-ratio`, `avatar`, `badge`,
   `breadcrumb`, `button`, `calendar`, `card`, `carousel`, `chart`, `checkbox`,
   `collapsible`, `command`, `context-menu`, `dialog`, `drawer`, `dropdown-menu`,
@@ -155,35 +161,51 @@ _shadcn/ui + Radix primitives (46 files; each exports its namesake component)._
   `toggle`, `toggle-group`, `tooltip`
 
 ### src/hooks/use-mobile.tsx
+
 _Mobile breakpoint detection hook._
+
 - L5 `export function useIsMobile`
 
 ### src/integrations/supabase/auth-attacher.ts
+
 _Client middleware that attaches the Supabase bearer token to server-function calls._
+
 - L7 `export const attachSupabaseAuth`
 
 ### src/integrations/supabase/auth-middleware.ts
+
 _Server middleware that requires a valid Supabase session._
+
 - L34 `export const requireSupabaseAuth`
 
 ### src/integrations/supabase/client.server.ts
+
 _Server-only Supabase client using the service-role key._
+
 - L64 `export const supabaseAdmin`
 
 ### src/integrations/supabase/client.ts
+
 _Lazy client-side Supabase singleton._
+
 - L63 `export const supabase`
 
 ### src/integrations/supabase/cron-auth.ts
+
 _Authenticates cron-triggered requests._
+
 - L2 `export async function authenticateCronRequest`
 
 ### src/integrations/supabase/previewAuthStorage.ts
+
 _Auth storage broker for Lovable preview surfaces._
+
 - L5 `export function brokeredPreviewStorage`
 
 ### src/integrations/supabase/types.ts
+
 _Generated Supabase database types (large; do not hand-edit)._
+
 - L1 `export type Json`
 - L9 `export type Database`
 - L2423 `export type Tables`
@@ -194,13 +216,17 @@ _Generated Supabase database types (large; do not hand-edit)._
 - L2536 `export const Constants`
 
 ### src/lib/auth/context.tsx
+
 _Auth context, session loading, and sign-out state._
+
 - L24 `export function AuthProvider`
 - L154 `export function useAuth`
 - L163 `export function useIsSignedOut`
 
 ### src/lib/auth/permissions.ts
+
 _Permission helpers and navigation derived from a club context._
+
 - L11 `export interface ClubContext`
 - L26 `export function can`
 - L30 `export function isLeader`
@@ -209,7 +235,9 @@ _Permission helpers and navigation derived from a club context._
 - L99 `export function quickActions`
 
 ### src/lib/domain.ts
+
 _Product vocabulary, labels, and preset values shared by forms and UI._
+
 - L24 `export const PRESET_INTERESTS`
 - L43 `export const CLUB_TYPES`
 - L49 `export const CLUB_TYPE_LABELS`
@@ -239,50 +267,72 @@ _Product vocabulary, labels, and preset values shared by forms and UI._
 - L347 `export const GRADE_LABELS`
 
 ### src/lib/error-capture.ts
+
 _Describes and stores the last server-side error for recovery._
+
 - L18 `export function describeError`
 - L72 `export function consumeLastCapturedError`
 
 ### src/lib/error-page.ts
+
 _Renders the standalone HTML error page._
+
 - L1 `export function renderErrorPage`
 
 ### src/lib/hooks/use-club.ts
+
 _Loads club, membership, and permissions in one context hook._
+
 - L15 `export function useClubContext`
 
 ### src/lib/hooks/use-debounced-value.ts
+
 _Debounces search input values (300 ms default)._
+
 - L11 `export function useDebouncedValue`
 
 ### src/lib/lovable-error-reporting.ts
+
 _Reports client errors to the Lovable error channel._
+
 - L27 `export function reportLovableError`
 
 ### src/lib/mcp/index.ts
+
 _MCP server definition: registers the Clubset tools._
+
 - L8 `export default defineMcp(...)`
 
 ### src/lib/mcp/supabase.ts
+
 _Per-user Supabase client and result helpers for MCP tools._
+
 - L17 `export function supabaseForUser`
 - L29 `export const textResult`
 - L30 `export const errorResult`
 
 ### src/lib/mcp/tools/list-announcements.ts
+
 _MCP tool: list club announcements._
+
 - L5 `export default defineTool(...)`
 
 ### src/lib/mcp/tools/list-my-clubs.ts
+
 _MCP tool: list the caller's clubs._
+
 - L4 `export default defineTool(...)`
 
 ### src/lib/mcp/tools/list-upcoming-events.ts
+
 _MCP tool: list upcoming events._
+
 - L5 `export default defineTool(...)`
 
 ### src/lib/queries.ts
+
 _All TanStack Query hooks and mutations (single source for keys/invalidation)._
+
 - L37 `export function useAdminLogin`
 - L77 `export async function requestAdministratorActivation`
 - L94 `export function useViewerId`
@@ -317,12 +367,16 @@ _All TanStack Query hooks and mutations (single source for keys/invalidation)._
 - L666 `export function useAdminClubOverview`
 
 ### src/lib/supabase/client.ts
+
 _Client factory with configuration guard (RLS enforced)._
+
 - L36 `export function isSupabaseConfigured`
 - L46 `export function getSupabaseClient`
 
 ### src/lib/types/database.ts
+
 _Hand-maintained database types mirroring the migrations._
+
 - L10 `export type Json`
 - L16 `export type AccountType`
 - L17 `export type GradeLevel`
@@ -359,11 +413,15 @@ _Hand-maintained database types mirroring the migrations._
 - L886 `export type TablesInsert`
 
 ### src/lib/utils.ts
+
 _Class-name merge helper._
+
 - L4 `export function cn`
 
 ### src/routeTree.gen.ts
+
 _Auto-generated TanStack Router tree — do not edit by hand._
+
 - L160 `export interface FileRoutesByFullPath`
 - L186 `export interface FileRoutesByTo`
 - L212 `export interface FileRoutesById`
@@ -372,129 +430,190 @@ _Auto-generated TanStack Router tree — do not edit by hand._
 - L547 `export const routeTree`
 
 ### src/router.tsx
+
 _Router factory used by the Start entry point._
+
 - L5 `export const getRouter`
 
 ### src/routes/[.]lovable.oauth.consent.tsx
+
 _OAuth consent screen for the Lovable integration._
+
 - L13 `export const Route`
 
 ### src/routes/[.well-known]/oauth-protected-resource.ts
+
 _OAuth protected-resource metadata endpoint._
+
 - L12 `export const Route`
 
 ### src/routes/__root.tsx
+
 _Root layout: query-client context, auth shell, error boundaries._
+
 - L78 `export const Route`
 
 ### src/routes/admin.tsx
+
 _Administrator oversight page — club approvals and platform view._
+
 - L24 `export const Route`
 
 ### src/routes/calendar.tsx
+
 _Combined calendar of events from the user's clubs._
+
 - L23 `export const Route`
 
 ### src/routes/clubs/$clubId/announcements.tsx
+
 _Club announcements management._
+
 - L28 `export const Route`
 
 ### src/routes/clubs/$clubId/attendance.tsx
+
 _RSVP → attendance tracking and finalization._
+
 - L36 `export const Route`
 
 ### src/routes/clubs/$clubId/calendar.tsx
+
 _Individual club calendar view._
+
 - L21 `export const Route`
 
 ### src/routes/clubs/$clubId/chat.tsx
+
 _Club group chat with banners._
+
 - L23 `export const Route`
 
 ### src/routes/clubs/$clubId/data.tsx
+
 _Custom club data tables (columns, rows, templates)._
+
 - L40 `export const Route`
 
 ### src/routes/clubs/$clubId/events.tsx
+
 _Event creation and management for a club._
+
 - L36 `export const Route`
 
 ### src/routes/clubs/$clubId/forms.tsx
+
 _Form builder and response collection._
+
 - L45 `export const Route`
 
 ### src/routes/clubs/$clubId/funds.tsx
+
 _Club finances — income, expenses, dues tracking._
+
 - L33 `export const Route`
 
 ### src/routes/clubs/$clubId/index.tsx
+
 _Club dashboard: public welcome page or internal view._
+
 - L25 `export const Route`
 
 ### src/routes/clubs/$clubId/leadership.tsx
+
 _Roles, permissions, eligibility requirements, applications._
+
 - L46 `export const Route`
 
 ### src/routes/clubs/$clubId/members.tsx
+
 _Membership management and join requests._
+
 - L33 `export const Route`
 
 ### src/routes/clubs/$clubId/settings.tsx
+
 _Club metadata, meeting schedule, interests._
+
 - L38 `export const Route`
 
 ### src/routes/clubs/new.tsx
+
 _New-club creation wizard with verification flow._
+
 - L45 `export const Route`
 
 ### src/routes/index.tsx
+
 _Discovery home: recommended clubs and upcoming events._
+
 - L33 `export const Route`
 
 ### src/routes/login.tsx
+
 _Student and administrator sign-in paths._
+
 - L19 `export const Route`
 
 ### src/routes/mcp.ts
+
 _MCP server endpoint._
+
 - L12 `export const Route`
 
 ### src/routes/my-clubs.tsx
+
 _User's clubs with priority ordering._
+
 - L21 `export const Route`
 
 ### src/routes/notifications.tsx
+
 _Notification feed._
+
 - L14 `export const Route`
 
 ### src/routes/onboarding.tsx
+
 _New-user onboarding: name, grade, interests, commitment._
+
 - L28 `export const Route`
 
 ### src/routes/settings.tsx
+
 _General account settings._
+
 - L30 `export const Route`
 
 ### src/server.ts
+
 _Server entry: wires Start, error capture, and the HTML error fallback._
+
 - L47 `export default { ... }`
 
 ### src/start.ts
+
 _TanStack Start instance with CSRF and auth middleware._
+
 - L28 `export const startInstance`
 
 ### src/test/app-routing.test.tsx
+
 _Router smoke tests: every top-level route mounts and paints._
+
 - L8 `function renderAt`
 - L25 `describe("App routing", ...)`
 
 ### src/test/setup.ts
+
 _Vitest DOM setup (jest-dom, matchMedia, scrollTo stubs)._
 
 ### vite.config.ts
+
 _Vite build config (TanStack Start plugin, aliases, chunking)._
 
 ### vitest.config.ts
+
 _Vitest config (jsdom environment, setup file)._
 
 ## Database migrations

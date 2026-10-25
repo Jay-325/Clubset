@@ -4,7 +4,8 @@ import { supabaseForUser, errorResult } from "../supabase";
 export default defineTool({
   name: "list_my_clubs",
   title: "List my clubs",
-  description: "List the clubs the signed-in student belongs to or has applied to, with membership status.",
+  description:
+    "List the clubs the signed-in student belongs to or has applied to, with membership status.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (_args, ctx) => {
@@ -23,6 +24,9 @@ export default defineTool({
       meeting_time: m.clubs?.meeting_time ? String(m.clubs.meeting_time) : null,
       status: String(m.status),
     }));
-    return { content: [{ type: "text", text: JSON.stringify(clubs) }], structuredContent: { clubs } };
+    return {
+      content: [{ type: "text", text: JSON.stringify(clubs) }],
+      structuredContent: { clubs },
+    };
   },
 });

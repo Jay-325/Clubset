@@ -380,11 +380,7 @@ function LeadershipContent() {
                   ) : null}
 
                   <Button type="submit" disabled={createRole.isPending}>
-                    {createRole.isPending ? (
-                      <SkeletonSpinner />
-                    ) : (
-                      <Crown className="size-4" />
-                    )}
+                    {createRole.isPending ? <SkeletonSpinner /> : <Crown className="size-4" />}
                     Create position
                   </Button>
                 </form>

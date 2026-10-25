@@ -13,4 +13,14 @@ export default defineConfig({
     server: { entry: "server" },
   },
   plugins: [],
+  vite: {
+    build: {
+      rollupOptions: {
+        external: [],
+      },
+    },
+    ssr: {
+      noExternal: ["@vercel/speed-insights"],
+    },
+  },
 });

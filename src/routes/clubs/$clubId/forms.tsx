@@ -480,11 +480,7 @@ function FormsContent() {
               ) : null}
 
               <Button type="submit" disabled={createForm.isPending}>
-                {createForm.isPending ? (
-                  <SkeletonSpinner />
-                ) : (
-                  <ClipboardList className="size-4" />
-                )}
+                {createForm.isPending ? <SkeletonSpinner /> : <ClipboardList className="size-4" />}
                 Save as draft
               </Button>
             </form>
@@ -538,11 +534,7 @@ function FormsContent() {
                           disabled={publish.isPending}
                           onClick={() => publish.mutate(activeForm.id)}
                         >
-                          {publish.isPending ? (
-                            <SkeletonSpinner />
-                          ) : (
-                            <Send className="size-4" />
-                          )}
+                          {publish.isPending ? <SkeletonSpinner /> : <Send className="size-4" />}
                           Publish
                         </Button>
                       ) : null}
@@ -604,11 +596,7 @@ function FormsContent() {
                       ) : null}
 
                       <Button type="submit" disabled={respond.isPending || availability !== "open"}>
-                        {respond.isPending ? (
-                          <SkeletonSpinner />
-                        ) : (
-                          <Send className="size-4" />
-                        )}
+                        {respond.isPending ? <SkeletonSpinner /> : <Send className="size-4" />}
                         {alreadyResponded ? "Update my response" : "Submit"}
                       </Button>
                     </form>
