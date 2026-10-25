@@ -8,7 +8,7 @@
 -- run this against a real school database.
 -- ============================================================================
 
--- The seed mirrors the deployed tenant exactly: one school, one administrator.
+-- The seed mirrors the deployed tenant exactly: one school, two administrators.
 -- Earlier revisions seeded a fabricated "Ridgeway High School" / ridgeway.edu
 -- tenant. It never existed in any environment and has been removed; do not
 -- reintroduce it.
@@ -21,11 +21,19 @@ values (
 )
 on conflict (slug) do nothing;
 
--- There is intentionally EXACTLY ONE allowlist entry in this project. Adding
--- a second address here hands administrator rights to that address, so treat
--- any addition as a deliberate authorization change.
+-- The allowlist is the ONLY thing that grants administrator rights, so treat
+-- any addition or removal here as a deliberate authorization change. It holds
+-- exactly TWO entries in this project: the two people who may activate an
+-- administrator account. No school-domain address belongs here -- being on
+-- @fairfieldschools.net/.org grants student access only.
 insert into public.admin_allowlist (school_id, email, full_name)
 select id, 'arinjaypal@gmail.com', 'Arinjay Pal'
+from public.schools
+where slug = 'fairfield'
+on conflict (school_id, email) do nothing;
+
+insert into public.admin_allowlist (school_id, email, full_name)
+select id, 'ray.d.villaflor@gmail.com', 'Ray Villaflor'
 from public.schools
 where slug = 'fairfield'
 on conflict (school_id, email) do nothing;

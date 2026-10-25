@@ -33,7 +33,8 @@ npm run dev
 1. Create a project at [supabase.com](https://supabase.com).
 2. Copy **Project Settings → API** values into `.env`:
    - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` (the anon key; `VITE_SUPABASE_ANON_KEY`
+     is accepted as a legacy alias)
 3. Open the SQL editor and run the migrations in `supabase/migrations/` **in
    filename order**. Or with the CLI:
 
@@ -51,15 +52,19 @@ disable "Confirm email" so magic links work without a real inbox.
 
 ### 3. Create the first administrator
 
-`supabase/seed.sql` inserts exactly one allowlist entry, for
-`arinjaypal@gmail.com`. After signing in with that address, activate the role:
+`supabase/seed.sql` inserts two allowlist entries, for
+`arinjaypal@gmail.com` and `ray.d.villaflor@gmail.com`. After signing in with
+one of those addresses and confirming the emailed link, activate the role:
 
 ```sql
 select public.activate_administrator();
 ```
 
-The function raises an exception if the email is not on the allowlist, so a
-user cannot promote themselves (PRD 5, 53.21).
+The function raises an exception if the signed-in email is not an active row in
+`public.admin_allowlist`, so a user cannot promote themselves and a school
+domain grants nothing (PRD 5, 53.21). Both addresses must exist as confirmed
+users before they can activate; the allowlist row only makes activation
+possible.
 
 ---
 
@@ -68,7 +73,12 @@ user cannot promote themselves (PRD 5, 53.21).
 | Variable | Purpose |
 | --- | --- |
 | `VITE_SUPABASE_URL` | Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | Public anon key |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Public publishable (anon) key. `VITE_SUPABASE_ANON_KEY` is accepted as a legacy alias. |
+
+If neither is set, the build falls back to the checked-in public config in
+`src/lib/supabase/public-config.ts`, so a deployment with no environment
+variables still starts instead of showing "Connect Supabase to continue".
+Environment variables always take precedence over that fallback.
 
 The anon key is designed to be public. It is safe in the browser **only**
 because every table has RLS enabled and every RPC re-checks permissions
