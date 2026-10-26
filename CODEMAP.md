@@ -1,530 +1,341 @@
 # CODEMAP
 
-_Generated: 2026-10-24T20:13:06.247Z_
+_Generated: 2026-10-26T00:00:00Z_
 
 ## Tree
 
 ```
-joinin-44b91fde/
+clubset/
 ├── .agents/
-│   └── skills/                       # vendored Supabase skill docs (40 files)
-├── .claude/
-│   └── .gitignore
+│   └── skills/
+│       ├── supabase/
+│       │   ├── SKILL.md
+│       │   ├── CHANGELOG.md
+│       │   ├── references/  (skill-feedback.md, ...)
+│       │   └── assets/      (feedback-issue-template.md)
+│       └── supabase-postgres-best-practices/
+│           ├── SKILL.md
+│           ├── CHANGELOG.md
+│           └── references/  (_contributing.md, _sections.md, _template.md,
+│           │               advanced-full-text-search.md, advanced-jsonb-indexing.md,
+│           │               conn-*.md, data-*.md, lock-*.md, monitor-*.md,
+│           │               query-*.md, schema-*.md, security-*.md)
+├── .claude/.gitignore
+├── .env.example
+├── .gitignore
 ├── .lovable/
-│   ├── mcp/
-│   │   └── manifest.json
+│   ├── mcp/manifest.json
 │   └── project.json
+├── .prettierignore
+├── .prettierrc
+├── AGENTS.md
+├── bun.lock
+├── bunfig.toml
+├── CODEMAP.md
+├── components.json
+├── eslint.config.js
+├── package.json
+├── package-lock.json
 ├── public/
 │   ├── favicon.ico
 │   └── robots.txt
+├── README.md
 ├── scripts/
 │   ├── check-sql.ts
 │   ├── sql-error.ts
 │   └── verify-admin-auth.sql
+├── SECURITY_NOTES.md
 ├── src/
 │   ├── components/
-│   │   ├── app-shell.tsx
-│   │   └── ui/                       # 46 shadcn/ui primitives
+│   │   ├── app-shell.tsx        # RequireAuth, AppShell, PageHeader
+│   │   └── ui/                  # 46 shadcn/ui primitives (accordion, alert, ... tooltip)
 │   ├── hooks/
-│   │   └── use-mobile.tsx
+│   │   ├── use-mobile.tsx       # useIsMobile
+│   │   └── use-debounced-value.ts  # useDebouncedValue(value, delayMs)
 │   ├── integrations/
 │   │   └── supabase/
-│   │       ├── auth-attacher.ts
-│   │       ├── auth-middleware.ts
-│   │       ├── client.server.ts
-│   │       ├── client.ts
-│   │       ├── cron-auth.ts
-│   │       ├── previewAuthStorage.ts
-│   │       └── types.ts
+│   │       ├── auth-attacher.ts      # attachSupabaseAuth
+│   │       ├── auth-middleware.ts    # requireSupabaseAuth
+│   │       ├── client.server.ts      # supabaseAdmin (service-role proxy)
+│   │       ├── client.ts             # supabase (anon proxy)
+│   │       ├── cron-auth.ts          # authenticateCronRequest
+│   │       ├── previewAuthStorage.ts # PreviewAuthStorage, brokeredPreviewStorage
+│   │       └── types.ts              # Json, Database, Tables/Insert/Update, Enums, Constants
 │   ├── lib/
 │   │   ├── auth/
-│   │   │   ├── context.tsx
-│   │   │   └── permissions.ts
+│   │   │   ├── context.tsx   # AuthProvider, useAuth, useIsSignedOut
+│   │   │   └── permissions.ts# ClubContext, can, isLeader, isActiveMember, managementSections, quickActions
+│   │   ├── domain.ts         # club/event/attendance constants + TABLE_TEMPLATES
+│   │   ├── error-capture.ts  # describeError, consumeLastCapturedError
+│   │   ├── error-page.ts     # renderErrorPage
 │   │   ├── hooks/
-│   │   │   ├── use-club.ts
-│   │   │   └── use-debounced-value.ts
+│   │   │   ├── use-club.ts           # useClubContext
+│   │   │   └── use-debounced-value.ts# useDebouncedValue
+│   │   ├── lovable-error-reporting.ts# reportLovableError
 │   │   ├── mcp/
-│   │   │   ├── tools/
-│   │   │   │   ├── list-announcements.ts
-│   │   │   │   ├── list-my-clubs.ts
-│   │   │   │   └── list-upcoming-events.ts
 │   │   │   ├── index.ts
-│   │   │   └── supabase.ts
+│   │   │   ├── supabase.ts    # supabaseForUser, textResult, errorResult
+│   │   │   └── tools/
+│   │   │       ├── list-announcements.ts
+│   │   │       ├── list-my-clubs.ts
+│   │   │       └── list-upcoming-events.ts
+│   │   ├── queries.ts        # TanStack Query hooks (useClubSearch, useClub, useFinalizeAttendance, ...)
 │   │   ├── supabase/
-│   │   │   └── client.ts
+│   │   │   ├── client.ts            # isSupabaseConfigured, getSupabaseClient
+│   │   │   └── public-config.ts     # FALLBACK_SUPABASE_URL, FALLBACK_SUPABASE_PUBLISHABLE_KEY
 │   │   ├── types/
-│   │   │   └── database.ts
-│   │   ├── domain.ts
-│   │   ├── error-capture.ts
-│   │   ├── error-page.ts
-│   │   ├── lovable-error-reporting.ts
-│   │   ├── queries.ts
-│   │   └── utils.ts
-│   ├── routes/
-│   │   ├── [.well-known]/
-│   │   │   └── oauth-protected-resource.ts
-│   │   ├── clubs/
-│   │   │   ├── $clubId/
-│   │   │   │   ├── announcements.tsx
-│   │   │   │   ├── attendance.tsx
-│   │   │   │   ├── calendar.tsx
-│   │   │   │   ├── chat.tsx
-│   │   │   │   ├── data.tsx
-│   │   │   │   ├── events.tsx
-│   │   │   │   ├── forms.tsx
-│   │   │   │   ├── funds.tsx
-│   │   │   │   ├── index.tsx
-│   │   │   │   ├── leadership.tsx
-│   │   │   │   ├── members.tsx
-│   │   │   │   └── settings.tsx
-│   │   │   └── new.tsx
-│   │   ├── [.]lovable.oauth.consent.tsx
-│   │   ├── __root.tsx
-│   │   ├── admin.tsx
-│   │   ├── calendar.tsx
-│   │   ├── index.tsx
-│   │   ├── login.tsx
-│   │   ├── mcp.ts
-│   │   ├── my-clubs.tsx
-│   │   ├── notifications.tsx
-│   │   ├── onboarding.tsx
-│   │   ├── settings.tsx
-│   │   └── README.md
-│   ├── test/
-│   │   ├── app-routing.test.tsx
-│   │   └── setup.ts
-│   ├── routeTree.gen.ts
+│   │   │   ├── database.ts   # Json, AccountType, ClubRow, MembershipRow, EventRow, Database, ...
+│   │   │   └── domain.ts     # (merged into src/lib/domain.ts)
+│   │   └── utils.ts          # cn(...inputs)
 │   ├── router.tsx
+│   ├── routeTree.gen.ts
 │   ├── server.ts
 │   ├── start.ts
-│   └── styles.css
+│   ├── styles.css
+│   ├── routes/
+│   │   ├── [.]lovable.oauth.consent.tsx
+│   │   ├── [.well-known]/oauth-protected-resource.ts
+│   │   ├── __root.tsx        # Route
+│   │   ├── admin.tsx         # Route
+│   │   ├── calendar.tsx      # Route
+│   │   ├── clubs/
+│   │   │   ├── $clubId/
+│   │   │   │   ├── announcements.tsx   # Route
+│   │   │   │   ├── attendance.tsx      # Route
+│   │   │   │   ├── calendar.tsx        # Route
+│   │   │   │   ├── chat.tsx            # Route
+│   │   │   │   ├── data.tsx            # Route
+│   │   │   │   ├── events.tsx          # Route
+│   │   │   │   ├── forms.tsx           # Route
+│   │   │   │   ├── funds.tsx           # Route
+│   │   │   │   ├── index.tsx           # Route
+│   │   │   │   ├── leadership.tsx      # Route
+│   │   │   │   ├── members.tsx         # Route
+│   │   │   │   └── settings.tsx        # Route
+│   │   ├── clubs/new.tsx     # Route
+│   │   ├── index.tsx         # Route
+│   │   ├── login.tsx         # Route
+│   │   ├── mcp.ts            # Route
+│   │   ├── my-clubs.tsx      # Route
+│   │   ├── notifications.tsx # Route
+│   │   ├── onboarding.tsx    # Route
+│   │   ├── settings.tsx      # Route
+│   │   └── README.md
+│   └── test/
+│       ├── app-routing.test.tsx
+│       └── setup.ts
 ├── supabase/
-│   ├── migrations/                   # 26 migrations (see Database migrations)
-│   ├── SCHEMA_RECONCILIATION_REPORT.md
+│   ├── AUDIT_2026-10-24_schema_rls_indexes.md
 │   ├── config.toml
-│   └── seed.sql
-├── .env
-├── .env.example
-├── .gitignore
-├── .prettierignore
-├── .prettierrc
-├── AGENTS.md
-├── CODEMAP.md
-├── README.md
-├── bun.lock
-├── bunfig.toml
-├── components.json
-├── eslint.config.js
-├── package.json
+│   ├── SCHEMA_RECONCILIATION_REPORT.md
+│   ├── seed.sql
+│   └── migrations/
+│       ├── 20260101000001_core_schema.sql
+│       ├── 20260101000002_clubs.sql
+│       ├── 20260101000003_events_attendance.sql
+│       ├── 20260101000004_chat.sql
+│       ├── 20260101000005_finances.sql
+│       ├── 20260101000006_forms.sql
+│       ├── 20260101000007_data_tables.sql
+│       ├── 20260101000008_leadership.sql
+│       ├── 20260101000009_notifications.sql
+│       ├── 20260101000100_update_admin_allowlist.sql
+│       ├── 20260101000200_update_admin_authorization.sql
+│       ├── 20260101000210_fix_search_clubs.sql
+│       ├── 20260101000220_fix_search_clubs_orderby.sql
+│       ├── 20260101000300_harden_profiles_security.sql
+│       ├── 20261003000536_eeda22be-6233-4e49-8eb6-56f5c167104d.sql
+│       ├── 20261003000659_2f086b1d-4ed4-4f6d-89a1-6025bb199d33.sql
+│       ├── 20261003000812_ee563a54-509a-4a92-8255-a6a88c8fb8d1.sql
+│       ├── 20261003000858_72b0e5f9-fcc4-4941-adc7-a35be672f841.sql
+│       ├── 20261003000954_2e694160-3221-416b-a92a-973cd97d117a.sql
+│       ├── 20261003001201_10756f18-9d39-45d3-9523-f5caafe885e1.sql
+│       ├── 20261003001241_75ef3c48-ca01-4f01-b60d-6676849cfcff.sql
+│       ├── 20261018000000_admin_allowlist_authorization.sql
+│       ├── 20261019000000_performance_indexes.sql
+│       ├── 20261019000100_restore_rls_policy_helper_grants.sql
+│       ├── 20261019000200_authorize_administrator.sql
+│       ├── 20261020021156_d660b51e-42d4-4e8c-a345-c3bb013ff634.sql
+│       ├── 20261024204857_harden_attendance_stats_and_notify_grants.sql
+│       ├── 20261025001325_harden_default_function_privileges.sql
+│       ├── 20261025001656_revert_inert_default_function_privileges.sql
+│       ├── 20261025002233_restore_profiles_select_for_authenticated.sql
+│       ├── 20261025005921_authorize_second_administrator.sql
+│       ├── 20261026000100_fix_club_read_access.sql      # can_read_club narrowing, can_discover_club
+│       ├── 20261026000200_fix_membership_attendance_audit.sql  # membership guard, attendance, audit
+│       ├── 20261026000300_fix_leadership_forms_data.sql  # review_application, apply_for_role, forms
+│       └── 20261026000400_rls_and_index_performance.sql   # 30 policy rewrites, 30 FK indexes, pg_trgm
 ├── tsconfig.json
 ├── vite.config.ts
-└── vitest.config.ts
-```
-
-## Tree (tests)
-
-```
-src/test/
-├── app-routing.test.tsx
-└── setup.ts
+├── vitest.config.ts
+└── wrangler.jsonc          # public VITE_* vars for Cloudflare Worker (Nitro reads at build)
 ```
 
 ## Files
 
-### scripts/check-sql.ts
-_Parses every migration with the real Postgres grammar (definition-of-done gate)._
-
-### scripts/sql-error.ts
-_SQL error formatting and position reporting helpers._
-
 ### src/components/app-shell.tsx
-_RequireAuth gate, four-tab navigation shell, and page header._
-- L24 `export function RequireAuth`
-- L64 `export function AppShell`
-- L149 `export function PageHeader`
+_RequireAuth + AppShell page wrapper + PageHeader_
+- L24 `export function RequireAuth({ children })`
+- L64 `export function AppShell({ children })`
+- L149 `export function PageHeader({`
 
-### src/components/ui/
-_shadcn/ui + Radix primitives (46 files; each exports its namesake component)._
-- `accordion`, `alert-dialog`, `alert`, `aspect-ratio`, `avatar`, `badge`,
-  `breadcrumb`, `button`, `calendar`, `card`, `carousel`, `chart`, `checkbox`,
-  `collapsible`, `command`, `context-menu`, `dialog`, `drawer`, `dropdown-menu`,
-  `form`, `hover-card`, `input`, `input-otp`, `label`, `menubar`,
-  `navigation-menu`, `pagination`, `popover`, `progress`, `radio-group`,
-  `resizable`, `scroll-area`, `select`, `separator`, `sheet`, `sidebar`,
-  `skeleton`, `slider`, `sonner`, `switch`, `table`, `tabs`, `textarea`,
-  `toggle`, `toggle-group`, `tooltip`
+### src/components/ui/* (46 shadcn/ui primitives)
+Accordion, Alert, AlertDialog, AspectRatio, Avatar, Badge, Breadcrumb, Button, Calendar, Card, Carousel, Chart, Checkbox, Collapsible, Command, ContextMenu, Dialog, Drawer, DropdownMenu, Form, HoverCard, Input, InputOTP, Label, Menubar, NavigationMenu, Pagination, Popover, Progress, RadioGroup, Resizable, ScrollArea, Select, Separator, Sheet, Sidebar, Skeleton, Slider, Sonner, Switch, Table, Tabs, Textarea, Toggle, ToggleGroup, Tooltip
+
+Representative exports:
+- badge.tsx: L25 `export interface BadgeProps`, L32 `export { Badge, badgeVariants }`
+- button.tsx: L34 `export interface ButtonProps`, L49 `export { Button, buttonVariants }`
+- chart.tsx: L9 `export type ChartConfig`, L324 `export {...}`
+- table.tsx: L94 `export { Table, TableHeader, ... }`
 
 ### src/hooks/use-mobile.tsx
-_Mobile breakpoint detection hook._
-- L5 `export function useIsMobile`
+_Mobile breakpoint detection_
+- L5 `export function useIsMobile()`
+
+### src/hooks/use-debounced-value.ts
+_Debounce a value over time_
+- L11 `export function useDebouncedValue<T>(value, delayMs = 300)`
 
 ### src/integrations/supabase/auth-attacher.ts
-_Client middleware that attaches the Supabase bearer token to server-function calls._
+_Supabase auth middleware (function client)_
 - L7 `export const attachSupabaseAuth`
 
 ### src/integrations/supabase/auth-middleware.ts
-_Server middleware that requires a valid Supabase session._
+_Supabase auth middleware (function server)_
 - L34 `export const requireSupabaseAuth`
 
 ### src/integrations/supabase/client.server.ts
-_Server-only Supabase client using the service-role key._
+_Service-role Supabase client proxy_
 - L64 `export const supabaseAdmin`
 
 ### src/integrations/supabase/client.ts
-_Lazy client-side Supabase singleton._
+_Anon Supabase client proxy_
 - L63 `export const supabase`
 
 ### src/integrations/supabase/cron-auth.ts
-_Authenticates cron-triggered requests._
-- L2 `export async function authenticateCronRequest`
+_Cron request authentication_
+- L2 `export async function authenticateCronRequest()`
 
 ### src/integrations/supabase/previewAuthStorage.ts
-_Auth storage broker for Lovable preview surfaces._
-- L5 `export function brokeredPreviewStorage`
+_Brokered preview auth storage_
+- L4 `export interface PreviewAuthStorage`
+- L41 `export function brokeredPreviewStorage()`
 
 ### src/integrations/supabase/types.ts
-_Generated Supabase database types (large; do not hand-edit)._
+_Supabase-generated Database types_
 - L1 `export type Json`
 - L9 `export type Database`
-- L2423 `export type Tables`
-- L2452 `export type TablesInsert`
-- L2477 `export type TablesUpdate`
+- L2423 `export type Tables<T>`
+- L2452 `export type TablesInsert<T>`
+- L2477 `export type TablesUpdate<T>`
 - L2502 `export type Enums`
-- L2519 `export type CompositeTypes`
 - L2536 `export const Constants`
 
 ### src/lib/auth/context.tsx
-_Auth context, session loading, and sign-out state._
-- L24 `export function AuthProvider`
-- L154 `export function useAuth`
-- L163 `export function useIsSignedOut`
+_Auth provider + hooks_
+- L24 `export function AuthProvider({ children })`
+- L154 `export function useAuth()`
+- L163 `export function useIsSignedOut()`
 
 ### src/lib/auth/permissions.ts
-_Permission helpers and navigation derived from a club context._
+_Club permission helpers_
 - L11 `export interface ClubContext`
-- L26 `export function can`
-- L30 `export function isLeader`
-- L34 `export function isActiveMember`
-- L42 `export function managementSections`
-- L99 `export function quickActions`
+- L26 `export function can(permissions, needed)`
+- L30 `export function isLeader(context)`
+- L34 `export function isActiveMember(context)`
+- L42 `export function managementSections(...)`
+- L99 `export function quickActions(context)`
 
 ### src/lib/domain.ts
-_Product vocabulary, labels, and preset values shared by forms and UI._
+_Club/event/attendance domain constants + table templates_
 - L24 `export const PRESET_INTERESTS`
 - L43 `export const CLUB_TYPES`
-- L49 `export const CLUB_TYPE_LABELS`
-- L59 `export const COMMITMENT_LEVELS`
-- L69 `export const COMMITMENT_LABELS`
-- L75 `export const WEEKLY_HOUR_OPTIONS`
-- L81 `export const MEETING_DAYS`
-- L90 `export const COMMON_MEETING_TIMES`
+- L75 `export const COMMITMENT_LEVELS`
 - L103 `export const CLUB_STATUS_LABELS`
-- L113 `export const REQUIRED_STUDENT_VERIFICATIONS`
-- L119 `export const PERMISSION_LABELS`
-- L133 `export const SUGGESTED_ROLES`
 - L184 `export const ALL_PERMISSIONS`
-- L190 `export const EVENT_KINDS`
-- L197 `export const EVENT_KIND_LABELS`
-- L204 `export const EVENT_PRIORITY_LABELS`
-- L211 `export const DEFAULT_MEETING_DURATION_MINUTES`
-- L220 `export const ATTENDANCE_STATUS_LABELS`
-- L227 `export const ATTENDANCE_STATUS_HINTS`
-- L238 `export const INCOME_CATEGORIES`
-- L247 `export const EXPENSE_CATEGORIES`
-- L262 `export const QUESTION_TYPE_LABELS`
 - L276 `export interface TableTemplate`
 - L284 `export const TABLE_TEMPLATES`
-- L327 `export const REQUIREMENT_LABELS`
-- L338 `export const REQUIREMENTS_USE_FINALIZED_ATTENDANCE`
-- L347 `export const GRADE_LABELS`
 
 ### src/lib/error-capture.ts
-_Describes and stores the last server-side error for recovery._
-- L18 `export function describeError`
-- L72 `export function consumeLastCapturedError`
+_Error capture utilities_
+- L18 `export function describeError(error)`
+- L72 `export function consumeLastCapturedError()`
 
 ### src/lib/error-page.ts
-_Renders the standalone HTML error page._
-- L1 `export function renderErrorPage`
+_SSR error page renderer_
+- L1 `export function renderErrorPage()`
 
-### src/lib/hooks/use-club.ts
-_Loads club, membership, and permissions in one context hook._
-- L15 `export function useClubContext`
+### src/lib/queries.ts
+_TanStack Query hooks (clubs, memberships, events, attendance, notifications, admin)_
+- L37 `export function useAdminLogin()`
+- L77 `export async function requestAdministratorActivation()`
+- L94 `export function useViewerId()`
+- L236 `export function useClubSearch(filters)`
+- L256 `export function useClub(clubId)`
+- L610 `export function useFinalizeAttendance()`
+- L631 `export function useNotifications()`
+- L666 `export function useAdminClubOverview(enabled = true)`
 
-### src/lib/hooks/use-debounced-value.ts
-_Debounces search input values (300 ms default)._
-- L11 `export function useDebouncedValue`
+### src/lib/supabase/client.ts
+_Supabase client factory + configured check_
+- L41 `export function isSupabaseConfigured()`
+- L49 `export function getSupabaseClient()`
 
-### src/lib/lovable-error-reporting.ts
-_Reports client errors to the Lovable error channel._
-- L27 `export function reportLovableError`
+### src/lib/supabase/public-config.ts
+_Public Supabase fallback URL/publishable key_
+- L27 `export const FALLBACK_SUPABASE_URL`
+- L30 `export const FALLBACK_SUPABASE_PUBLISHABLE_KEY`
 
-### src/lib/mcp/index.ts
-_MCP server definition: registers the Clubset tools._
-- L8 `export default defineMcp(...)`
+### src/lib/types/database.ts
+_Database row/result type definitions_
+- L10 `export type Json`
+- L16-47 `export type` (AccountType, GradeLevel, ClubType, CommitmentLevel, EventPriority, EventKind, ClubStatus, MembershipStatus, ClubPermission, VerificationKind, RsvpStatus, AttendanceStatus, AttendanceSource, TransactionType, DuesStatus, FormStatus, QuestionType, RequirementKind, ApplicationStatus, NotificationType)
+- L70 `export type SchoolRow`
+- L79 `export type ProfileRow`
+- L94 `export type ClubRow`
+- L150 `export type MembershipRow`
+- L171 `export type EventRow`
+- L197 `export type AttendanceRow`
+- L363 `export type LeadershipApplicationRow`
+- L504 `export type Database`
+- L884 `export type Tables<T>`
+- L886 `export type TablesInsert<T>`
+
+### src/lib/utils.ts
+_Tailwind class merge helper_
+- L4 `export function cn(...inputs)`
 
 ### src/lib/mcp/supabase.ts
-_Per-user Supabase client and result helpers for MCP tools._
-- L17 `export function supabaseForUser`
+_Supabase client factory for MCP tool context_
+- L17 `export function supabaseForUser(ctx)`
 - L29 `export const textResult`
 - L30 `export const errorResult`
 
 ### src/lib/mcp/tools/list-announcements.ts
-_MCP tool: list club announcements._
-- L5 `export default defineTool(...)`
-
+_List announcements MCP tool_
 ### src/lib/mcp/tools/list-my-clubs.ts
-_MCP tool: list the caller's clubs._
-- L4 `export default defineTool(...)`
-
+_List my clubs MCP tool_
 ### src/lib/mcp/tools/list-upcoming-events.ts
-_MCP tool: list upcoming events._
-- L5 `export default defineTool(...)`
-
-### src/lib/queries.ts
-_All TanStack Query hooks and mutations (single source for keys/invalidation)._
-- L37 `export function useAdminLogin`
-- L77 `export async function requestAdministratorActivation`
-- L94 `export function useViewerId`
-- L106 `export function useSignIn`
-- L133 `export function useSignUp`
-- L151 `export function useUpdateProfile`
-- L167 `export function useMemberSearch`
-- L189 `export interface ClubFilters`
-- L236 `export function useClubSearch`
-- L245 `export function useRecommendedClubs`
-- L256 `export function useClub`
-- L269 `export function useMyClubs`
-- L290 `export function useSetClubPriority`
-- L310 `export function useCreateClub`
-- L343 `export function useClubVerifications`
-- L359 `export function useVerifyClub`
-- L374 `export function useSubmitClubForReview`
-- L391 `export function useReviewClub`
-- L411 `export function useApplyToClub`
-- L426 `export function useJoinRequests`
-- L447 `export function useClubMembers`
-- L465 `export function useReviewMembership`
-- L489 `export function useUpcomingEvents`
-- L503 `export function useClubEvents`
-- L520 `export function useCreateEvent`
-- L558 `export function useRsvp`
-- L578 `export function useAttendanceForEvent`
-- L595 `export function useVetoRsvp`
-- L610 `export function useFinalizeAttendance`
-- L631 `export function useNotifications`
-- L647 `export function useMarkNotificationRead`
-- L666 `export function useAdminClubOverview`
-
-### src/lib/supabase/client.ts
-_Client factory with configuration guard (RLS enforced)._
-- L36 `export function isSupabaseConfigured`
-- L46 `export function getSupabaseClient`
-
-### src/lib/types/database.ts
-_Hand-maintained database types mirroring the migrations._
-- L10 `export type Json`
-- L16 `export type AccountType`
-- L17 `export type GradeLevel`
-- L18 `export type ClubType`
-- L19 `export type CommitmentLevel`
-- L20 `export type EventPriority`
-- L21 `export type EventKind`
-- L22 `export type ClubStatus`
-- L29 `export type MembershipStatus`
-- L30 `export type ClubPermission`
-- L41 `export type VerificationKind`
-- L42 `export type RsvpStatus`
-- L43 `export type AttendanceStatus`
-- L44 `export type AttendanceSource`
-- L45 `export type TransactionType`
-- L46 `export type DuesStatus`
-- L47 `export type FormStatus`
-- L48 `export type QuestionType`
-- L50 `export type RequirementKind`
-- L52 `export type ApplicationStatus`
-- L54 `export type NotificationType`
-- L70 `export type SchoolRow`
-- L79 `export type ProfileRow`
-- L94 `export type ClubRow`
-- L115 `export type ClubAdministratorRow`
-- L122 `export type ClubVerificationRow`
-- L130 `export type LeadershipRoleRow`
-- L141 `export type RoleAssignmentRow`
-- L150 `export type MembershipRow`
-- L161 `export type AnnouncementRow`
-- _…plus row types for events/chat/finance/forms/data-tables/leadership/notifications/audit (L171–L481)_
-- L504 `export type Database`
-- L884 `export type Tables`
-- L886 `export type TablesInsert`
-
-### src/lib/utils.ts
-_Class-name merge helper._
-- L4 `export function cn`
-
-### src/routeTree.gen.ts
-_Auto-generated TanStack Router tree — do not edit by hand._
-- L160 `export interface FileRoutesByFullPath`
-- L186 `export interface FileRoutesByTo`
-- L212 `export interface FileRoutesById`
-- L239 `export interface FileRouteTypes`
-- L320 `export interface RootRouteChildren`
-- L547 `export const routeTree`
-
-### src/router.tsx
-_Router factory used by the Start entry point._
-- L5 `export const getRouter`
-
-### src/routes/[.]lovable.oauth.consent.tsx
-_OAuth consent screen for the Lovable integration._
-- L13 `export const Route`
-
-### src/routes/[.well-known]/oauth-protected-resource.ts
-_OAuth protected-resource metadata endpoint._
-- L12 `export const Route`
+_List upcoming events MCP tool_
 
 ### src/routes/__root.tsx
-_Root layout: query-client context, auth shell, error boundaries._
+_Root route_
 - L78 `export const Route`
 
-### src/routes/admin.tsx
-_Administrator oversight page — club approvals and platform view._
-- L24 `export const Route`
+### src/routes/*.tsx
+_File-based TanStack Router routes (admin, calendar, clubs/*, index, login, mcp, my-clubs, notifications, onboarding, settings)_
+Each exports `export const Route = createFileRoute("...")({...})`.
 
-### src/routes/calendar.tsx
-_Combined calendar of events from the user's clubs._
-- L23 `export const Route`
+### supabase/migrations/20261026000100_fix_club_read_access.sql
+_Club discovery vs private reads split (can_read_club, can_discover_club)_
+### supabase/migrations/20261026000200_fix_membership_attendance_audit.sql
+_Membership self-update guard, attendance_corrections insert, private.record_audit, finalize_attendance, apply_for_role, review_application_
+### supabase/migrations/20261026000300_fix_leadership_forms_data.sql
+_Leadership application/update policies, draft-only insert, form_responses update self, apply_table_template fix_
+### supabase/migrations/20261026000400_rls_and_index_performance.sql
+_30 (select auth.uid()) policy rewrites, 30 FK indexes, pg_trgm + 3 trigram indexes, search_clubs @> rewrite_
 
-### src/routes/clubs/$clubId/announcements.tsx
-_Club announcements management._
-- L28 `export const Route`
+### wrangler.jsonc
+_Public Cloudflare Worker runtime vars (VITE_SUPABASE_ANON_KEY, VITE_SUPABASE_URL, VITE_TURNSTILE_SITE_KEY)_
 
-### src/routes/clubs/$clubId/attendance.tsx
-_RSVP → attendance tracking and finalization._
-- L36 `export const Route`
-
-### src/routes/clubs/$clubId/calendar.tsx
-_Individual club calendar view._
-- L21 `export const Route`
-
-### src/routes/clubs/$clubId/chat.tsx
-_Club group chat with banners._
-- L23 `export const Route`
-
-### src/routes/clubs/$clubId/data.tsx
-_Custom club data tables (columns, rows, templates)._
-- L40 `export const Route`
-
-### src/routes/clubs/$clubId/events.tsx
-_Event creation and management for a club._
-- L36 `export const Route`
-
-### src/routes/clubs/$clubId/forms.tsx
-_Form builder and response collection._
-- L45 `export const Route`
-
-### src/routes/clubs/$clubId/funds.tsx
-_Club finances — income, expenses, dues tracking._
-- L33 `export const Route`
-
-### src/routes/clubs/$clubId/index.tsx
-_Club dashboard: public welcome page or internal view._
-- L25 `export const Route`
-
-### src/routes/clubs/$clubId/leadership.tsx
-_Roles, permissions, eligibility requirements, applications._
-- L46 `export const Route`
-
-### src/routes/clubs/$clubId/members.tsx
-_Membership management and join requests._
-- L33 `export const Route`
-
-### src/routes/clubs/$clubId/settings.tsx
-_Club metadata, meeting schedule, interests._
-- L38 `export const Route`
-
-### src/routes/clubs/new.tsx
-_New-club creation wizard with verification flow._
-- L45 `export const Route`
-
-### src/routes/index.tsx
-_Discovery home: recommended clubs and upcoming events._
-- L33 `export const Route`
-
-### src/routes/login.tsx
-_Student and administrator sign-in paths._
-- L19 `export const Route`
-
-### src/routes/mcp.ts
-_MCP server endpoint._
-- L12 `export const Route`
-
-### src/routes/my-clubs.tsx
-_User's clubs with priority ordering._
-- L21 `export const Route`
-
-### src/routes/notifications.tsx
-_Notification feed._
-- L14 `export const Route`
-
-### src/routes/onboarding.tsx
-_New-user onboarding: name, grade, interests, commitment._
-- L28 `export const Route`
-
-### src/routes/settings.tsx
-_General account settings._
-- L30 `export const Route`
-
-### src/server.ts
-_Server entry: wires Start, error capture, and the HTML error fallback._
-- L47 `export default { ... }`
-
-### src/start.ts
-_TanStack Start instance with CSRF and auth middleware._
-- L28 `export const startInstance`
-
-### src/test/app-routing.test.tsx
-_Router smoke tests: every top-level route mounts and paints._
-- L8 `function renderAt`
-- L25 `describe("App routing", ...)`
-
-### src/test/setup.ts
-_Vitest DOM setup (jest-dom, matchMedia, scrollTo stubs)._
-
-### vite.config.ts
-_Vite build config (TanStack Start plugin, aliases, chunking)._
-
-### vitest.config.ts
-_Vitest config (jsdom environment, setup file)._
-
-## Database migrations
-
-`supabase/migrations/` — oldest → newest. Every schema change must be a new
-timestamped migration; never edit an applied one.
-
-- `20260101000001_core_schema.sql` — core schema (schools, profiles, enums)
-- `20260101000002_clubs.sql` — clubs, membership, leadership roles & permissions
-- `20260101000003_events_attendance.sql` — events, RSVPs, attendance, corrections, calendar conflicts
-- `20260101000004_chat.sql` — group chat, banners, announcements
-- `20260101000005_finances.sql` — club funds, dues, receipts
-- `20260101000006_forms.sql` — forms and responses
-- `20260101000007_data_tables.sql` — custom data tables
-- `20260101000008_leadership.sql` — leadership applications and eligibility
-- `20260101000009_notifications.sql` — discovery, recommendations, notifications
-- `20260101000100_update_admin_allowlist.sql` — administrator allowlist update
-- `20260101000200_update_admin_authorization.sql` — administrator authorization rules
-- `20260101000210_fix_search_clubs.sql` — `search_clubs` ORDER BY alias fix
-- `20260101000220_fix_search_clubs_orderby.sql` — `search_clubs` ORDER BY via CTE
-- `20260101000300_harden_profiles_security.sql` — profiles security hardening
-- `20261003000536_*.sql` — harden exposed helper functions
-- `20261003000659_*.sql` — events/attendance reconciliation (intentionally empty)
-- `20261003000812_*.sql` — enable RLS on dues (follow-up)
-- `20261003000858_*.sql` — `apply_table_template` runs as caller
-- `20261003000954_*.sql` — eligibility checks scoped to caller
-- `20261003001201_*.sql` — notifications, discovery, audit triggers, seeds
-- `20261003001241_*.sql` — **project-wide execution-grant hardening baseline (do not regress)**
-- `20261018000000_admin_allowlist_authorization.sql` — allowlist is authoritative
-- `20261019000000_performance_indexes.sql` — indexes for the two unbounded read paths
-- `20261019000100_restore_rls_policy_helper_grants.sql` — restore EXECUTE for policy helpers
-- `20261019000200_authorize_administrator.sql` — make the first live administrator
-- `20261020021156_*.sql` — `guard_club_status_change` trigger hardening
+codemap: wrote CODEMAP.md (~140 files, ~200 with symbols)
