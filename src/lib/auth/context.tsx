@@ -1,5 +1,15 @@
-import { createContext, use, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
+import {
+  createContext,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
 import type { Session } from "@supabase/supabase-js";
 
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -37,6 +47,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const session = sessionQuery.data ?? null;
   const userId = session?.user.id ?? null;
+  const router = useRouter();
+
+  // True once the administrator activation handshake (if any) for this session
+  // can no longer change the account type: the account is already an
+  // administrator, email is not confirmed (activation cannot run), or
+  // activate_administrator() has already been attempted (activated or refused).
+  // Post-sign-in routing waits for this so a teacher completing activation is
+  // never sent to student onboarding mid-handshake.
+  const [activationSettled, setActivationSettled] = useState(false);
 
   // The profile is the app's view of the user. Account type lives in the
   // database, never in local state (PRD 5, 40).
@@ -52,6 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     enabled: Boolean(userId),
   });
+
+  const profile = profileQuery.data ?? null;
 
   const signOut = useCallback(async () => {
     const supabase = getSupabaseClient();
@@ -90,18 +111,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!userId) {
       activationAttempted.current = false;
+      setActivationSettled(false);
       return;
     }
     const profile = profileQuery.data;
-    if (!profile || profile.account_type === "administrator") return;
-    if (activationAttempted.current) return;
+    if (!profile) return; // profile still resolving: activation cannot be assessed yet
+    if (profile.account_type === "administrator") {
+      setActivationSettled(true);
+      return;
+    }
+    if (activationAttempted.current) {
+      setActivationSettled(true);
+      return;
+    }
 
     let cancelled = false;
     const attempt = async () => {
       const supabase = getSupabaseClient();
       const { data: userData } = await supabase.auth.getUser();
       const user = userData.user;
-      if (!user || !(user.email_confirmed_at ?? user.confirmed_at)) return;
+      if (!user || !(user.email_confirmed_at ?? user.confirmed_at)) {
+        // Email is not confirmed: activation cannot run, so the handshake is
+        // settled and post-sign-in routing may proceed.
+        if (!cancelled) setActivationSettled(true);
+        return;
+      }
       if (cancelled) return;
 
       activationAttempted.current = true;
@@ -117,14 +151,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           error instanceof Error ? error.message : String(error),
         );
       }
-      if (!cancelled) await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      if (!cancelled) {
+        await queryClient.invalidateQueries({ queryKey: ["profile"] });
+        setActivationSettled(true);
+      }
     };
 
     void attempt();
     return () => {
       cancelled = true;
     };
-  }, [userId, profileQuery.data, queryClient]);
+  }, [userId, profileQuery.data, queryClient, setActivationSettled]);
+
+  // --------------------------------------------------------------------------
+  // Post-sign-in routing (PRD 4).
+  //
+  // Signed-in students whose profile is not yet complete are routed into
+  // onboarding instead of being silently treated as ready. Administrators and
+  // completed students continue to their destination (the saved `next` or home).
+  // This is the single backstop for every route, so sign-in from /login, a
+  // returned verification link, or token refresh all behave the same.
+  // --------------------------------------------------------------------------
+  useEffect(() => {
+    if (!session || !profile) return;
+    if (!activationSettled) return; // let the activation handshake finish first
+
+    if (profile.account_type === "student" && !profile.onboarding_complete) {
+      // Incomplete student profile: onboarding is the required next step.
+      if (window.location.pathname !== "/onboarding") {
+        void router.navigate({ to: "/onboarding" });
+      }
+      return;
+    }
+
+    // Complete student or administrator: continue to the intended destination.
+    const target = sessionStorage.getItem("clubset_next") ?? "/";
+    sessionStorage.removeItem("clubset_next");
+    if (window.location.pathname !== target) {
+      void router.navigate({ to: target });
+    }
+  }, [session, profile, activationSettled, router]);
 
   // The context value is a fresh object on every render, which would re-render
   // every consumer in the tree (the shell, every page). Memoising on the values

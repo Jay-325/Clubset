@@ -132,20 +132,28 @@ export function useSignIn() {
 }
 
 export function useSignUp() {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { email: string; password: string; fullName: string }) => {
+    mutationFn: async (input: { email: string; password: string; fullName?: string }) => {
       // Signup is the first point a user chooses a password. The check must
       // finish before Supabase Auth creates the account, so a breached
       // password is never stored.
       await assertPasswordNotBreached(input.password);
 
       const supabase = getSupabaseClient();
-      const { error } = await supabase.auth.signUp({
+      const signUpOptions = input.fullName ? { data: { full_name: input.fullName } } : {};
+      const { data, error } = await supabase.auth.signUp({
         email: input.email.toLowerCase().trim(),
         password: input.password,
-        options: { data: { full_name: input.fullName } },
+        ...(Object.keys(signUpOptions).length ? { options: signUpOptions } : {}),
       });
       if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      void variables;
     },
   });
 }

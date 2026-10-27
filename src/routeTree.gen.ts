@@ -18,6 +18,7 @@ import { Route as MyClubsRouteImport } from './routes/my-clubs'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as ClubsNewRouteImport } from './routes/clubs/new'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -77,6 +78,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
@@ -167,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/settings': typeof SettingsRoute
+  '/signup': typeof SignupRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/clubs/new': typeof ClubsNewRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/settings': typeof SettingsRoute
+  '/signup': typeof SignupRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/clubs/new': typeof ClubsNewRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/settings': typeof SettingsRoute
+  '/signup': typeof SignupRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/clubs/new': typeof ClubsNewRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -248,6 +257,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/onboarding'
     | '/settings'
+    | '/signup'
     | '/.well-known/oauth-protected-resource'
     | '/clubs/new'
     | '/.lovable/oauth/consent'
@@ -274,6 +284,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/onboarding'
     | '/settings'
+    | '/signup'
     | '/.well-known/oauth-protected-resource'
     | '/clubs/new'
     | '/.lovable/oauth/consent'
@@ -300,6 +311,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/onboarding'
     | '/settings'
+    | '/signup'
     | '/.well-known/oauth-protected-resource'
     | '/clubs/new'
     | '/.lovable/oauth/consent'
@@ -327,6 +339,7 @@ export interface RootRouteChildren {
   NotificationsRoute: typeof NotificationsRoute
   OnboardingRoute: typeof OnboardingRoute
   SettingsRoute: typeof SettingsRoute
+  SignupRoute: typeof SignupRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ClubsNewRoute: typeof ClubsNewRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -407,6 +420,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.well-known/oauth-protected-resource': {
@@ -527,6 +547,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotificationsRoute: NotificationsRoute,
   OnboardingRoute: OnboardingRoute,
   SettingsRoute: SettingsRoute,
+  SignupRoute: SignupRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ClubsNewRoute: ClubsNewRoute,

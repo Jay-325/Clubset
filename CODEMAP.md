@@ -126,6 +126,7 @@ clubset/
 │   │   ├── notifications.tsx # Route
 │   │   ├── onboarding.tsx    # Route
 │   │   ├── settings.tsx      # Route
+│   │   ├── signup.tsx        # Route
 │   │   └── README.md
 │   └── test/
 │       ├── app-routing.test.tsx

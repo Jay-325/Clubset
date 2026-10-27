@@ -1,20 +1,28 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { GraduationCap, ShieldCheck } from "lucide-react";
+import { Mail, ShieldCheck, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { SkeletonSpinner } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/auth/context";
 import { useAdminLogin, useSignIn } from "@/lib/queries";
 
 /**
  * PRD 40: two login paths, but the path chosen here grants NOTHING. The
- * backend decides the account type (PRD 5, 40) -- picking "Administrator"
- * only changes which check the backend runs.
+ * backend decides the account type (PRD 5, 40).
+ *
+ * The page exposes three distinct actions:
+ *   * Log in (student) — email / optional password sign in
+ *   * Create Student Account — normal student signup, leads to onboarding
+ *   * Administrator Login / Activation — visually separate, allowlist-only
+ *
+ * Administrator activation is driven by AuthProvider, which wraps every route:
+ * the emailed link can land anywhere because the client sets
+ * detectSessionInUrl. Once a session exists, AuthProvider completes the
+ * activation handshake and routes the user (onboarding for incomplete student
+ * profiles, home otherwise), so this page does not perform its own redirect.
  */
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>): { next?: string } => {
@@ -29,10 +37,8 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { session, isConfigured, profile } = useAuth();
-  const navigate = useNavigate();
+  const { session, isConfigured } = useAuth();
   const { next } = Route.useSearch();
-  const [mode, setMode] = useState<"student" | "administrator">("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -40,44 +46,9 @@ function LoginPage() {
   const signIn = useSignIn();
   const adminLogin = useAdminLogin();
 
-  // Administrator activation is driven by AuthProvider, which wraps every
-  // route: the emailed link can land anywhere because the client sets
-  // detectSessionInUrl. Doing it here would only work if the teacher happened
-  // to return to /login, so this page no longer performs it.
-
   useEffect(() => {
     if (next) sessionStorage.setItem("clubset_next", next);
   }, [next]);
-
-  // Stay on this page briefly while the provider's activation handshake may
-  // still be in flight, so the redirect below cannot race it and strand the
-  // teacher on a student landing page. Ordinary students are released as soon
-  // as the profile resolves (the provider clears its pending attempt on any
-  // account that is not a candidate for activation).
-  const activationPending = Boolean(session && !profile);
-
-  useEffect(() => {
-    if (!session) return;
-    if (activationPending) return;
-    const target = next ?? sessionStorage.getItem("clubset_next");
-    sessionStorage.removeItem("clubset_next");
-    if (!target) {
-      void navigate({ to: "/" });
-      return;
-    }
-    if (target.startsWith("/") && !target.startsWith("//") && !/[\\\r\n:]/.test(target)) {
-      try {
-        const url = new URL(target, window.location.origin);
-        if (url.origin === window.location.origin) {
-          void navigate({ to: url.pathname + url.search + url.hash });
-          return;
-        }
-      } catch {
-        // ignore
-      }
-    }
-    void navigate({ to: "/" });
-  }, [session, navigate, next, activationPending]);
 
   const handleStudentLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -122,6 +93,11 @@ function LoginPage() {
     );
   }
 
+  // Signed in: AuthProvider finishes any administrator activation handshake and
+  // routes the user (student onboarding if the profile is incomplete, home
+  // otherwise). Do not render the login form while signed in.
+  if (session) return null;
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
@@ -132,52 +108,88 @@ function LoginPage() {
             -- in one place.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Tabs value={mode} onValueChange={(value) => setMode(value as typeof mode)}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="student">
-                <GraduationCap className="size-4" />
-                Student Login
-              </TabsTrigger>
-              <TabsTrigger value="administrator">
+        <CardContent className="space-y-6">
+          {/* ---------------- Student log in ---------------- */}
+          <section>
+            <form onSubmit={handleStudentLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="student-email">School email</Label>
+                <Input
+                  id="student-email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder="you@school.edu"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="student-password">Password (optional)</Label>
+                <Input
+                  id="student-password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Leave blank to use a sign-in link"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={signIn.isPending}>
+                {signIn.isPending ? <Mail className="size-4" /> : null}
+                Continue
+              </Button>
+            </form>
+          </section>
+
+          {message ? (
+            <p className="mt-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+              {message}
+            </p>
+          ) : null}
+
+          {signIn.error ? (
+            <p className="mt-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {signIn.error.message}
+            </p>
+          ) : null}
+
+          {/* ---------------- Create Student Account ---------------- */}
+          <section className="pt-2">
+            <Link
+              to="/signup"
+              className="block"
+              onClick={() => {
+                setMessage(null);
+              }}
+            >
+              <Button
+                className="w-full"
+                variant="outline"
+                disabled={signIn.isPending || adminLogin.isPending}
+              >
+                <UserPlus className="mr-2 size-4" />
+                Create Student Account
+              </Button>
+            </Link>
+            <p className="mt-2 text-xs text-muted-foreground text-center">
+              New to Clubset? Create your student account, then set up your profile.
+            </p>
+          </section>
+
+          {/* ---------------- Administrator (visually separate) ---------------- */}
+          <Card className="border border-muted mt-4">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
                 <ShieldCheck className="size-4" />
-                Administrator Login
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="student" className="mt-4">
-              <form onSubmit={handleStudentLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="student-email">School email</Label>
-                  <Input
-                    id="student-email"
-                    type="email"
-                    required
-                    autoComplete="email"
-                    placeholder="you@school.edu"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="student-password">Password (optional)</Label>
-                  <Input
-                    id="student-password"
-                    type="password"
-                    autoComplete="current-password"
-                    placeholder="Leave blank to use a sign-in link"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={signIn.isPending}>
-                  {signIn.isPending ? <SkeletonSpinner /> : null}
-                  Continue
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="administrator" className="mt-4">
+                Administrator Login / Activation
+              </CardTitle>
+              <CardDescription>
+                Teachers and staff only. Administrator access is granted by your school via the
+                administrator allowlist -- entering an address here cannot grant it on its own.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
               <form onSubmit={handleAdminLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="admin-email">School email</Label>
@@ -192,28 +204,12 @@ function LoginPage() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={adminLogin.isPending}>
-                  {adminLogin.isPending ? <SkeletonSpinner /> : null}
+                  {adminLogin.isPending ? <Mail className="size-4" /> : null}
                   Send activation link
                 </Button>
-                <p className="text-xs text-muted-foreground">
-                  Teachers and staff only. Your school keeps the administrator allowlist -- entering
-                  an address here cannot grant administrator access on its own.
-                </p>
               </form>
-            </TabsContent>
-          </Tabs>
-
-          {message ? (
-            <p className="mt-4 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
-              {message}
-            </p>
-          ) : null}
-
-          {signIn.error || adminLogin.error ? (
-            <p className="mt-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {(signIn.error ?? adminLogin.error)?.message}
-            </p>
-          ) : null}
+            </CardContent>
+          </Card>
         </CardContent>
       </Card>
     </div>
