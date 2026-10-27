@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth/context";
-import { useUpdateProfile } from "@/lib/queries";
+import { useChangePassword, useUpdateProfile } from "@/lib/queries";
 import { GRADE_LABELS, PRESET_INTERESTS, WEEKLY_HOUR_OPTIONS } from "@/lib/domain";
 import type { GradeLevel } from "@/lib/types/database";
 
@@ -47,6 +47,7 @@ function SettingsContent() {
   const { profile, signOut, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const updateProfile = useUpdateProfile();
+  const changePassword = useChangePassword();
 
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
   const [grade, setGrade] = useState<GradeLevel | null>(profile?.grade ?? null);
@@ -56,6 +57,10 @@ function SettingsContent() {
     profile?.commitment_hours ?? null,
   );
   const [saved, setSaved] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const toggleInterest = (interest: string) => {
     setSaved(false);
@@ -76,6 +81,30 @@ function SettingsContent() {
     });
     await refreshProfile();
     setSaved(true);
+  };
+
+  const handlePasswordChange = async (event: FormEvent) => {
+    event.preventDefault();
+    setPasswordMessage(null);
+    setPasswordError(null);
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Passwords do not match.");
+      return;
+    }
+
+    try {
+      await changePassword.mutateAsync({ password: newPassword });
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordMessage("Password updated.");
+    } catch (error) {
+      setPasswordError(
+        error instanceof Error
+          ? error.message
+          : "We couldn't update your password. Please try again.",
+      );
+    }
   };
 
   return (
@@ -234,6 +263,68 @@ function SettingsContent() {
             {updateProfile.error ? (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {updateProfile.error.message}
+              </p>
+            ) : null}
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Any flow that sets a password goes through the leaked-password guard
+          before Supabase Auth stores it. */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Password</CardTitle>
+          <CardDescription>
+            Choose a password that has not appeared in a known data breach. If you normally sign in
+            with a one-time email link, setting a password is optional.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="settings-new-password">New password</Label>
+              <Input
+                id="settings-new-password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={newPassword}
+                onChange={(event) => {
+                  setPasswordMessage(null);
+                  setPasswordError(null);
+                  setNewPassword(event.target.value);
+                }}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="settings-confirm-password">Confirm new password</Label>
+              <Input
+                id="settings-confirm-password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={confirmPassword}
+                onChange={(event) => {
+                  setPasswordMessage(null);
+                  setPasswordError(null);
+                  setConfirmPassword(event.target.value);
+                }}
+              />
+            </div>
+
+            <Button type="submit" disabled={changePassword.isPending}>
+              {changePassword.isPending ? <SkeletonSpinner /> : null}
+              Update password
+            </Button>
+
+            {passwordMessage ? (
+              <p className="text-sm text-muted-foreground">{passwordMessage}</p>
+            ) : null}
+
+            {passwordError ? (
+              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {passwordError}
               </p>
             ) : null}
           </form>

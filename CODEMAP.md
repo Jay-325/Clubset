@@ -1,6 +1,6 @@
 # CODEMAP
 
-_Generated: 2026-10-26T00:00:00Z_
+_Generated: 2026-10-27T00:00:00Z_
 
 ## Tree
 
@@ -80,6 +80,12 @@ clubset/
 │   │   │       ├── list-my-clubs.ts
 │   │   │       └── list-upcoming-events.ts
 │   │   ├── queries.ts        # TanStack Query hooks (useClubSearch, useClub, useFinalizeAttendance, ...)
+│   │   ├── security/
+│   │   │   ├── passwords.test.ts
+│   │   │   ├── passwords.ts
+│   │   │   ├── pwned-passwords.functions.ts
+│   │   │   ├── pwned-passwords.server.ts
+│   │   │   └── pwned-passwords.test.ts
 │   │   ├── supabase/
 │   │   │   ├── client.ts            # isSupabaseConfigured, getSupabaseClient
 │   │   │   └── public-config.ts     # FALLBACK_SUPABASE_URL, FALLBACK_SUPABASE_PUBLISHABLE_KEY
@@ -266,15 +272,41 @@ _SSR error page renderer_
 - L1 `export function renderErrorPage()`
 
 ### src/lib/queries.ts
-_TanStack Query hooks (clubs, memberships, events, attendance, notifications, admin)_
+_TanStack Query hooks (auth, clubs, memberships, events, attendance, notifications, admin)_
 - L37 `export function useAdminLogin()`
 - L77 `export async function requestAdministratorActivation()`
 - L94 `export function useViewerId()`
+- L134 `export function useSignUp()`
+- L161 `export function useChangePassword()`
 - L236 `export function useClubSearch(filters)`
 - L256 `export function useClub(clubId)`
 - L610 `export function useFinalizeAttendance()`
 - L631 `export function useNotifications()`
 - L666 `export function useAdminClubOverview(enabled = true)`
+
+### src/lib/security/passwords.test.ts
+_Tests for password-guard messages and fail-closed handling_
+
+### src/lib/security/passwords.ts
+_Client-safe password guard + generic user-facing messages_
+- L7 `export const BREACHED_PASSWORD_MESSAGE`
+- L10 `export const PASSWORD_CHECK_UNAVAILABLE_MESSAGE`
+- L24 `export async function assertPasswordNotBreached(password)`
+
+### src/lib/security/pwned-passwords.functions.ts
+_Server function for the leaked-password check_
+- L15 `export const checkPasswordNotBreached`
+
+### src/lib/security/pwned-passwords.server.ts
+_Server-only SHA-1 hashing + HIBP Pwned Passwords range check_
+- L21 `export function sha1Hex(value)`
+- L26 `export function splitSha1(hash)`
+- L45 `export function parseHibpRange(body)`
+- L66 `export function rangeContainsSuffix(body, suffix)`
+- L83 `export async function checkPasswordAgainstHibp(password, options)`
+
+### src/lib/security/pwned-passwords.test.ts
+_Tests for HIBP hashing, range parsing, privacy, and fail-closed behavior_
 
 ### src/lib/supabase/client.ts
 _Supabase client factory + configured check_

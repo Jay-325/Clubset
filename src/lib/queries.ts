@@ -10,6 +10,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 
+import { assertPasswordNotBreached } from "@/lib/security/passwords";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type {
   AdminClubOverviewRow,
@@ -133,12 +134,37 @@ export function useSignIn() {
 export function useSignUp() {
   return useMutation({
     mutationFn: async (input: { email: string; password: string; fullName: string }) => {
+      // Signup is the first point a user chooses a password. The check must
+      // finish before Supabase Auth creates the account, so a breached
+      // password is never stored.
+      await assertPasswordNotBreached(input.password);
+
       const supabase = getSupabaseClient();
       const { error } = await supabase.auth.signUp({
         email: input.email.toLowerCase().trim(),
         password: input.password,
         options: { data: { full_name: input.fullName } },
       });
+      if (error) throw error;
+    },
+  });
+}
+
+/**
+ * Change the signed-in user's password.
+ *
+ * There is no password in the sign-in path to check: existing credentials are
+ * only verified there. Any flow that lets a user choose a new password --
+ * including a future recovery flow that establishes a session and calls
+ * updateUser -- must go through this guard first.
+ */
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: async (input: { password: string }) => {
+      await assertPasswordNotBreached(input.password);
+
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.updateUser({ password: input.password });
       if (error) throw error;
     },
   });
