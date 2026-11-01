@@ -50,8 +50,7 @@ clubset/
 │   │   ├── app-shell.tsx        # RequireAuth, AppShell, PageHeader
 │   │   └── ui/                  # 46 shadcn/ui primitives (accordion, alert, ... tooltip)
 │   ├── hooks/
-│   │   ├── use-mobile.tsx       # useIsMobile
-│   │   └── use-debounced-value.ts  # useDebouncedValue(value, delayMs)
+│   │   └── use-mobile.tsx       # useIsMobile
 │   ├── integrations/
 │   │   └── supabase/
 │   │       ├── auth-attacher.ts      # attachSupabaseAuth
@@ -201,10 +200,6 @@ Representative exports:
 _Mobile breakpoint detection_
 - L5 `export function useIsMobile()`
 
-### src/hooks/use-debounced-value.ts
-_Debounce a value over time_
-- L11 `export function useDebouncedValue<T>(value, delayMs = 300)`
-
 ### src/integrations/supabase/auth-attacher.ts
 _Supabase auth middleware (function client)_
 - L7 `export const attachSupabaseAuth`
@@ -254,6 +249,10 @@ _Club permission helpers_
 - L34 `export function isActiveMember(context)`
 - L42 `export function managementSections(...)`
 - L99 `export function quickActions(context)`
+
+### src/lib/auth/permissions.test.ts
+_Unit tests for the UI permission helpers (can, isLeader, isActiveMember, managementSections, quickActions)_
+- Pure functions, no database required
 
 ### src/lib/domain.ts
 _Club/event/attendance domain constants + table templates_
