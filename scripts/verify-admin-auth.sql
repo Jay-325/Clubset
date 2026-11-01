@@ -100,6 +100,54 @@ set role anon;
 select public.activate_administrator();
 -- expect: ERROR permission denied for function activate_administrator
 
+\echo ''
+\echo '=== TEST 8a (expect true): allowlisted address passes the pre-check ==='
+-- The /login Administrator tab calls this BEFORE requesting an activation
+-- email. Signed out (anon) must be able to call it.
+reset role;
+set role anon;
+select public.check_administrator_allowlist('  ArinjayPal@Gmail.com ') as allowlisted;
+-- expect: true (normalized: lower + btrim)
+
+\echo '=== TEST 8b (expect false): non-allowlisted address is refused ==='
+select public.check_administrator_allowlist('teacher@example.net') as allowlisted;
+-- expect: false -- and the client then sends NO email and creates NO auth user
+
+\echo '=== TEST 8c (expect false): junk / malformed input never matches ==='
+select public.check_administrator_allowlist(null) as null_input,
+       public.check_administrator_allowlist('') as empty_input,
+       public.check_administrator_allowlist('not-an-email') as no_at,
+       public.check_administrator_allowlist('@example.com') as empty_local,
+       public.check_administrator_allowlist('arinjaypal@gmail.com ') as trailing_space;
+-- expect: false | false | false | false | true (btrim normalizes the last one)
+
+\echo '=== TEST 8d (expect true): the pre-check is an anon-callable endpoint ==='
+reset role;
+select has_function_privilege('anon', 'public.check_administrator_allowlist(text)', 'execute') as anon_can_execute,
+       has_function_privilege('authenticated', 'public.check_administrator_allowlist(text)', 'execute') as authenticated_can_execute;
+-- expect: true | true
+
+\echo '=== TEST 8e (expect DENIED): admin_allowlist is closed to anon ==='
+-- 20261101182953 revoked every table privilege from anon, so the table is no
+-- longer reachable signed-out at all (401 from PostgREST). This is the one
+-- deliberate exception to the "anon must get 200 with zero rows" rule: no
+-- policy evaluates this table as the querying role, and every reader of it is
+-- SECURITY DEFINER.
+set role anon;
+select count(*) from public.admin_allowlist;
+-- expect: ERROR permission denied for table admin_allowlist (SQLSTATE 42501)
+
+\echo '=== TEST 8f (expect true | false): the RPC still works for anon ==='
+select public.check_administrator_allowlist('arinjaypal@gmail.com') as allowlisted,
+       public.check_administrator_allowlist('nobody@example.net')  as unknown;
+-- expect: true | false -- the gate still functions without the table grant
+
+\echo '=== TEST 8g (expect true | true): signed-in users keep the table grant ==='
+reset role;
+select has_table_privilege('authenticated', 'public.admin_allowlist', 'select') as auth_can_select,
+       has_table_privilege('anon', 'public.admin_allowlist', 'select') as anon_can_select;
+-- expect: true | false -- administrators still manage their school's allowlist
+
 \echo '=== FINAL STATE CHECK ==='
 reset role;
 select p.email, p.account_type

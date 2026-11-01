@@ -73,6 +73,64 @@ the real rule:
 (`manage_leadership` / club admin); the wider reviewer set is only reachable
 through the function.
 
+### 1.6 `check_administrator_allowlist()` is the one anon-callable endpoint
+
+`20261101182137_administrator_allowlist_precheck.sql` adds
+`public.check_administrator_allowlist(candidate_email text) -> boolean`, the
+read-only lookup behind the Administrator tab on `/login`.
+
+It is a deliberate, scoped exception to "no EXECUTE for `anon` on public
+functions": the caller is a signed-out visitor, and
+`public.admin_allowlist` has no client SELECT policy (staff PII must never reach
+a client), so the RPC is the only way the browser can answer "is this address
+registered?".
+
+Rules that follow, do not regress:
+
+* It returns **one boolean and nothing else** — never a name, school or
+  allowlist id. Keep it that way.
+* A revoked row and a never-allowlisted address must stay **indistinguishable**
+  (both `false`).
+* Malformed/oversized input must short-circuit **before** any table access.
+* It grants nothing. `activate_administrator()` remains the only authorization
+  step and re-derives the email from `auth.users`, never from the client. A
+  client that skips the pre-check can request an activation email, but
+  activation still fails with `42501`.
+* The pre-check must run **before** `signInWithOtp()` in `useAdminLogin()`.
+  Reordering them re-opens the bug this migration fixed: `shouldCreateUser:
+  true` would create an auth user — and, via `on_auth_user_created`, a profile
+  row — for an address that is not allowed to be an administrator.
+* **The verdict must never reach the UI.** `useAdminLogin()` resolves `void` for
+  both branches and `/login` shows the same "if that email is on the allowlist,
+  an activation link is on its way" message either way. An earlier revision
+  returned `"not_allowlisted"` and rendered "you do not have administrator
+  permission"; that made the login page an email-enumeration oracle and was
+  reverted.
+* Residual risk accepted: **the RPC itself is still an oracle.** A client can
+  `POST /rest/v1/rpc/check_administrator_allowlist` directly and read the
+  boolean, regardless of what the UI shows. The UI change removes the product
+  from the business of answering, not the API. If this needs to be closed
+  properly, rate limit the endpoint at the edge (or move the lookup behind a
+  server function that never returns the boolean), rather than removing the
+  grant the gate depends on.
+
+### 1.7 `admin_allowlist` carries no `anon` grant
+
+`20261101182953_lock_admin_allowlist_from_anon.sql` revokes all table privileges
+on `public.admin_allowlist` from `anon`. Signed-out clients now get `401` from
+`/rest/v1/admin_allowlist` instead of `200 []`.
+
+This is the **one** deliberate exception to the "an anon read must be `200` with
+zero rows, never `42501`" invariant. It is not the 20261003001241 defect: no
+policy evaluates `admin_allowlist` as the querying role, and the three functions
+that read it (`handle_new_auth_user`, `activate_administrator`,
+`check_administrator_allowlist`) are all `SECURITY DEFINER`, so they are
+unaffected by the missing grant.
+
+`authenticated` keeps its grant on purpose — school administrators manage their
+own school's allowlist through `admin_allowlist_admin_all`. For signed-in users,
+RLS remains the authority; the grant only removes the signed-out surface.
+
 ---
 
 ## 2. Dependency review — MCP transitive packages

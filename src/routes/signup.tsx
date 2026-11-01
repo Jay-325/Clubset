@@ -20,7 +20,7 @@ import { useSignUp } from "@/lib/queries";
  *
  * The administrator flow is deliberately NOT here: administrator access is
  * activation-only via the existing AdminUser allowlist and is reached from the
- * Administrator Login/Activation section on /login, never from this page.
+ * Administrator Login/Activation tab on /login, never from this page.
  */
 export const Route = createFileRoute("/signup")({
   component: SignupPage,
@@ -99,8 +99,15 @@ function SignupPage() {
         <CardHeader>
           <CardTitle className="text-2xl">Create Student Account</CardTitle>
           <CardDescription>
-            Join Clubset as a student. Administrator access is separate -- use the Administrator
-            Login/Activation link on the login page instead.
+            Join Clubset as a student. Administrator access is separate -- use the{" "}
+            <Link
+              to="/login"
+              search={{ tab: "admin" }}
+              className="font-medium underline underline-offset-4 hover:text-primary"
+            >
+              Administrator tab
+            </Link>{" "}
+            on the login page instead.
           </CardDescription>
         </CardHeader>
 
@@ -185,7 +192,16 @@ function SignupPage() {
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
         Creating an account as a student does not grant administrator access. Administrator accounts
-        are activation-only and require an address on your school's administrator allowlist.
+        are activation-only and require an address on your school's administrator allowlist -- see
+        the{" "}
+        <Link
+          to="/login"
+          search={{ tab: "admin" }}
+          className="font-medium underline underline-offset-4 hover:text-primary"
+        >
+          Administrator tab
+        </Link>{" "}
+        on the login page.
       </p>
     </div>
   );

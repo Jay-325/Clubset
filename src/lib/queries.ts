@@ -34,19 +34,52 @@ import type {
  * PRD 5: the Administrator Login path only ever *requests* a check. The
  * backend compares the email against the allowlist and emails an activation
  * link; the role is never granted by the client.
+ *
+ * The allowlist is consulted FIRST, before any email is sent:
+ *
+ *   check_administrator_allowlist(email)  -- read-only RPC, anon-callable
+ *     false -> return silently; no email, no auth user created
+ *     true  -> signInWithOtp(email)       -- the activation link
+ *
+ * The result is deliberately NOT reported to the caller: this hook resolves the
+ * same way whether the address is allowlisted or not, so the page cannot tell
+ * the two apart and the response stays anonymous (no email enumeration in the
+ * UI). Only genuine failures -- a network/RPC error, or GoTrue refusing the
+ * OTP -- reject.
+ *
+ * The pre-check is a UX gate only. `activate_administrator()` remains the sole
+ * authorization step and re-checks the allowlist against the caller's verified
+ * auth email, so nothing here can widen access.
  */
 export function useAdminLogin() {
   return useMutation({
-    mutationFn: async (email: string) => {
+    mutationFn: async (email: string): Promise<void> => {
       const supabase = getSupabaseClient();
-      // Sign in first so the caller has a session; activate_administrator() is
-      // then called from the authenticated state.
+      const normalized = email.toLowerCase().trim();
+
+      // 1. Ask the database. public.admin_allowlist has no client SELECT
+      //    policy, so this RPC is the only way the browser can learn the answer.
+      const { data: allowlisted, error: checkError } = await supabase.rpc(
+        "check_administrator_allowlist",
+        { candidate_email: normalized },
+      );
+      if (checkError) throw checkError;
+
+      // 2. Not on the allowlist: stop here, and stop *silently*. Deliberately
+      //    no signInWithOtp() call -- otherwise shouldCreateUser would create an
+      //    account (and a profile row) for an address that may not be an
+      //    administrator. Deliberately no distinguishable return value either:
+      //    the caller must not be able to tell this branch from the success
+      //    branch.
+      if (!allowlisted) return;
+
+      // 3. Allowlisted: request the activation link. shouldCreateUser stays
+      //    true because an allowlisted teacher may not have an account yet.
       const { error } = await supabase.auth.signInWithOtp({
-        email: email.toLowerCase().trim(),
+        email: normalized,
         options: { shouldCreateUser: true },
       });
       if (error) throw error;
-      return { email: email.toLowerCase().trim() };
     },
   });
 }

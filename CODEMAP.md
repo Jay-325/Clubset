@@ -1,6 +1,6 @@
 # CODEMAP
 
-_Generated: 2026-10-27T00:00:00Z_
+_Generated: 2026-11-01T00:00:00Z_
 
 ## Tree
 
@@ -171,7 +171,9 @@ clubset/
 │       ├── 20261026000100_fix_club_read_access.sql      # can_read_club narrowing, can_discover_club
 │       ├── 20261026000200_fix_membership_attendance_audit.sql  # membership guard, attendance, audit
 │       ├── 20261026000300_fix_leadership_forms_data.sql  # review_application, apply_for_role, forms
-│       └── 20261026000400_rls_and_index_performance.sql   # 30 policy rewrites, 30 FK indexes, pg_trgm
+│       ├── 20261026000400_rls_and_index_performance.sql   # 30 policy rewrites, 30 FK indexes, pg_trgm
+│       ├── 20261101182137_administrator_allowlist_precheck.sql  # anon-callable allowlist lookup RPC
+│       └── 20261101182953_lock_admin_allowlist_from_anon.sql    # revoke anon's admin_allowlist grants
 ├── tsconfig.json
 ├── vite.config.ts
 ├── vitest.config.ts
@@ -274,16 +276,17 @@ _SSR error page renderer_
 
 ### src/lib/queries.ts
 _TanStack Query hooks (auth, clubs, memberships, events, attendance, notifications, admin)_
-- L37 `export function useAdminLogin()`
-- L77 `export async function requestAdministratorActivation()`
-- L94 `export function useViewerId()`
-- L134 `export function useSignUp()`
-- L161 `export function useChangePassword()`
-- L236 `export function useClubSearch(filters)`
-- L256 `export function useClub(clubId)`
-- L610 `export function useFinalizeAttendance()`
-- L631 `export function useNotifications()`
-- L666 `export function useAdminClubOverview(enabled = true)`
+- L54 `export function useAdminLogin()` — allowlist pre-check then activation link; resolves `void`, never the verdict
+- L111 `export async function requestAdministratorActivation()`
+- L128 `export function useViewerId()`
+- L140 `export function useSignIn()`
+- L167 `export function useSignUp()`
+- L202 `export function useChangePassword()`
+- L234 `export function useMemberSearch(clubId, term)`
+- L303 `export function useClubSearch(filters)`
+- L677 `export function useFinalizeAttendance()`
+- L698 `export function useNotifications()`
+- L733 `export function useAdminClubOverview(enabled = true)`
 
 ### src/lib/security/passwords.test.ts
 _Tests for password-guard messages and fail-closed handling_
@@ -358,6 +361,7 @@ _Root route_
 ### src/routes/*.tsx
 _File-based TanStack Router routes (admin, calendar, clubs/*, index, login, mcp, my-clubs, notifications, onboarding, settings)_
 Each exports `export const Route = createFileRoute("...")({...})`.
+`login.tsx` is the tabbed Student/Administrator auth screen; `?tab=admin` deep-links to the administrator tab, and the admin form calls `check_administrator_allowlist()` before requesting an activation email.
 
 ### supabase/migrations/20261026000100_fix_club_read_access.sql
 _Club discovery vs private reads split (can_read_club, can_discover_club)_
@@ -367,6 +371,12 @@ _Membership self-update guard, attendance_corrections insert, private.record_aud
 _Leadership application/update policies, draft-only insert, form_responses update self, apply_table_template fix_
 ### supabase/migrations/20261026000400_rls_and_index_performance.sql
 _30 (select auth.uid()) policy rewrites, 30 FK indexes, pg_trgm + 3 trigram indexes, search_clubs @> rewrite_
+
+### supabase/migrations/20261101182137_administrator_allowlist_precheck.sql
+_`check_administrator_allowlist(text) -> boolean`: read-only, anon-callable allowlist lookup for the Administrator login tab_
+
+### supabase/migrations/20261101182953_lock_admin_allowlist_from_anon.sql
+_Revokes all table privileges on `admin_allowlist` from `anon`; signed-out reads get 401/42501, signed-in admins keep RLS-governed access_
 
 ### wrangler.jsonc
 _Public Cloudflare Worker runtime vars (VITE_SUPABASE_ANON_KEY, VITE_SUPABASE_URL, VITE_TURNSTILE_SITE_KEY)_

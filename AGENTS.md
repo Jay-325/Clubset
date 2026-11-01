@@ -100,6 +100,49 @@ Rules that follow:
 - `has_club_permission` takes `(uuid, public.club_permission)` — the enum, not
   `text`. A grant naming the wrong signature silently does nothing.
 
+### The one sanctioned `anon` endpoint: the allowlist pre-check
+
+`check_administrator_allowlist(text)` (`20261101182137`) is granted to `anon`
+on purpose. The Administrator tab on `/login` is used by signed-out visitors and
+`public.admin_allowlist` has no client SELECT policy, so an RPC is the only way
+to answer "is this address registered?" without exposing staff PII.
+
+Constraints that make it safe, do not relax them:
+
+- returns **one boolean**, no name/school/id;
+- revoked and never-allowlisted addresses answer identically (`false`);
+- malformed/oversized input returns `false` before touching the table;
+- it grants nothing — `activate_administrator()` still re-checks the caller's
+  `auth.users` email;
+- it must be called **before** `signInWithOtp()` in `useAdminLogin()`, otherwise
+  `shouldCreateUser: true` creates an account for a non-allowlisted address;
+- **`useAdminLogin()` must not report the verdict to the page.** It resolves
+  identically for allowlisted and non-allowlisted addresses, and `login.tsx`
+  shows one message either way ("If that email is on your school's
+  administrator allowlist, an activation link is on its way"). Returning
+  `"not_allowlisted"`, or any "you do not have admin permission" copy, turns the
+  page into an email-enumeration oracle. The RPC is still directly callable by
+  an API client — that residual risk is accepted and rate-limiting it at the
+  edge is the mitigation — but the product must not hand the answer out itself.
+
+It is not a policy predicate and must never be used inside one. Every other new
+function still fails closed: `revoke ... from public` then explicit grants.
+
+### `admin_allowlist` is the one table with no `anon` grant
+
+`20261101182953` runs `revoke all on table public.admin_allowlist from anon`.
+Signed-out clients get `401`/`42501` from `/rest/v1/admin_allowlist`, not
+`200 []`. This is the single deliberate exception to the "a signed-out read must
+return `200` with zero rows, not `42501`" rule above: no policy anywhere
+evaluates `admin_allowlist` as the querying role, and every function that reads
+it (`handle_new_auth_user`, `activate_administrator`,
+`check_administrator_allowlist`) is `SECURITY DEFINER`, so it keeps working
+without a grant for `anon`.
+
+Do **not** revoke the grant from `authenticated`: school administrators manage
+their own school's allowlist through `admin_allowlist_admin_all`, and RLS — not
+the grant — is the authority for signed-in users.
+
 ## 3. Database rules
 
 - **Migrations only.** Never run DDL against the live project by hand, and never

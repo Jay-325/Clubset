@@ -725,6 +725,10 @@ export type Database = {
       can_read_club: { Args: { target_club: string }; Returns: boolean };
       student_verification_count: { Args: { target_club: string }; Returns: number };
       activate_administrator: { Args: Record<string, never>; Returns: ProfileRow };
+      check_administrator_allowlist: {
+        Args: { candidate_email: string };
+        Returns: boolean;
+      };
       create_club: {
         Args: {
           club_name: string;
