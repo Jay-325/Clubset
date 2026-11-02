@@ -29,8 +29,6 @@ clubset/
 ├── .prettierignore
 ├── .prettierrc
 ├── AGENTS.md
-├── bun.lock
-├── bunfig.toml
 ├── CODEMAP.md
 ├── components.json
 ├── eslint.config.js
