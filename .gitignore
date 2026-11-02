@@ -25,6 +25,11 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Supabase CLI local runtime state (machine-local, created by `supabase start` /
+# `supabase db reset`); never commit container/branch/temp artifacts.
+supabase/.branches/
+supabase/.temp/
+
 # Local agent tooling config. opencode.json points this workspace at a remote
 # MCP endpoint for the linked Supabase project and is machine/agent-local; it
 # must never travel with the repository (Lovable syncs the branch).

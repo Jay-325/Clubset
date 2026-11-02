@@ -230,25 +230,6 @@ export function useUpdateProfile() {
   });
 }
 
-/** Users whose name contains the term (PRD 26: use profiles as the member picker). */
-export function useMemberSearch(clubId: string | null, term: string) {
-  return useQuery({
-    queryKey: ["club", clubId, "member-search", term],
-    queryFn: async (): Promise<ProfileRow[]> => {
-      if (!clubId || term.trim().length < 2) return [];
-      const supabase = getSupabaseClient();
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .ilike("full_name", `%${term.trim()}%`)
-        .limit(8);
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: Boolean(clubId) && term.trim().length >= 2,
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Discovery (PRD 20/21)
 // ---------------------------------------------------------------------------
@@ -317,19 +298,6 @@ export function useRecommendedClubs() {
     // The recommendation list is the same discovery result, ranked by match
     // reason. Selecting here keeps the shared cache entry untouched.
     select: selectRecommended,
-  });
-}
-
-export function useClub(clubId: string) {
-  return useQuery({
-    queryKey: ["club", clubId],
-    queryFn: async (): Promise<ClubRow> => {
-      const supabase = getSupabaseClient();
-      const { data, error } = await supabase.from("clubs").select("*").eq("id", clubId).single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: Boolean(clubId),
   });
 }
 

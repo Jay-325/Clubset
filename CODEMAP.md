@@ -78,7 +78,7 @@ clubset/
 │   │   │       ├── list-announcements.ts
 │   │   │       ├── list-my-clubs.ts
 │   │   │       └── list-upcoming-events.ts
-│   │   ├── queries.ts        # TanStack Query hooks (useClubSearch, useClub, useFinalizeAttendance, ...)
+│   │   ├── queries.ts        # TanStack Query hooks (useClubSearch, useFinalizeAttendance, ...)
 │   │   ├── security/
 │   │   │   ├── passwords.test.ts
 │   │   │   ├── passwords.ts
@@ -281,7 +281,6 @@ _TanStack Query hooks (auth, clubs, memberships, events, attendance, notificatio
 - L140 `export function useSignIn()`
 - L167 `export function useSignUp()`
 - L202 `export function useChangePassword()`
-- L234 `export function useMemberSearch(clubId, term)`
 - L303 `export function useClubSearch(filters)`
 - L677 `export function useFinalizeAttendance()`
 - L698 `export function useNotifications()`
