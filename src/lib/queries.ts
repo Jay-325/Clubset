@@ -26,6 +26,17 @@ import type {
   UpcomingEventResult,
 } from "@/lib/types/database";
 
+/**
+ * Normalize an email address the same way the server does:
+ * PostgreSQL `lower(btrim(email))` in `check_administrator_allowlist()`
+ * and `handle_new_auth_user()`. The database re-normalizes independently,
+ * so client normalization is a UX/performance optimization, not a security
+ * boundary. Authorization remains solely in `activate_administrator()`.
+ */
+export function normalizeEmail(email: string): string {
+  return email.toLowerCase().trim();
+}
+
 // ---------------------------------------------------------------------------
 // Session
 // ---------------------------------------------------------------------------
@@ -55,7 +66,7 @@ export function useAdminLogin() {
   return useMutation({
     mutationFn: async (email: string): Promise<void> => {
       const supabase = getSupabaseClient();
-      const normalized = email.toLowerCase().trim();
+      const normalized = normalizeEmail(email);
 
       // 1. Ask the database. public.admin_allowlist has no client SELECT
       //    policy, so this RPC is the only way the browser can learn the answer.
@@ -144,13 +155,13 @@ export function useSignIn() {
       const supabase = getSupabaseClient();
       if (input.password) {
         const { error } = await supabase.auth.signInWithPassword({
-          email: input.email.toLowerCase().trim(),
+          email: normalizeEmail(input.email),
           password: input.password,
         });
         if (error) throw error;
       } else {
         const { error } = await supabase.auth.signInWithOtp({
-          email: input.email.toLowerCase().trim(),
+          email: normalizeEmail(input.email),
           options: { shouldCreateUser: true },
         });
         if (error) throw error;
@@ -176,7 +187,7 @@ export function useSignUp() {
       const supabase = getSupabaseClient();
       const signUpOptions = input.fullName ? { data: { full_name: input.fullName } } : {};
       const { data, error } = await supabase.auth.signUp({
-        email: input.email.toLowerCase().trim(),
+        email: normalizeEmail(input.email),
         password: input.password,
         ...(Object.keys(signUpOptions).length ? { options: signUpOptions } : {}),
       });
