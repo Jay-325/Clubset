@@ -319,7 +319,7 @@ export function useMyClubs() {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from("memberships")
-        .select("*, clubs(*)")
+        .select("*, clubs(id, name, description, type, meeting_day, meeting_time, room, commitment)")
         .eq("status", "active");
       if (error) throw error;
 
@@ -476,7 +476,7 @@ export function useJoinRequests(clubId: string) {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from("memberships")
-        .select("*, profiles(id, full_name, grade, avatar_url, email)")
+        .select("*, profiles(id, full_name, grade, avatar_url)")
         .eq("club_id", clubId)
         .eq("status", "pending");
       if (error) throw error;
@@ -497,7 +497,7 @@ export function useClubMembers(clubId: string) {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from("memberships")
-        .select("*, profiles(id, full_name, grade, avatar_url, email)")
+        .select("*, profiles(id, full_name, grade, avatar_url)")
         .eq("club_id", clubId)
         .eq("status", "active")
         .order("joined_at", { ascending: true });

@@ -128,20 +128,30 @@ Constraints that make it safe, do not relax them:
 It is not a policy predicate and must never be used inside one. Every other new
 function still fails closed: `revoke ... from public` then explicit grants.
 
-### `admin_allowlist` is the one table with no `anon` grant
+### `admin_allowlist` is client-inaccessible and developer-managed
 
 `20261101182953` runs `revoke all on table public.admin_allowlist from anon`.
-Signed-out clients get `401`/`42501` from `/rest/v1/admin_allowlist`, not
-`200 []`. This is the single deliberate exception to the "a signed-out read must
-return `200` with zero rows, not `42501`" rule above: no policy anywhere
-evaluates `admin_allowlist` as the querying role, and every function that reads
-it (`handle_new_auth_user`, `activate_administrator`,
-`check_administrator_allowlist`) is `SECURITY DEFINER`, so it keeps working
-without a grant for `anon`.
+`20261103000000` extends that to `authenticated` and drops
+`admin_allowlist_admin_all`. Signed-out **and** signed-in clients therefore get
+`401`/`42501` from `/rest/v1/admin_allowlist`, not `200 []`. This is the single
+deliberate exception to the "a signed-out read must return `200` with zero rows,
+not `42501`" rule above: no policy anywhere evaluates `admin_allowlist` as the
+querying role, and every function that reads it (`handle_new_auth_user`,
+`activate_administrator`, `check_administrator_allowlist`) is `SECURITY
+DEFINER`, so it keeps working without a client grant.
 
-Do **not** revoke the grant from `authenticated`: school administrators manage
-their own school's allowlist through `admin_allowlist_admin_all`, and RLS — not
-the grant — is the authority for signed-in users.
+The allowlist is deliberately **developer-only**: adding, changing or revoking an
+entry requires direct database access (the dashboard, `postgres`, or the
+server-only `service_role`). No application user -- not even an activated school
+administrator -- may write it. That is the whole point: an administrator must
+not be able to mint another administrator. Do not re-add
+`admin_allowlist_admin_all`, and do not grant the table to `authenticated`.
+
+Administrator *activation* is still the only path to `account_type =
+'administrator'`, and it is still allowlist-authoritative
+(`activate_administrator()`). Student sign-up is unrelated and email-domain
+agnostic: `handle_new_auth_user()` links every new auth user to the deployment's
+school, so any verified address gets a working student account.
 
 ## 3. Database rules
 

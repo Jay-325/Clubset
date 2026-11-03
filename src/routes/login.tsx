@@ -91,7 +91,7 @@ function LoginPage() {
     if (!studentPassword) {
       // Passwordless: sends a magic link (PRD 4, email-based authentication).
       await signIn.mutateAsync({ email: studentEmail });
-      setStudentMessage("Check your school email for a sign-in link.");
+      setStudentMessage("Check your email for a sign-in link.");
       return;
     }
 
@@ -178,13 +178,13 @@ function LoginPage() {
             <TabsContent value="student" className="space-y-6">
               <form onSubmit={handleStudentLogin} className="space-y-4 pt-2">
                 <div className="space-y-2">
-                  <Label htmlFor="student-email">School email</Label>
+                  <Label htmlFor="student-email">Email</Label>
                   <Input
                     id="student-email"
                     type="email"
                     required
                     autoComplete="email"
-                    placeholder="you@school.edu"
+                    placeholder="you@example.com"
                     value={studentEmail}
                     onChange={(event) => setStudentEmail(event.target.value)}
                   />
@@ -251,13 +251,13 @@ function LoginPage() {
 
               <form onSubmit={handleAdminLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="admin-email">School email</Label>
+                  <Label htmlFor="admin-email">Email</Label>
                   <Input
                     id="admin-email"
                     type="email"
                     required
                     autoComplete="email"
-                    placeholder="teacher@school.edu"
+                    placeholder="you@example.com"
                     value={adminEmail}
                     onChange={(event) => setAdminEmail(event.target.value)}
                   />

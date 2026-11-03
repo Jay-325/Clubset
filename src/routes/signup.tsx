@@ -12,7 +12,7 @@ import { useSignUp } from "@/lib/queries";
 /**
  * Student account creation (PRD 4).
  *
- *   Enter school email + password
+ *   Enter email + password
  *   -> create/activate student account (HIBP-checked password)
  *   -> email verification, if the Auth project requires it
  *   -> student profile setup/onboarding (/onboarding)
@@ -48,7 +48,7 @@ function SignupPage() {
     setMessage(null);
 
     if (!email || !password) {
-      setMessage("Please enter your school email and a password.");
+      setMessage("Please enter your email and a password.");
       return;
     }
 
@@ -115,13 +115,13 @@ function SignupPage() {
           {step === "account" ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="signup-email">School email</Label>
+                <Label htmlFor="signup-email">Email</Label>
                 <Input
                   id="signup-email"
                   type="email"
                   required
                   autoComplete="email"
-                  placeholder="you@school.edu"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                 />
@@ -153,8 +153,8 @@ function SignupPage() {
               <CardHeader>
                 <CardTitle>Check your email</CardTitle>
                 <CardDescription>
-                  We sent a verification link to your school email. Open it to verify your address,
-                  then sign in to finish setting up your profile.
+                  We sent a verification link to your email. Open it to verify your address, then
+                  sign in to finish setting up your profile.
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-center">

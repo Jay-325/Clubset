@@ -114,10 +114,12 @@ Rules that follow, do not regress:
   server function that never returns the boolean), rather than removing the
   grant the gate depends on.
 
-### 1.7 `admin_allowlist` carries no `anon` grant
+### 1.7 `admin_allowlist` is client-inaccessible and developer-managed
 
-`20261101182953_lock_admin_allowlist_from_anon.sql` revokes all table privileges
-on `public.admin_allowlist` from `anon`. Signed-out clients now get `401` from
+`20261101182953_lock_admin_allowlist_from_anon.sql` revoked all table privileges
+on `public.admin_allowlist` from `anon`. `20261103000000_open_student_signup_and_lock_allowlist.sql`
+extends this to `authenticated` and drops the `admin_allowlist_admin_all`
+policy. Signed-out **and** signed-in clients now get `401`/`42501` from
 `/rest/v1/admin_allowlist` instead of `200 []`.
 
 This is the **one** deliberate exception to the "an anon read must be `200` with
@@ -125,11 +127,21 @@ zero rows, never `42501`" invariant. It is not the 20261003001241 defect: no
 policy evaluates `admin_allowlist` as the querying role, and the three functions
 that read it (`handle_new_auth_user`, `activate_administrator`,
 `check_administrator_allowlist`) are all `SECURITY DEFINER`, so they are
-unaffected by the missing grant.
+unaffected by the missing grants.
 
-`authenticated` keeps its grant on purpose — school administrators manage their
-own school's allowlist through `admin_allowlist_admin_all`. For signed-in users,
-RLS remains the authority; the grant only removes the signed-out surface.
+The allowlist is deliberately **developer-only**. There is no application
+allowlist-management screen, and an activated school administrator must not be
+able to mint another administrator by writing an allowlist row. Adding,
+changing or revoking an entry requires direct database access (dashboard,
+`postgres`) or the server-only `service_role` credential, which is never shipped
+to the browser. Do not re-add `admin_allowlist_admin_all`, and do not grant the
+table to `authenticated`.
+
+Student sign-up is separate and email-domain agnostic:
+`handle_new_auth_user()` links every new auth user to the deployment's school
+(allowlist row, then `schools.email_domain`, then the oldest school), so any
+verified address gets a working student account. Administrator status still
+comes only from `activate_administrator()`.
 
 ---
 

@@ -1,6 +1,6 @@
 # CODEMAP
 
-_Generated: 2026-11-01T00:00:00Z_
+_Generated: 2026-11-03T00:00:00Z_
 
 ## Tree
 
@@ -170,7 +170,8 @@ clubset/
 │       ├── 20261026000300_fix_leadership_forms_data.sql  # review_application, apply_for_role, forms
 │       ├── 20261026000400_rls_and_index_performance.sql   # 30 policy rewrites, 30 FK indexes, pg_trgm
 │       ├── 20261101182137_administrator_allowlist_precheck.sql  # anon-callable allowlist lookup RPC
-│       └── 20261101182953_lock_admin_allowlist_from_anon.sql    # revoke anon's admin_allowlist grants
+│       ├── 20261101182953_lock_admin_allowlist_from_anon.sql    # revoke anon's admin_allowlist grants
+│       └── 20261103000000_open_student_signup_and_lock_allowlist.sql  # domain-agnostic student signup; developer-only allowlist
 ├── tsconfig.json
 ├── vite.config.ts
 ├── vitest.config.ts
@@ -372,7 +373,10 @@ _30 (select auth.uid()) policy rewrites, 30 FK indexes, pg_trgm + 3 trigram inde
 _`check_administrator_allowlist(text) -> boolean`: read-only, anon-callable allowlist lookup for the Administrator login tab_
 
 ### supabase/migrations/20261101182953_lock_admin_allowlist_from_anon.sql
-_Revokes all table privileges on `admin_allowlist` from `anon`; signed-out reads get 401/42501, signed-in admins keep RLS-governed access_
+_Revokes all table privileges on `admin_allowlist` from `anon`; signed-out reads get 401/42501 (the signed-in surface is closed by 20261103000000)_
+
+### supabase/migrations/20261103000000_open_student_signup_and_lock_allowlist.sql
+_Domain-agnostic student sign-up: `handle_new_auth_user()` links every new auth user to the deployment's school; drops `admin_allowlist_admin_all` and revokes all `admin_allowlist` privileges from `anon`/`authenticated` so only developers (`postgres`/`service_role`) can manage administrator authorization_
 
 ### wrangler.jsonc
 _Public Cloudflare Worker runtime vars (VITE_SUPABASE_ANON_KEY, VITE_SUPABASE_URL, VITE_TURNSTILE_SITE_KEY)_

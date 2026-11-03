@@ -125,7 +125,7 @@ function SettingsContent() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="settings-email">School email</Label>
+              <Label htmlFor="settings-email">Email</Label>
               {/* PRD 5: the email is the identity the backend checks, so it is
                   shown but never editable here. */}
               <Input id="settings-email" value={profile?.email ?? ""} readOnly disabled />

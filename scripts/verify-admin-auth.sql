@@ -39,7 +39,9 @@ where table_schema = 'public' and udt_name = 'rsvp_status';
 select s.slug, al.email, al.revoked_at
 from public.admin_allowlist al join public.schools s on s.id = al.school_id
 order by al.created_at;
--- expect: fairfield / arinjaypal@gmail.com / null (revoked_at is NULL)
+-- expect exactly TWO rows, both revoked_at NULL:
+--   fairfield / arinjaypal@gmail.com / null
+--   fairfield / ray.d.villaflor@gmail.com / null
 
 \echo '=== V4: create throwaway auth users (fires on_auth_user_created -> profile) ==='
 insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
@@ -52,6 +54,13 @@ on conflict (id) do nothing;
 
 select email, account_type from public.profiles order by email;
 -- expect: all four provisioned with account_type = 'student'
+
+select p.email, s.slug as school_slug
+from public.profiles p left join public.schools s on s.id = p.school_id
+order by p.email;
+-- expect: ALL FOUR rows link to the Fairfield school, including
+-- teacher@example.net, student@example.org and random@example.com.
+-- Student sign-up is domain-agnostic (20261103000000).
 
 \echo ''
 \echo '=== TEST 1 (expect SUCCESS): arinjaypal@gmail.com activates ==='
@@ -77,8 +86,10 @@ select public.activate_administrator();
 
 \echo '=== TEST 5: no other allowlisted admins were invented ==='
 reset role;
-select al.email from public.admin_allowlist al where al.revoked_at is null;
--- expect: only arinjaypal@gmail.com (local seed state)
+select al.email from public.admin_allowlist al where al.revoked_at is null order by al.email;
+-- expect exactly the two seeded entries:
+--   arinjaypal@gmail.com
+--   ray.d.villaflor@gmail.com
 
 \echo '=== TEST 6 (expect FAIL): normal user cannot modify ANOTHER user ==='
 set role authenticated;
@@ -142,11 +153,29 @@ select public.check_administrator_allowlist('arinjaypal@gmail.com') as allowlist
        public.check_administrator_allowlist('nobody@example.net')  as unknown;
 -- expect: true | false -- the gate still functions without the table grant
 
-\echo '=== TEST 8g (expect true | true): signed-in users keep the table grant ==='
+\echo '=== TEST 8g (expect false | false): no client table privileges ==='
 reset role;
 select has_table_privilege('authenticated', 'public.admin_allowlist', 'select') as auth_can_select,
+       has_table_privilege('authenticated', 'public.admin_allowlist', 'insert') as auth_can_insert,
+       has_table_privilege('authenticated', 'public.admin_allowlist', 'update') as auth_can_update,
+       has_table_privilege('authenticated', 'public.admin_allowlist', 'delete') as auth_can_delete,
        has_table_privilege('anon', 'public.admin_allowlist', 'select') as anon_can_select;
--- expect: true | false -- administrators still manage their school's allowlist
+-- expect: false | false | false | false | false
+-- The allowlist is developer-managed only (20261103000000).
+
+\echo '=== TEST 8h (expect true | true): service_role keeps developer DML ==='
+select has_table_privilege('service_role', 'public.admin_allowlist', 'select') as svc_can_select,
+       has_table_privilege('service_role', 'public.admin_allowlist', 'insert') as svc_can_insert;
+-- expect: true | true -- server-only credential, never shipped to the browser
+
+\echo '=== TEST 8i (expect DENIED): an admin cannot write the allowlist ==='
+-- An already-activated administrator (arinjaypal) must not be able to mint
+-- another administrator by writing the allowlist through the Data API.
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', false);
+insert into public.admin_allowlist (school_id, email, full_name)
+select id, 'attacker@example.net', 'Attacker' from public.schools limit 1;
+-- expect: ERROR permission denied for table admin_allowlist (SQLSTATE 42501)
 
 \echo '=== FINAL STATE CHECK ==='
 reset role;

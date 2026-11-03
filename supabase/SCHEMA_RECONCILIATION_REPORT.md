@@ -265,6 +265,13 @@ notifications in live.
 cannot complete school-scoped onboarding. Needs a safe, domain→school assignment
 path (no Ridgeway hardcoding).
 
+> **Resolved in `20261103000000_open_student_signup_and_lock_allowlist.sql`:**
+> `handle_new_auth_user()` now resolves a school by an active allowlist row, then
+> a matching `schools.email_domain`, then the deployment's oldest school. Any
+> email domain therefore produces a working student account, and
+> `account_type` remains the column default `'student'`. Administrator status is
+> still allowlist-only.
+
 ### 6.15 P2 — RLS init-plan / perf advisories
 `profiles_update_self_safe` uses correlated `select ... from public.profiles`
 subqueries in its `with check`; flagged class of "auth RLS initialization plan"
