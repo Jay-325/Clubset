@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EVENT_KIND_LABELS, EVENT_PRIORITY_LABELS } from "@/lib/domain";
 import { useClubContext } from "@/lib/hooks/use-club";
-import { useClubEvents } from "@/lib/queries";
+import { useClubUpcomingEvents } from "@/lib/queries";
 import type { EventRow as ClubEventRow } from "@/lib/types/database";
 
 /**
@@ -35,15 +35,9 @@ function CalendarPage() {
 function CalendarContent() {
   const { clubId } = useParams({ from: "/clubs/$clubId/calendar" });
   const context = useClubContext(clubId);
-  const events = useClubEvents(clubId);
+  const upcomingEvents = useClubUpcomingEvents(clubId);
 
-  const upcoming = useMemo(
-    () =>
-      (events.data ?? [])
-        .filter((event) => new Date(event.starts_at).getTime() >= Date.now())
-        .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()),
-    [events.data],
-  );
+  const upcoming = upcomingEvents.data ?? [];
 
   // PRD 15: two half-open intervals overlap when each starts before the other
   // ends. The badge lands on the later-indexed event of the pair so a clash is
@@ -83,7 +77,7 @@ function CalendarContent() {
         description="Everything this club has planned, day by day."
       />
 
-      {events.isLoading ? (
+      {upcomingEvents.isLoading ? (
         <div className="space-y-3">
           <Skeleton className="h-24 w-full" />
           <Skeleton className="h-24 w-full" />

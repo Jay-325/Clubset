@@ -563,6 +563,34 @@ export function useClubEvents(clubId: string) {
   });
 }
 
+/**
+ * PRD 13: the club calendar only needs upcoming events. Fetching every
+ * historical event and filtering them in React wastes network transfer and
+ * client compute on every page load.
+ *
+ * This hook performs the upcoming-event filter in Postgres using the existing
+ * `events_club_time_idx (club_id, starts_at)` index, so only rows the calendar
+ * actually displays are transferred. `useClubEvents()` is left untouched so the
+ * events page retains its full historical behaviour.
+ */
+export function useClubUpcomingEvents(clubId: string) {
+  return useQuery({
+    queryKey: ["club", clubId, "events", "upcoming"],
+    queryFn: async () => {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from("events")
+        .select("*")
+        .eq("club_id", clubId)
+        .gte("starts_at", new Date().toISOString())
+        .order("starts_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: Boolean(clubId),
+  });
+}
+
 export function useCreateEvent() {
   const queryClient = useQueryClient();
   return useMutation({
