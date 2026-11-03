@@ -690,6 +690,31 @@ export function useNotifications() {
   });
 }
 
+/**
+ * PRD 36: AppShell only needs the unread count for its header badge, not the
+ * full notification records. This count-only query fetches no rows --
+ * PostgREST returns just the count via a HEAD request -- and the existing
+ * partial index `notifications_user_unread_idx (user_id, created_at desc)
+ * where read_at is null` serves it efficiently.
+ *
+ * RLS (`notifications_select_own: user_id = auth.uid()`) scopes results to the
+ * authenticated user, so no client-side user filtering is needed.
+ */
+export function useUnreadNotificationCount() {
+  return useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: async (): Promise<number> => {
+      const supabase = getSupabaseClient();
+      const { count, error } = await supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .is("read_at", null);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+}
+
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -701,7 +726,14 @@ export function useMarkNotificationRead() {
         .eq("id", notificationId);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+    onSuccess: () => {
+      // `["notifications"]` is a key prefix of `["notifications",
+      // "unread-count"]`, so invalidating it already refreshes the count.
+      // Invalidate both explicitly so the badge and the full list stay in
+      // sync even if the key structure changes later.
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+    },
   });
 }
 

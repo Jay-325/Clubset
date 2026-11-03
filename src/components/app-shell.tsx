@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/context";
-import { useNotifications } from "@/lib/queries";
+import { useUnreadNotificationCount } from "@/lib/queries";
 
 /**
  * PRD 39: four primary tabs -- Main, My Clubs, Calendar, Settings.
@@ -63,10 +63,8 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { profile, signOut } = useAuth();
-  const { data: notifications = [] } = useNotifications();
+  const { data: unreadCount = 0 } = useUnreadNotificationCount();
   const router = useRouter();
-
-  const unreadCount = notifications.filter((n) => !n.read_at).length;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
