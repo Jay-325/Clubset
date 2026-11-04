@@ -142,3 +142,182 @@
     color: var(--color-foreground);
   }
 }
+
+/* ===================== Otter Mascot ===================== */
+.otter-buddy {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 50;
+  width: 170px;
+  height: 170px;
+  cursor: pointer;
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.14));
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.otter-buddy:hover {
+  transform: scale(1.08);
+}
+
+.otter-view {
+  width: 100%;
+  height: 100%;
+  border-radius: 1rem;
+  background-color: #fff5ea;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Sprite sheet: 3 columns x 2 rows. Replace the URL with your image file. */
+.otter-view {
+  background-image: url("/assets/otter-sheet.png");
+  background-size: 300% 200%;
+  background-repeat: no-repeat;
+}
+
+/* Pose positions for 2x3 grid */
+.pose-idle {
+  background-position: 0% 0%;
+} /* Waving hello */
+.pose-swimming {
+  background-position: 50% 0%;
+} /* Swimming */
+.pose-eating {
+  background-position: 100% 0%;
+} /* Eating golden fish */
+.pose-sleeping {
+  background-position: 0% 100%;
+} /* Sleeping on pillow */
+.pose-sleep-towel {
+  background-position: 50% 100%;
+} /* Sleeping on towel */
+.pose-working {
+  background-position: 100% 100%;
+} /* Studying w/ glasses */
+
+/* Gentle idle bob */
+.anim-idle {
+  animation: otter-bob 3.5s ease-in-out infinite;
+}
+@keyframes otter-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+/* Swimming bob + slight rotation */
+.anim-swimming {
+  animation: otter-swim 2s ease-in-out infinite;
+}
+@keyframes otter-swim {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(-3deg);
+  }
+}
+
+/* Eating chomp pulse */
+.anim-eating {
+  animation: otter-chomp 1s ease-in-out infinite;
+}
+@keyframes otter-chomp {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+/* Sleeping gentle rock */
+.anim-sleeping {
+  animation: otter-sleep-rock 4s ease-in-out infinite;
+}
+@keyframes otter-sleep-rock {
+  0%,
+  100% {
+    transform: rotate(-1deg);
+  }
+  50% {
+    transform: rotate(1deg);
+  }
+}
+
+.otter-bubble {
+  position: absolute;
+  bottom: 180px;
+  right: 0;
+  max-width: 210px;
+  background: #fff;
+  border: 2px solid #ead9cc;
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.12);
+  font-size: 0.875rem;
+  color: #4a3a33;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 40;
+}
+
+.otter-bubble strong {
+  color: #d89a9a;
+}
+
+.otter-bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  right: 24px;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid #ead9cc;
+}
+
+.otter-buddy:hover .otter-bubble {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .otter-buddy {
+    transition: none;
+    filter: none;
+  }
+  .otter-buddy:hover {
+    transform: none;
+  }
+  .anim-idle,
+  .anim-swimming,
+  .anim-eating,
+  .anim-sleeping {
+    animation: none;
+  }
+  .otter-bubble {
+    transition: none;
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
+  .otter-buddy:hover .otter-bubble {
+    transform: none;
+  }
+}

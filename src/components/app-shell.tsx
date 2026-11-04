@@ -1,4 +1,4 @@
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link, useRouter, useLocation } from "@tanstack/react-router";
 import { CalendarDays, Compass, LayoutGrid, Settings, Users, Bell, LogOut } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
@@ -6,8 +6,12 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OtterBuddy } from "@/components/otter/OtterBuddy";
+import { OtterProvider } from "@/components/otter/OtterContext";
 import { useAuth } from "@/lib/auth/context";
 import { useUnreadNotificationCount } from "@/lib/queries";
+
+type OtterState = "idle" | "swimming" | "eating" | "sleeping" | "working";
 
 /**
  * PRD 39: four primary tabs -- Main, My Clubs, Calendar, Settings.
@@ -19,6 +23,33 @@ const TABS = [
   { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
+
+/** Maps the current route to an otter state so the mascot matches the vibe. */
+function routeToOtterState(pathname: string): OtterState {
+  // Calendar and event pages -> swimming
+  if (pathname.startsWith("/clubs/") && pathname.includes("/events")) return "swimming";
+
+  // Club management pages -> working (studying with books + glasses)
+  if (pathname.startsWith("/clubs/")) {
+    if (
+      pathname.includes("/settings") ||
+      pathname.includes("/funds") ||
+      pathname.includes("/leadership") ||
+      pathname.includes("/forms") ||
+      pathname.includes("/data") ||
+      pathname.includes("/members") ||
+      pathname.includes("/attendance") ||
+      pathname === "/clubs/new"
+    ) {
+      return "working";
+    }
+  }
+
+  // Global settings -> working
+  if (pathname === "/settings") return "working";
+
+  return "idle";
+}
 
 /** Redirects to sign-in when there is no session (PRD 40/41). */
 export function RequireAuth({ children }: { children: ReactNode }) {
@@ -65,6 +96,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { profile, signOut } = useAuth();
   const { data: unreadCount = 0 } = useUnreadNotificationCount();
   const router = useRouter();
+  const location = useLocation();
+
+  const otterState = routeToOtterState(location.pathname);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -140,6 +174,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
+
+      {/* Otter mascot — floating in the back corner on every page. */}
+      <OtterProvider>
+        <OtterBuddy state={otterState} />
+      </OtterProvider>
     </div>
   );
 }
