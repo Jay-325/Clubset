@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OtterBuddy } from "@/components/otter/OtterBuddy";
-import { OtterProvider } from "@/components/otter/OtterContext";
 import { useAuth } from "@/lib/auth/context";
 import { useUnreadNotificationCount } from "@/lib/queries";
 
@@ -144,9 +143,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
 
       {/* Otter mascot — floating in the back corner on every page. */}
-      <OtterProvider>
-        <OtterBuddy />
-      </OtterProvider>
+      <OtterBuddy />
     </div>
   );
 }
