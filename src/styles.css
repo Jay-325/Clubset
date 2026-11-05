@@ -172,87 +172,16 @@
   overflow: hidden;
 }
 
-/* Sprite sheet: 3 columns x 2 rows (see public/assets/otter-sheet.svg). */
+/* Otter artwork: idle (eating) by default, paw-up on hover. */
 .otter-view {
-  background-image: url("/assets/otter-sheet.svg");
-  background-size: 300% 200%;
+  background-image: url("/assets/otter-idle.webp");
+  background-size: contain;
+  background-position: center;
   background-repeat: no-repeat;
 }
 
-/* Pose positions for 2x3 grid */
-.pose-idle {
-  background-position: 0% 0%;
-} /* Waving hello */
-.pose-swimming {
-  background-position: 50% 0%;
-} /* Swimming */
-.pose-eating {
-  background-position: 100% 0%;
-} /* Eating golden fish */
-.pose-sleeping {
-  background-position: 0% 100%;
-} /* Sleeping on pillow */
-.pose-sleep-towel {
-  background-position: 50% 100%;
-} /* Sleeping on towel */
-.pose-working {
-  background-position: 100% 100%;
-} /* Studying w/ glasses */
-
-/* Gentle idle bob */
-.anim-idle {
-  animation: otter-bob 3.5s ease-in-out infinite;
-}
-@keyframes otter-bob {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-7px);
-  }
-}
-
-/* Swimming bob + slight rotation */
-.anim-swimming {
-  animation: otter-swim 2s ease-in-out infinite;
-}
-@keyframes otter-swim {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-8px) rotate(-3deg);
-  }
-}
-
-/* Eating chomp pulse */
-.anim-eating {
-  animation: otter-chomp 1s ease-in-out infinite;
-}
-@keyframes otter-chomp {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.04);
-  }
-}
-
-/* Sleeping gentle rock */
-.anim-sleeping {
-  animation: otter-sleep-rock 4s ease-in-out infinite;
-}
-@keyframes otter-sleep-rock {
-  0%,
-  100% {
-    transform: rotate(-1deg);
-  }
-  50% {
-    transform: rotate(1deg);
-  }
+.otter-buddy:hover .otter-view {
+  background-image: url("/assets/otter-hover.webp");
 }
 
 .otter-bubble {
