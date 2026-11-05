@@ -3,6 +3,25 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
+// The /mcp endpoint (Supabase-backed OAuth MCP server) is an internet-facing
+// integration surface not required by the core product. Per SECURITY_NOTES.md
+// §2 it is blocked at the entry point (hosting-layer equivalent) for the
+// initial production launch to remove the reachable attack surface, since the
+// flagged @modelcontextprotocol/* transitive deps have no supported upgrade
+// path and Supabase mints a broad project-wide aud ("authenticated").
+const MCP_BLOCKED_PATHS = ["/mcp", "/.well-known/oauth-protected-resource"];
+
+function isMcpPath(requestUrl: string): boolean {
+  try {
+    const pathname = new URL(requestUrl).pathname;
+    return MCP_BLOCKED_PATHS.some(
+      (p) => pathname === p || pathname.startsWith(p + "/"),
+    );
+  } catch {
+    return false;
+  }
+}
+
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
@@ -47,6 +66,9 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      if (isMcpPath(request.url)) {
+        return new Response(null, { status: 404 });
+      }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
