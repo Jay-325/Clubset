@@ -172,9 +172,9 @@
   overflow: hidden;
 }
 
-/* Sprite sheet: 3 columns x 2 rows. Replace the URL with your image file. */
+/* Sprite sheet: 3 columns x 2 rows (see public/assets/otter-sheet.svg). */
 .otter-view {
-  background-image: url("/assets/otter-sheet.png");
+  background-image: url("/assets/otter-sheet.svg");
   background-size: 300% 200%;
   background-repeat: no-repeat;
 }

@@ -66,9 +66,7 @@ export function OtterBuddy({ state: propState = "idle", message, onClick }: Otte
           <strong className="text-rose-dark">Otter:</strong> {bubbleText}
         </div>
       )}
-      <div className={`otter-view ${poseClass} ${animClass}`} aria-hidden="true">
-        🦭
-      </div>
+      <div className={`otter-view ${poseClass} ${animClass}`} aria-hidden="true" />
     </div>
   );
 }
