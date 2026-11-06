@@ -170,21 +170,41 @@
   outline: none;
 }
 
+/* Layered image container: both images occupy the same space. */
 .otter-view {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   border-radius: 1rem;
   background: transparent;
-  background-image: url("/assets/otter-idle.webp");
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
-  transition: background-image var(--motion-duration-normal) var(--motion-ease-out);
 }
 
-.otter-buddy:hover .otter-view,
-.otter-buddy:focus-visible .otter-view {
+/* Idle image: always visible. */
+.otter-idle-image {
+  background-image: url("/assets/otter-idle.webp");
+  opacity: 1;
+  transition: opacity var(--motion-duration-normal) var(--motion-ease-out);
+}
+
+/* Hover image: starts hidden, fades in on hover/focus. */
+.otter-hover-image {
   background-image: url("/assets/otter-hover.webp");
+  opacity: 0;
+  transition: opacity var(--motion-duration-normal) var(--motion-ease-out);
+}
+
+.otter-buddy:hover .otter-idle-image,
+.otter-buddy:focus-visible .otter-idle-image {
+  opacity: 0;
+}
+
+.otter-buddy:hover .otter-hover-image,
+.otter-buddy:focus-visible .otter-hover-image {
+  opacity: 1;
 }
 
 .otter-bubble {
@@ -199,10 +219,11 @@
   box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.12);
   font-size: 0.875rem;
   color: #4a3a33;
-  pointer-events: none;
+  pointer-events: auto;
   opacity: 0;
   transform: translateY(10px);
-  transition: all var(--motion-duration-normal) var(--motion-ease-out);
+  transition: opacity var(--motion-duration-normal) var(--motion-ease-out),
+    transform var(--motion-duration-normal) var(--motion-ease-out);
   z-index: 40;
 }
 
@@ -222,11 +243,10 @@
   border-top: 10px solid #ead9cc;
 }
 
-.otter-buddy:hover .otter-bubble,
-.otter-buddy:focus-visible .otter-bubble {
+/* Bubble visible when bubbleOpen state is active (click-to-toggle). */
+.otter-buddy[data-bubble="true"] .otter-bubble {
   opacity: 1;
   transform: translateY(0);
-  pointer-events: auto;
 }
 
 /* Form validation / success messages: gentle fade-in when they appear, no
@@ -246,29 +266,21 @@
   .otter-buddy:focus-visible {
     transform: none;
   }
-  .anim-idle,
-  .anim-swimming,
-  .anim-eating,
-  .anim-sleeping {
-    animation: none;
+  .otter-view {
+    transition: none;
   }
   .otter-bubble {
     transition: none;
-    animation: none;
-    transform: none;
-    opacity: 1;
-  }
-  .otter-buddy:hover .otter-bubble,
-  .otter-buddy:focus-visible .otter-bubble {
     transform: none;
   }
-  /* Form messages: appear without fading. */
+  .otter-buddy[data-bubble="true"] .otter-bubble {
+    transform: none;
+  }
   .form-message {
     animation: none !important;
     opacity: 1;
     transform: none;
   }
-  /* Press feedback scale: stay at natural size when activated. */
   button:active {
     transform: none !important;
   }

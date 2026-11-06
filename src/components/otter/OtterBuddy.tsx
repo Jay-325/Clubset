@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { useUpcomingEvents } from "@/lib/queries";
 import type { UpcomingEventResult } from "@/lib/types/database";
 
@@ -11,31 +13,48 @@ interface OtterBuddyProps {
 /**
  * Floating otter mascot in the bottom-right corner.
  *
- * Shows the idle (shell-holding) otter by default and swaps to the
- * greeting (paw-up) otter on hover or focus, with a subtle scale effect.
- * A speech bubble with the user's next club meeting appears on hover/focus.
+ * Shows the shell-holding otter by default. On hover or focus, crossfades
+ * to the greeting (paw-up) otter. Clicking toggles a speech bubble with the
+ * user's next upcoming club meeting, pulled from their calendar.
  */
 export function OtterBuddy({ onClick }: OtterBuddyProps = {}) {
-  const { data: upcoming = [] } = useUpcomingEvents();
+  const { data: upcoming = [], isPending: isLoading } = useUpcomingEvents();
+  const [bubbleOpen, setBubbleOpen] = useState(false);
 
   // Soonest upcoming event across all of the user's clubs.
   const nextEvent = [...upcoming].sort(
     (a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
   )[0];
 
+  const toggleBubble = () => setBubbleOpen((prev) => !prev);
+
   return (
-    <button type="button" className="otter-buddy" onClick={onClick} aria-label="Otter buddy">
-      <div className="otter-bubble">
-        <strong className="text-rose-dark">Otter:</strong> {meetingMessage(nextEvent)}
-      </div>
-      <div className="otter-view" aria-hidden="true" />
+    <button
+      type="button"
+      className="otter-buddy"
+      onClick={toggleBubble}
+      onFocus={() => setBubbleOpen(false)}
+      aria-label="Otter buddy"
+      aria-expanded={bubbleOpen}
+      data-bubble={bubbleOpen}
+    >
+      {/* Layered images for opacity crossfade. */}
+      <div className="otter-view otter-idle-image" aria-hidden="true" />
+      <div className="otter-view otter-hover-image" aria-hidden="true" />
+      {bubbleOpen && (
+        <div className="otter-bubble" role="status" aria-live="polite">
+          <strong className="text-rose-dark">Otter:</strong> {meetingMessage(isLoading, nextEvent)}
+        </div>
+      )}
     </button>
   );
 }
 
-/** Build the hover speech-bubble line from the next calendar event. */
-function meetingMessage(event: UpcomingEventResult | undefined): string {
-  if (!event) return "No upcoming club meetings.";
+/** Build the speech-bubble line from the next calendar event. */
+function meetingMessage(isLoading: boolean, event: UpcomingEventResult | undefined): string {
+  if (isLoading) return "Checking your calendar...";
+
+  if (!event) return "Nothing on your calendar yet. Have a great day!";
 
   const starts = new Date(event.starts_at);
   const today = new Date();
@@ -44,7 +63,10 @@ function meetingMessage(event: UpcomingEventResult | undefined): string {
   eventDay.setHours(0, 0, 0, 0);
 
   if (eventDay.getTime() === today.getTime()) {
-    return `You have a club meeting today — Priority: ${event.priority}`;
+    return `Hey! You've got "${event.title}" today at ${starts.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    })}.`;
   }
 
   const options: Intl.DateTimeFormatOptions = {
@@ -52,5 +74,8 @@ function meetingMessage(event: UpcomingEventResult | undefined): string {
     month: "short",
     day: "numeric",
   };
-  return `Next meeting: ${event.title} on ${starts.toLocaleDateString(undefined, options)}`;
+  return `Your next club meeting is "${event.title}" on ${starts.toLocaleDateString(
+    undefined,
+    options,
+  )}.`;
 }
