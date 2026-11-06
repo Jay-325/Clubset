@@ -18,9 +18,21 @@ const mockFrom = vi.fn(() => ({
   update: mockUpdate,
 })) as any;
 
+const mockAssertPasswordNotBreached = vi.hoisted(() => vi.fn());
+const mockSignUp = vi.hoisted(() => vi.fn().mockResolvedValue({ data: null, error: null }));
+const mockUpdateUser = vi.hoisted(() => vi.fn().mockResolvedValue({ error: null }));
+
+vi.mock("@/lib/security/passwords", () => ({
+  assertPasswordNotBreached: mockAssertPasswordNotBreached,
+}));
+
 vi.mock("@/lib/supabase/client", () => ({
   getSupabaseClient: vi.fn(() => ({
     from: mockFrom,
+    auth: {
+      signUp: mockSignUp,
+      updateUser: mockUpdateUser,
+    },
   })),
 }));
 
@@ -29,17 +41,15 @@ import {
   useNotifications,
   useUnreadNotificationCount,
   useMarkNotificationRead,
+  useSignUp,
+  useChangePassword,
 } from "./queries";
 
 const mockedGetSupabaseClient = vi.mocked(getSupabaseClient);
 
 function makeWrapper(queryClient: QueryClient) {
   return ({ children }: { children: React.ReactNode }) =>
-    React.createElement(
-      QueryClientProvider,
-      { client: queryClient },
-      children,
-    );
+    React.createElement(QueryClientProvider, { client: queryClient }, children);
 }
 
 beforeEach(() => {
@@ -52,7 +62,10 @@ beforeEach(() => {
   });
   mockUpdate.mockReturnValue({ eq: mockEq });
   mockEq.mockReturnValue({ error: null });
-  mockedGetSupabaseClient.mockReturnValue({ from: mockFrom } as any);
+  mockedGetSupabaseClient.mockReturnValue({
+    from: mockFrom,
+    auth: { signUp: mockSignUp, updateUser: mockUpdateUser },
+  } as any);
 });
 
 afterEach(() => {
@@ -211,9 +224,7 @@ describe("useMarkNotificationRead invalidation", () => {
       await result.current.mutateAsync("notif-123");
     });
 
-    expect(mockUpdate).toHaveBeenCalledWith(
-      { read_at: expect.any(String) },
-    );
+    expect(mockUpdate).toHaveBeenCalledWith({ read_at: expect.any(String) });
     expect(mockEq).toHaveBeenCalledWith("id", "notif-123");
 
     // Both keys must be invalidated so the badge and the full list stay in sync.
@@ -223,5 +234,108 @@ describe("useMarkNotificationRead invalidation", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: ["notifications", "unread-count"],
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Leaked-password guard wiring: signup and password change
+// ---------------------------------------------------------------------------
+
+describe("useSignUp runs assertPasswordNotBreached before Supabase Auth", () => {
+  const wrapper = makeWrapper(
+    new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    }),
+  );
+
+  beforeEach(() => {
+    mockAssertPasswordNotBreached.mockResolvedValue(undefined);
+    mockSignUp.mockResolvedValue({ data: null, error: null });
+  });
+
+  it("calls the HIBP guard before signUp and proceeds when the password is not breached", async () => {
+    const { result } = renderHook(() => useSignUp(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        email: "student@school.edu",
+        password: "a-long-unique-passphrase",
+      });
+    });
+
+    expect(mockAssertPasswordNotBreached).toHaveBeenCalledWith("a-long-unique-passphrase");
+    expect(mockSignUp).toHaveBeenCalled();
+    // The guard must complete before Supabase Auth is asked to create the account.
+    expect(mockAssertPasswordNotBreached.mock.invocationCallOrder[0]!).toBeLessThan(
+      mockSignUp.mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it("rejects signup and never calls signUp when the password is breached", async () => {
+    mockAssertPasswordNotBreached.mockRejectedValue(
+      new Error(
+        "This password has appeared in a known data breach. Please choose a different password.",
+      ),
+    );
+
+    const { result } = renderHook(() => useSignUp(), { wrapper });
+
+    await expect(
+      act(async () => {
+        await result.current.mutateAsync({
+          email: "student@school.edu",
+          password: "password",
+        });
+      }),
+    ).rejects.toThrow();
+
+    expect(mockAssertPasswordNotBreached).toHaveBeenCalled();
+    expect(mockSignUp).not.toHaveBeenCalled();
+  });
+});
+
+describe("useChangePassword runs assertPasswordNotBreached before updateUser", () => {
+  const wrapper = makeWrapper(
+    new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    }),
+  );
+
+  beforeEach(() => {
+    mockAssertPasswordNotBreached.mockResolvedValue(undefined);
+    mockUpdateUser.mockResolvedValue({ error: null });
+  });
+
+  it("calls the HIBP guard before updateUser and proceeds when the password is not breached", async () => {
+    const { result } = renderHook(() => useChangePassword(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ password: "a-long-unique-passphrase" });
+    });
+
+    expect(mockAssertPasswordNotBreached).toHaveBeenCalledWith("a-long-unique-passphrase");
+    expect(mockUpdateUser).toHaveBeenCalledWith({ password: "a-long-unique-passphrase" });
+    expect(mockAssertPasswordNotBreached.mock.invocationCallOrder[0]!).toBeLessThan(
+      mockUpdateUser.mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it("rejects the password change and never calls updateUser when the password is breached", async () => {
+    mockAssertPasswordNotBreached.mockRejectedValue(
+      new Error(
+        "This password has appeared in a known data breach. Please choose a different password.",
+      ),
+    );
+
+    const { result } = renderHook(() => useChangePassword(), { wrapper });
+
+    await expect(
+      act(async () => {
+        await result.current.mutateAsync({ password: "password" });
+      }),
+    ).rejects.toThrow();
+
+    expect(mockAssertPasswordNotBreached).toHaveBeenCalled();
+    expect(mockUpdateUser).not.toHaveBeenCalled();
   });
 });
