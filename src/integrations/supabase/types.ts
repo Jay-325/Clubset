@@ -1940,7 +1940,12 @@ export type Database = {
         Args: { student_id: string; target_club: string }
         Returns: Json
       }
+      can_discover_club: { Args: { target_club: string }; Returns: boolean }
       can_read_club: { Args: { target_club: string }; Returns: boolean }
+      check_administrator_allowlist: {
+        Args: { candidate_email: string }
+        Returns: boolean
+      }
       check_eligibility: {
         Args: { student_id: string; target_role: string }
         Returns: Json
