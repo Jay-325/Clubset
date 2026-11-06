@@ -1,6 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertTriangle, CalendarDays, MapPin, Search, Sparkles, Users } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  MapPin,
+  Search,
+  Sparkles,
+  Users,
+} from "lucide-react";
 
 import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
@@ -91,24 +98,29 @@ function MainContent() {
     <>
       <PageHeader
         title={`Hi, ${profile?.full_name?.split(" ")[0] ?? "there"}`}
-        description="Find clubs, see what is coming up, and keep up with your clubs."
+        description="Every day is a new opportunity."
       />
 
-      {/* ---- Welcome stats row ---- */}
-      <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        <StatCard label="Clubs this week" value={(clubSearch.data ?? []).length} />
-        <StatCard label="Upcoming events" value={(upcoming.data ?? []).length} />
-        <StatCard label="My clubs" value="-" />
-        <StatCard label="Events today" value="0" />
-      </div>
-
-      {/* ---- Main content: calendar + events side by side ---- */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        {/* Left: Upcoming events */}
+      {/* ---- Welcome row: calendar + events side by side ---- */}
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        {/* Left: Upcoming events (dashboard style) */}
         <div className="space-y-6">
           <section className="space-y-3">
-            <h2 className="text-lg font-semibold">Coming up</h2>
-            <p className="text-sm text-muted-foreground">Across all your joined clubs.</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="size-4 text-primary" />
+                <h2 className="text-lg font-semibold">Coming up</h2>
+              </div>
+              <Link
+                to="/calendar"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                View all
+              </Link>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Across all your joined clubs.
+            </p>
           </section>
 
           {upcoming.isLoading ? (
@@ -117,8 +129,8 @@ function MainContent() {
               <Skeleton className="h-20 w-full" />
             </div>
           ) : (upcoming.data ?? []).length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-center">
+            <Card className="text-center py-12">
+              <CardContent>
                 <p className="text-sm text-muted-foreground">
                   Nothing on your calendar yet. Join a club and its events will show up here
                   automatically.
@@ -139,15 +151,25 @@ function MainContent() {
           )}
         </div>
 
-        {/* Right: Calendar preview + recommendations */}
+        {/* Right: Mini calendar widget + recommendations */}
         <div className="space-y-6">
-          {/* Mini calendar */}
-          <Card className="h-[420px]">
+          {/* Mini calendar widget */}
+          <Card className="h-[400px]">
             <CardHeader>
-              <CardTitle className="text-sm font-semibold">January 2026</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold">January 2026</CardTitle>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="icon" className="h-7 w-7 p-0">
+                    <span className="sr-only">Previous month</span>
+                  </Button>
+                  <Button variant="outline" size="icon" className="h-7 w-7 p-0">
+                    <span className="sr-only">Next month</span>
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="p-4">
-              <div className="grid w-full grid-cols-7 gap-1 text-center text-xs">
+            <CardContent className="p-3">
+              <div className="grid w-full grid-cols-7 gap-0.5 text-center text-xs">
                 <div className="font-medium text-muted-foreground">Su</div>
                 <div className="font-medium text-muted-foreground">Mo</div>
                 <div className="font-medium text-muted-foreground">Tu</div>
@@ -156,7 +178,7 @@ function MainContent() {
                 <div className="font-medium text-muted-foreground">Fr</div>
                 <div className="font-medium text-muted-foreground">Sa</div>
               </div>
-              <div className="grid w-full grid-cols-7 gap-1 mt-2">
+              <div className="grid w-full grid-cols-7 gap-0.5 mt-2">
                 {[...Array(31)].map((_, i) => (
                   <div
                     key={i}
@@ -196,7 +218,9 @@ function MainContent() {
           {/* Start a club button */}
           <Card>
             <CardContent className="p-6 text-center">
-              <p className="text-sm text-muted-foreground mb-4">Ready to start something new?</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Ready to start something new?
+              </p>
               <Button asChild className="w-full">
                 <Link to="/clubs/new">Start a new club</Link>
               </Button>
@@ -206,8 +230,10 @@ function MainContent() {
       </div>
 
       {/* ---- Search & filters (full width below) ---- */}
-      <section className="mt-8 space-y-4">
-        <h2 className="text-lg font-semibold">Find clubs</h2>
+      <section className="mt-10 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Find clubs</h2>
+        </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="relative sm:col-span-2 lg:col-span-1">
@@ -270,9 +296,11 @@ function MainContent() {
             <Skeleton className="h-44 w-full" />
           </div>
         ) : (clubSearch.data ?? []).length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center">
-              <p className="text-sm text-muted-foreground">No clubs match those filters yet.</p>
+          <Card className="text-center py-12">
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                No clubs match those filters yet.
+              </p>
             </CardContent>
           </Card>
         ) : (
@@ -290,25 +318,6 @@ function MainContent() {
         )}
       </section>
     </>
-  );
-}
-
-/** Small stat card for the dashboard header row. */
-function StatCard({ label, value }: { label: string; value: string | number }) {
-  return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className="text-2xl font-semibold">{value}</p>
-          </div>
-          <div className="w-10 h-10 rounded-lg bg-accent/50 flex items-center justify-center text-accent-foreground">
-            <Users className="size-5" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -362,7 +371,9 @@ function EventCard({
             <Badge variant="outline">
               {EVENT_KIND_LABELS[event.kind as keyof typeof EVENT_KIND_LABELS]}
             </Badge>
-            {event.my_rsvp === "going" ? <Badge variant="secondary">Going</Badge> : null}
+            {event.my_rsvp === "going" ? (
+              <Badge variant="secondary">Going</Badge>
+            ) : null}
           </div>
         </div>
 
@@ -426,9 +437,7 @@ function ClubCard({
       <CardContent className="space-y-2 text-sm">
         <div className="flex flex-wrap gap-1.5">
           {club.fields.slice(0, 4).map((item) => (
-            <Badge key={item} variant="secondary">
-              {item}
-            </Badge>
+            <Badge key={item} variant="secondary">{item}</Badge>
           ))}
         </div>
         <p className="text-muted-foreground">

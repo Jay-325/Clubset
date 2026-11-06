@@ -77,7 +77,7 @@ function CalendarContent() {
     <>
       <PageHeader
         title="Calendar"
-        description="Every event from your clubs, in one place. Overlapping events are flagged so you can choose."
+        description="Every event from your clubs, in one place."
         actions={
           selectedDay ? (
             <Button variant="outline" size="sm" onClick={() => setSelectedDay(undefined)}>
@@ -87,7 +87,7 @@ function CalendarContent() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* ---- Agenda (the primary view) ---- */}
         <div className="space-y-6">
           {selectedDay ? (
