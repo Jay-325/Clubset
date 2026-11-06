@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState } from "react";
 import { AlertTriangle, CalendarDays, Clock, MapPin } from "lucide-react";
 
 import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/ui/motion";
@@ -87,11 +87,11 @@ function CalendarContent() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         {/* ---- Agenda (the primary view) ---- */}
-        <div>
+        <div className="space-y-6">
           {selectedDay ? (
-            <h2 className="mb-3 text-lg font-semibold">
+            <h2 className="text-lg font-semibold">
               {selectedDay.toLocaleDateString(undefined, {
                 weekday: "long",
                 month: "long",
@@ -99,25 +99,24 @@ function CalendarContent() {
               })}
             </h2>
           ) : (
-            <h2 className="mb-3 text-lg font-semibold">Agenda</h2>
+            <h2 className="text-lg font-semibold">Agenda</h2>
           )}
 
           {upcoming.isLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-28 w-full" />
-              <Skeleton className="h-28 w-full" />
-              <Skeleton className="h-28 w-full" />
+            <div className="space-y-4">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
             </div>
           ) : visibleGroups.length === 0 ? (
-            <FadeIn>
-              <Card>
-                <CardContent className="py-6 text-sm text-muted-foreground">
+            <Card className="text-center py-12">
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
                   {selectedDay
                     ? "Nothing scheduled on this day."
                     : "No upcoming events. Join a club and its events will appear here automatically."}
-                </CardContent>
-              </Card>
-            </FadeIn>
+                </p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-6">
               {visibleGroups.map((group) => (
@@ -127,10 +126,21 @@ function CalendarContent() {
           )}
         </div>
 
-        {/* ---- Month picker: narrows the agenda to a single day ---- */}
+        {/* ---- Month picker ---- */}
         <aside className="order-first lg:order-last">
           <Card>
-            <CardContent className="p-3">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold">January 2026</h3>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="icon" className="h-8 w-8 p-0">
+                    <span className="sr-only">Previous month</span>
+                  </Button>
+                  <Button variant="outline" size="icon" className="h-8 w-8 p-0">
+                    <span className="sr-only">Next month</span>
+                  </Button>
+                </div>
+              </div>
               <Calendar
                 mode="single"
                 selected={selectedDay}
@@ -147,11 +157,30 @@ function CalendarContent() {
                 }}
                 className="w-full"
               />
-              <p className="mt-2 px-1 text-xs text-muted-foreground">
+              <p className="mt-3 px-1 text-xs text-muted-foreground text-center">
                 Underlined days have events. Amber days have a scheduling conflict.
               </p>
             </CardContent>
           </Card>
+
+          {/* Quick stats for the selected day */}
+          {selectedDay && visibleGroups.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-semibold">Today's summary</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Events today</span>
+                    <span className="text-sm font-semibold">
+                      {visibleGroups[0]?.events.length ?? 0}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </aside>
       </div>
     </>
@@ -190,18 +219,18 @@ function EventRow({
 }: {
   event: UpcomingEventResult;
   className?: string;
-  style?: CSSProperties;
+  style?: React.CSSProperties;
 }) {
   const rsvp = useRsvp();
 
   return (
     <Card className={cn(className)} style={style}>
       <CardContent className="p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-sm text-muted-foreground">{event.club_name}</p>
             <p className="font-medium">{event.title}</p>
-            <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-1">
                 <Clock className="size-3" />
                 {new Date(event.starts_at).toLocaleTimeString(undefined, {
@@ -218,7 +247,7 @@ function EventRow({
             </div>
           </div>
 
-          <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <div className="flex shrink-0 items-end gap-1">
             <Badge variant="outline">{KIND_LABELS[event.kind]}</Badge>
             {event.priority === "high" ? (
               <Badge>{EVENT_PRIORITY_LABELS.high}</Badge>
@@ -232,7 +261,7 @@ function EventRow({
 
         {/* PRD 15: the overlap is shown, never auto-resolved. */}
         {event.conflict_count > 0 ? (
-          <p className="mt-3 flex items-start gap-1.5 rounded-md bg-amber-500/10 px-2 py-1.5 text-xs text-amber-700 dark:text-amber-400">
+          <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-amber-500/10 px-2 py-1.5 text-xs text-amber-700 dark:text-amber-400">
             <AlertTriangle className="mt-0.5 size-3 shrink-0" />
             Overlaps with {event.conflict_count} other event
             {event.conflict_count === 1 ? "" : "s"}. You decide which one to attend.

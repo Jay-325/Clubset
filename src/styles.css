@@ -222,7 +222,8 @@
   pointer-events: auto;
   opacity: 0;
   transform: translateY(10px);
-  transition: opacity var(--motion-duration-normal) var(--motion-ease-out),
+  transition:
+    opacity var(--motion-duration-normal) var(--motion-ease-out),
     transform var(--motion-duration-normal) var(--motion-ease-out);
   z-index: 40;
 }
