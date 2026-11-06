@@ -160,13 +160,13 @@
   width: 140px;
   height: 140px;
   cursor: pointer;
-  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.14));
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.1));
   transition: transform var(--motion-duration-normal) var(--motion-ease-out);
 }
 
 .otter-buddy:hover,
 .otter-buddy:focus-visible {
-  transform: scale(1.08);
+  transform: scale(1.06);
   outline: none;
 }
 
@@ -211,14 +211,14 @@
   position: absolute;
   bottom: 150px;
   right: 0;
-  max-width: 210px;
-  background: #fff;
-  border: 2px solid #ead9cc;
+  max-width: 200px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
   border-radius: 1rem;
-  padding: 1rem 1.25rem;
-  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.12);
+  padding: 0.875rem 1rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
   font-size: 0.875rem;
-  color: #4a3a33;
+  color: var(--color-foreground);
   pointer-events: auto;
   opacity: 0;
   transform: translateY(10px);
@@ -228,7 +228,7 @@
 }
 
 .otter-bubble strong {
-  color: #d89a9a;
+  color: var(--color-primary);
 }
 
 .otter-bubble::after {
@@ -240,7 +240,7 @@
   height: 0;
   border-left: 10px solid transparent;
   border-right: 10px solid transparent;
-  border-top: 10px solid #ead9cc;
+  border-top: 10px solid var(--color-border);
 }
 
 /* Bubble visible when bubbleOpen state is active (click-to-toggle). */
