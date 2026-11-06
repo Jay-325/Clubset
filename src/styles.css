@@ -59,6 +59,14 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  /* Centralized motion values (see src/lib/motion.ts). */
+  --motion-duration-fast: 150ms;
+  --motion-duration-normal: 250ms;
+  --motion-duration-slow: 350ms;
+  --motion-duration-exit: 120ms;
+  --motion-ease-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-press-scale: 0.97;
 }
 
 :root {
@@ -149,15 +157,17 @@
   bottom: 1.5rem;
   right: 1.5rem;
   z-index: 50;
-  width: 170px;
-  height: 170px;
+  width: 140px;
+  height: 140px;
   cursor: pointer;
   filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.14));
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--motion-duration-normal) var(--motion-ease-out);
 }
 
-.otter-buddy:hover {
+.otter-buddy:hover,
+.otter-buddy:focus-visible {
   transform: scale(1.08);
+  outline: none;
 }
 
 .otter-view {
@@ -165,28 +175,21 @@
   height: 100%;
   border-radius: 1rem;
   background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-}
-
-/* Otter artwork: idle (eating) by default, paw-up on hover. */
-.otter-view {
   background-image: url("/assets/otter-idle.webp");
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
+  transition: background-image var(--motion-duration-normal) var(--motion-ease-out);
 }
 
-.otter-buddy:hover .otter-view {
+.otter-buddy:hover .otter-view,
+.otter-buddy:focus-visible .otter-view {
   background-image: url("/assets/otter-hover.webp");
 }
 
 .otter-bubble {
   position: absolute;
-  bottom: 180px;
+  bottom: 150px;
   right: 0;
   max-width: 210px;
   background: #fff;
@@ -199,7 +202,7 @@
   pointer-events: none;
   opacity: 0;
   transform: translateY(10px);
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--motion-duration-normal) var(--motion-ease-out);
   z-index: 40;
 }
 
@@ -219,7 +222,8 @@
   border-top: 10px solid #ead9cc;
 }
 
-.otter-buddy:hover .otter-bubble {
+.otter-buddy:hover .otter-bubble,
+.otter-buddy:focus-visible .otter-bubble {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
@@ -238,7 +242,8 @@
     transition: none;
     filter: none;
   }
-  .otter-buddy:hover {
+  .otter-buddy:hover,
+  .otter-buddy:focus-visible {
     transform: none;
   }
   .anim-idle,
@@ -253,7 +258,8 @@
     transform: none;
     opacity: 1;
   }
-  .otter-buddy:hover .otter-bubble {
+  .otter-buddy:hover .otter-bubble,
+  .otter-buddy:focus-visible .otter-bubble {
     transform: none;
   }
   /* Form messages: appear without fading. */
@@ -265,5 +271,21 @@
   /* Press feedback scale: stay at natural size when activated. */
   button:active {
     transform: none !important;
+  }
+}
+
+/* Responsive: smaller otter on mobile so it doesn't crowd the bottom nav. */
+@media (max-width: 640px) {
+  .otter-buddy {
+    width: 110px;
+    height: 110px;
+    bottom: 1rem;
+    right: 1rem;
+  }
+  .otter-bubble {
+    bottom: 120px;
+    max-width: 180px;
+    font-size: 0.8125rem;
+    padding: 0.75rem 1rem;
   }
 }

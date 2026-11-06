@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 import { useUpcomingEvents } from "@/lib/queries";
 import type { UpcomingEventResult } from "@/lib/types/database";
 
@@ -13,12 +11,11 @@ interface OtterBuddyProps {
 /**
  * Floating otter mascot in the bottom-right corner.
  *
- * Shows the idle (eating) otter by default and swaps to the paw-up otter on
- * hover, growing slightly with a smooth transition. On hover it also speaks
- * the user's next club meeting, pulled from their calendar.
+ * Shows the idle (shell-holding) otter by default and swaps to the
+ * greeting (paw-up) otter on hover or focus, with a subtle scale effect.
+ * A speech bubble with the user's next club meeting appears on hover/focus.
  */
 export function OtterBuddy({ onClick }: OtterBuddyProps = {}) {
-  const [isHovered, setIsHovered] = useState(false);
   const { data: upcoming = [] } = useUpcomingEvents();
 
   // Soonest upcoming event across all of the user's clubs.
@@ -27,20 +24,12 @@ export function OtterBuddy({ onClick }: OtterBuddyProps = {}) {
   )[0];
 
   return (
-    <div
-      className="otter-buddy"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onClick={onClick}
-      aria-label="Otter buddy"
-    >
-      {isHovered && (
-        <div className="otter-bubble">
-          <strong className="text-rose-dark">Otter:</strong> {meetingMessage(nextEvent)}
-        </div>
-      )}
+    <button type="button" className="otter-buddy" onClick={onClick} aria-label="Otter buddy">
+      <div className="otter-bubble">
+        <strong className="text-rose-dark">Otter:</strong> {meetingMessage(nextEvent)}
+      </div>
       <div className="otter-view" aria-hidden="true" />
-    </div>
+    </button>
   );
 }
 
