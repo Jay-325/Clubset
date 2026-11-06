@@ -225,6 +225,13 @@
   pointer-events: auto;
 }
 
+/* Form validation / success messages: gentle fade-in when they appear, no
+ * layout shift. Animated via `animate-in fade-in` on mount; reduced-motion
+ * overrides live in the media query below. */
+.form-message {
+  display: block;
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .otter-buddy {
@@ -248,5 +255,15 @@
   }
   .otter-buddy:hover .otter-bubble {
     transform: none;
+  }
+  /* Form messages: appear without fading. */
+  .form-message {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+  /* Press feedback scale: stay at natural size when activated. */
+  button:active {
+    transform: none !important;
   }
 }

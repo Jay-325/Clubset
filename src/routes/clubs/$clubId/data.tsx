@@ -1,6 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import type { FormEvent } from "react";
 import { Plus, Sparkles, Table2, X } from "lucide-react";
 
@@ -19,6 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+import { FadeIn } from "@/components/ui/motion";
+import { staggerStyle } from "@/lib/motion";
 import { can } from "@/lib/auth/permissions";
 import { TABLE_TEMPLATES } from "@/lib/domain";
 import { useClubContext } from "@/lib/hooks/use-club";
@@ -431,8 +434,8 @@ function DataContent() {
         ) : (
           <>
             <ul className="flex flex-wrap gap-2">
-              {tableRows.map((table) => (
-                <li key={table.id}>
+              {tableRows.map((table, index) => (
+                <li key={table.id} className={cn("animate-in fade-in")} style={staggerStyle(index)}>
                   <Button
                     variant={table.id === activeTableId ? "default" : "outline"}
                     size="sm"

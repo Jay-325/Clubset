@@ -6,6 +6,9 @@ import { LogOut, Plus, X } from "lucide-react";
 import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { SkeletonSpinner } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { FadeIn, SlideIn } from "@/components/ui/motion";
+import { motion } from "@/lib/motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth/context";
 import { useChangePassword, useUpdateProfile } from "@/lib/queries";
+import { toast } from "sonner";
 import { GRADE_LABELS, PRESET_INTERESTS, WEEKLY_HOUR_OPTIONS } from "@/lib/domain";
 import type { GradeLevel } from "@/lib/types/database";
 
@@ -81,6 +85,7 @@ function SettingsContent() {
     });
     await refreshProfile();
     setSaved(true);
+    toast("Profile saved");
   };
 
   const handlePasswordChange = async (event: FormEvent) => {
@@ -98,12 +103,14 @@ function SettingsContent() {
       setNewPassword("");
       setConfirmPassword("");
       setPasswordMessage("Password updated.");
+      toast("Password updated");
     } catch (error) {
       setPasswordError(
         error instanceof Error
           ? error.message
           : "We couldn't update your password. Please try again.",
       );
+      toast(error instanceof Error ? error.message : "Password update failed.");
     }
   };
 
@@ -210,20 +217,22 @@ function SettingsContent() {
               </div>
 
               {interests.length > 0 ? (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {interests.map((interest) => (
-                    <Badge key={interest} variant="secondary" className="gap-1">
-                      {interest}
-                      <button
-                        type="button"
-                        aria-label={`Remove ${interest}`}
-                        onClick={() => toggleInterest(interest)}
-                      >
-                        <X className="size-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
+                <SlideIn side="bottom" duration={motion.duration.fast}>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {interests.map((interest) => (
+                      <Badge key={interest} variant="secondary" className="gap-1">
+                        {interest}
+                        <button
+                          type="button"
+                          aria-label={`Remove ${interest}`}
+                          onClick={() => toggleInterest(interest)}
+                        >
+                          <X className="size-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </SlideIn>
               ) : null}
             </div>
 
@@ -257,11 +266,13 @@ function SettingsContent() {
                 {updateProfile.isPending ? <SkeletonSpinner /> : null}
                 Save changes
               </Button>
-              {saved ? <span className="text-sm text-muted-foreground">Saved.</span> : null}
+              {saved ? (
+                <span className="text-sm text-muted-foreground animate-in fade-in">Saved.</span>
+              ) : null}
             </div>
 
             {updateProfile.error ? (
-              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p className="form-message animate-in fade-in rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive duration-150">
                 {updateProfile.error.message}
               </p>
             ) : null}
@@ -319,11 +330,11 @@ function SettingsContent() {
             </Button>
 
             {passwordMessage ? (
-              <p className="text-sm text-muted-foreground">{passwordMessage}</p>
+              <p className="text-sm text-muted-foreground animate-in fade-in">{passwordMessage}</p>
             ) : null}
 
             {passwordError ? (
-              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p className="form-message animate-in fade-in rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive duration-150">
                 {passwordError}
               </p>
             ) : null}

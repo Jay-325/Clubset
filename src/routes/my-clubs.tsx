@@ -6,9 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { FadeIn } from "@/components/ui/motion";
 import { useMyClubs, useSetClubPriority } from "@/lib/queries";
+import { staggerStyle } from "@/lib/motion";
+import { toast } from "sonner";
 import { CLUB_TYPE_LABELS, COMMITMENT_LABELS } from "@/lib/domain";
 import type { ClubRow, MembershipRow } from "@/lib/types/database";
+import type { CSSProperties } from "react";
 
 /**
  * PRD 22: My Clubs is the student's own list, ordered by how much the club
@@ -59,29 +64,38 @@ function MyClubsContent() {
           <Skeleton className="h-44 w-full" />
         </div>
       ) : clubs.length === 0 ? (
-        <Card>
-          <CardContent className="space-y-3 py-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              You have not joined a club yet. Browse the Main page to find one that fits.
-            </p>
-            <Button asChild>
-              <Link to="/">Find clubs</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <FadeIn>
+          <Card>
+            <CardContent className="space-y-3 py-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                You have not joined a club yet. Browse the Main page to find one that fits.
+              </p>
+              <Button asChild>
+                <Link to="/">Find clubs</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </FadeIn>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {clubs.map((club) => (
+          {clubs.map((club, index) => (
             <ClubSummary
               key={club.id}
               club={club}
-              onTogglePriority={(isPriority) =>
-                setClubPriority.mutate({
-                  membershipId: club.membership.id,
-                  isPriority,
-                })
-              }
+              onTogglePriority={async (isPriority) => {
+                try {
+                  await setClubPriority.mutateAsync({
+                    membershipId: club.membership.id,
+                    isPriority,
+                  });
+                  toast(isPriority ? "Club pinned" : "Club unpinned");
+                } catch {
+                  // Surface errors through the mutation's error state instead.
+                }
+              }}
               isPending={setClubPriority.isPending}
+              className="animate-in fade-in"
+              style={staggerStyle(index)}
             />
           ))}
         </div>
@@ -94,15 +108,19 @@ function ClubSummary({
   club,
   onTogglePriority,
   isPending,
+  className,
+  style,
 }: {
   club: ClubRow & { membership: MembershipRow };
   onTogglePriority: (isPriority: boolean) => void;
   isPending: boolean;
+  className?: string;
+  style?: CSSProperties;
 }) {
   const isPriority = club.membership.is_priority;
 
   return (
-    <Card className={isPriority ? "border-primary/40" : undefined}>
+    <Card className={cn(isPriority ? "border-primary/40" : undefined, className)} style={style}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-lg">{club.name}</CardTitle>

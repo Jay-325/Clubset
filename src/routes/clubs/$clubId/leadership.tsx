@@ -12,9 +12,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton, SkeletonSpinner } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { FadeIn } from "@/components/ui/motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { can } from "@/lib/auth/permissions";
+import { staggerStyle } from "@/lib/motion";
 import {
   ALL_PERMISSIONS,
   PERMISSION_LABELS,
@@ -35,6 +38,7 @@ import type {
   RequirementKind,
   TablesInsert,
 } from "@/lib/types/database";
+import { toast } from "sonner";
 
 /**
  * PRD 10/32-34: the positions a club offers, the permissions each one carries,
@@ -219,6 +223,7 @@ function LeadershipContent() {
       setRoleDescription("");
       setRolePermissions([]);
       setRoleError(null);
+      toast("Position created");
     },
   });
 
@@ -232,7 +237,10 @@ function LeadershipContent() {
       });
       if (error) throw error;
     },
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      toast("Application reviewed");
+    },
   });
 
   const applyForRole = useMutation({
@@ -241,7 +249,10 @@ function LeadershipContent() {
       const { error } = await supabase.rpc("apply_for_role", { target_role: roleId });
       if (error) throw error;
     },
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      toast("Application sent");
+    },
   });
 
   const handleCreateRole = (event: FormEvent<HTMLFormElement>) => {
@@ -369,12 +380,12 @@ function LeadershipContent() {
                   </div>
 
                   {roleError ? (
-                    <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    <p className="form-message animate-in fade-in rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive duration-150">
                       {roleError}
                     </p>
                   ) : null}
                   {createRole.error ? (
-                    <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    <p className="form-message animate-in fade-in rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive duration-150">
                       {createRole.error.message}
                     </p>
                   ) : null}
@@ -409,12 +420,16 @@ function LeadershipContent() {
                 </p>
               ) : (
                 <ul className="divide-y">
-                  {roleRows.map((role) => {
+                  {roleRows.map((role, index) => {
                     const roleRequirements = (requirements.data ?? []).filter(
                       (requirement) => requirement.role_id === role.id,
                     );
                     return (
-                      <li key={role.id} className="py-3">
+                      <li
+                        key={role.id}
+                        className={cn("py-3 animate-in fade-in")}
+                        style={staggerStyle(index)}
+                      >
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-medium">{role.name}</p>
                           {role.is_review_supervisor ? (
@@ -484,10 +499,13 @@ function LeadershipContent() {
                 </p>
               ) : (
                 <ul className="divide-y">
-                  {(eligible.data ?? []).map((role) => (
+                  {(eligible.data ?? []).map((role, index) => (
                     <li
                       key={role.role_id}
-                      className="flex flex-wrap items-center justify-between gap-2 py-3"
+                      className={cn(
+                        "flex flex-wrap items-center justify-between gap-2 py-3 animate-in fade-in",
+                      )}
+                      style={staggerStyle(index)}
                     >
                       <div>
                         <p className="font-medium">{role.role_name}</p>
@@ -510,7 +528,7 @@ function LeadershipContent() {
                 </ul>
               )}
               {applyForRole.error ? (
-                <p className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <p className="form-message animate-in fade-in mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive duration-150">
                   {applyForRole.error.message}
                 </p>
               ) : null}
@@ -539,14 +557,18 @@ function LeadershipContent() {
                 </p>
               ) : (
                 <ul className="divide-y">
-                  {applicationRows.map((application) => {
+                  {applicationRows.map((application, index) => {
                     const decided =
                       application.status === "accepted" ||
                       application.status === "rejected" ||
                       application.status === "withdrawn";
                     const notes = reviewNotes[application.id] ?? "";
                     return (
-                      <li key={application.id} className="space-y-2 py-3">
+                      <li
+                        key={application.id}
+                        className={cn("space-y-2 py-3 animate-in fade-in")}
+                        style={staggerStyle(index)}
+                      >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="min-w-0">
                             <p className="truncate font-medium">
@@ -633,7 +655,7 @@ function LeadershipContent() {
               )}
 
               {review.error ? (
-                <p className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <p className="form-message animate-in fade-in mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive duration-150">
                   {review.error.message}
                 </p>
               ) : null}

@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FadeIn } from "@/components/ui/motion";
 import { useAuth } from "@/lib/auth/context";
 import { useSignUp } from "@/lib/queries";
+import { toast } from "sonner";
 
 /**
  * Student account creation (PRD 4).
@@ -58,6 +60,7 @@ function SignupPage() {
       // If Supabase created a session (email auto-confirmed or no confirmation
       // required), continue straight to profile onboarding.
       if (result?.session) {
+        toast("Account created");
         void navigate({ to: "/onboarding" });
         return;
       }
@@ -173,7 +176,7 @@ function SignupPage() {
           )}
 
           {message ? (
-            <p className="mt-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p className="mt-4 form-message animate-in fade-in rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive duration-150">
               {message}
             </p>
           ) : null}

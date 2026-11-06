@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OtterBuddy } from "@/components/otter/OtterBuddy";
+import { cn } from "@/lib/utils";
+import { FadeIn } from "@/components/ui/motion";
 import { useAuth } from "@/lib/auth/context";
 import { useUnreadNotificationCount } from "@/lib/queries";
 
@@ -78,7 +80,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <nav className="hidden flex-1 items-center gap-1 sm:flex">
             {TABS.map((tab) => (
-              <Button key={tab.to} variant="ghost" size="sm" asChild>
+              <Button
+                key={tab.to}
+                variant="ghost"
+                size="sm"
+                asChild
+                className="transition-colors duration-200 [aria-current=page]:bg-accent [aria-current=page]:text-accent-foreground"
+              >
                 <Link to={tab.to} activeOptions={{ exact: tab.to === "/" }}>
                   <tab.icon className="size-4" />
                   {tab.label}
@@ -140,7 +148,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+        <FadeIn>{children}</FadeIn>
+      </main>
 
       {/* Otter mascot — floating in the back corner on every page. */}
       <OtterBuddy />

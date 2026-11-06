@@ -1,5 +1,5 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import type { FormEvent } from "react";
 import { AlertTriangle, Clock, MapPin, Plus } from "lucide-react";
 
@@ -17,13 +17,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton, SkeletonSpinner } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { FadeIn } from "@/components/ui/motion";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { can } from "@/lib/auth/permissions";
+import { staggerStyle } from "@/lib/motion";
 import { EVENT_KINDS, EVENT_KIND_LABELS, EVENT_PRIORITY_LABELS } from "@/lib/domain";
 import { useClubContext } from "@/lib/hooks/use-club";
 import { useClubEvents, useCreateEvent } from "@/lib/queries";
 import type { EventKind, EventPriority, EventRow as ClubEventRow } from "@/lib/types/database";
+import { toast } from "sonner";
 
 /**
  * PRD 11/14/19: meetings and events for one club.
@@ -155,6 +159,7 @@ function CreateEventForm({ clubId, defaultRsvp }: { clubId: string; defaultRsvp:
           setStartsAt("");
           setEndsAt("");
           setFormError(null);
+          toast("Event created");
         },
       },
     );
@@ -286,24 +291,20 @@ function CreateEventForm({ clubId, defaultRsvp }: { clubId: string; defaultRsvp:
           </div>
 
           {formError ? (
-            <p className="flex items-center gap-1.5 text-sm text-destructive">
+            <p className="form-message animate-in fade-in flex items-center gap-1.5 text-sm text-destructive duration-150">
               <AlertTriangle className="size-4" />
               {formError}
             </p>
           ) : null}
           {createEvent.isError ? (
-            <p className="flex items-center gap-1.5 text-sm text-destructive">
+            <p className="form-message animate-in fade-in flex items-center gap-1.5 text-sm text-destructive duration-150">
               <AlertTriangle className="size-4" />
               {createEvent.error.message}
             </p>
           ) : null}
 
           <Button type="submit" disabled={createEvent.isPending}>
-            {createEvent.isPending ? (
-              <SkeletonSpinner />
-            ) : (
-              <Plus className="size-4" />
-            )}
+            {createEvent.isPending ? <SkeletonSpinner /> : <Plus className="size-4" />}
             Create Event
           </Button>
         </form>
@@ -329,13 +330,20 @@ function EventSection({
       {isLoading ? (
         <Skeleton className="h-28 w-full" />
       ) : events.length === 0 ? (
-        <Card>
-          <CardContent className="py-6 text-sm text-muted-foreground">{empty}</CardContent>
-        </Card>
+        <FadeIn>
+          <Card>
+            <CardContent className="py-6 text-sm text-muted-foreground">{empty}</CardContent>
+          </Card>
+        </FadeIn>
       ) : (
         <div className="space-y-2">
-          {events.map((event) => (
-            <EventRow key={event.id} event={event} />
+          {events.map((event, index) => (
+            <EventRow
+              key={event.id}
+              event={event}
+              className="animate-in fade-in"
+              style={staggerStyle(index)}
+            />
           ))}
         </div>
       )}
@@ -343,9 +351,17 @@ function EventSection({
   );
 }
 
-function EventRow({ event }: { event: ClubEventRow }) {
+function EventRow({
+  event,
+  className,
+  style,
+}: {
+  event: ClubEventRow;
+  className?: string;
+  style?: CSSProperties;
+}) {
   return (
-    <Card>
+    <Card className={cn(className)} style={style}>
       <CardContent className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">

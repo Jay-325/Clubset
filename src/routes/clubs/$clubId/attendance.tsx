@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { Check, Undo2, UserX } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -18,6 +18,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import { FadeIn } from "@/components/ui/motion";
+import { staggerStyle } from "@/lib/motion";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useClubContext } from "@/lib/hooks/use-club";
 import { can } from "@/lib/auth/permissions";
@@ -271,10 +274,16 @@ function AttendanceReview({ event, clubId }: { event: EventRow; clubId: string }
             <p className="text-sm text-muted-foreground">Nobody has RSVPed for this event yet.</p>
           ) : (
             <ul className="divide-y">
-              {rows.map((row) => {
+              {rows.map((row, index) => {
                 const name = row.profile?.full_name ?? "Unknown student";
                 return (
-                  <li key={row.id} className="flex items-center justify-between gap-3 py-2.5">
+                  <li
+                    key={row.id}
+                    className={cn(
+                      "flex items-center justify-between gap-3 py-2.5 animate-in fade-in",
+                    )}
+                    style={staggerStyle(index)}
+                  >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{name}</p>
                       <p className="text-xs text-muted-foreground">

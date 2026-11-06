@@ -7,8 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { FadeIn } from "@/components/ui/motion";
 import { useAuth } from "@/lib/auth/context";
 import { useAdminLogin, useSignIn } from "@/lib/queries";
+import { toast } from "sonner";
 
 type LoginTab = "student" | "admin";
 
@@ -92,6 +95,7 @@ function LoginPage() {
       // Passwordless: sends a magic link (PRD 4, email-based authentication).
       await signIn.mutateAsync({ email: studentEmail });
       setStudentMessage("Check your email for a sign-in link.");
+      toast("Sign-in link sent");
       return;
     }
 
@@ -207,13 +211,13 @@ function LoginPage() {
               </form>
 
               {studentMessage ? (
-                <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+                <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground animate-in fade-in">
                   {studentMessage}
                 </p>
               ) : null}
 
               {signIn.error ? (
-                <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <p className="form-message animate-in fade-in rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive duration-150">
                   {signIn.error.message}
                 </p>
               ) : null}
@@ -271,11 +275,11 @@ function LoginPage() {
               {adminNotice ? (
                 <p
                   role="status"
-                  className={
+                  className={cn(
                     adminNotice.tone === "error"
-                      ? "rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
-                      : "rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground"
-                  }
+                      ? "form-message animate-in fade-in rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive duration-150"
+                      : "rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground animate-in fade-in",
+                  )}
                 >
                   {adminNotice.text}
                 </p>

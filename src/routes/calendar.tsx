@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { AlertTriangle, CalendarDays, Clock, MapPin } from "lucide-react";
 
 import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
@@ -8,9 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { FadeIn } from "@/components/ui/motion";
 import { useRsvp, useUpcomingEvents } from "@/lib/queries";
+import { staggerStyle } from "@/lib/motion";
 import { EVENT_KINDS, EVENT_PRIORITY_LABELS } from "@/lib/domain";
 import type { EventKind, UpcomingEventResult } from "@/lib/types/database";
+import { toast } from "sonner";
 
 /**
  * PRD 13: one calendar that combines every event from the clubs the student
@@ -105,13 +109,15 @@ function CalendarContent() {
               <Skeleton className="h-28 w-full" />
             </div>
           ) : visibleGroups.length === 0 ? (
-            <Card>
-              <CardContent className="py-6 text-sm text-muted-foreground">
-                {selectedDay
-                  ? "Nothing scheduled on this day."
-                  : "No upcoming events. Join a club and its events will appear here automatically."}
-              </CardContent>
-            </Card>
+            <FadeIn>
+              <Card>
+                <CardContent className="py-6 text-sm text-muted-foreground">
+                  {selectedDay
+                    ? "Nothing scheduled on this day."
+                    : "No upcoming events. Join a club and its events will appear here automatically."}
+                </CardContent>
+              </Card>
+            </FadeIn>
           ) : (
             <div className="space-y-6">
               {visibleGroups.map((group) => (
@@ -164,19 +170,32 @@ function DayGroup({ date, events }: { date: Date; events: UpcomingEventResult[] 
         })}
       </h3>
       <div className="space-y-2">
-        {events.map((event) => (
-          <EventRow key={event.id} event={event} />
+        {events.map((event, index) => (
+          <EventRow
+            key={event.id}
+            event={event}
+            className="animate-in fade-in"
+            style={staggerStyle(index)}
+          />
         ))}
       </div>
     </section>
   );
 }
 
-function EventRow({ event }: { event: UpcomingEventResult }) {
+function EventRow({
+  event,
+  className,
+  style,
+}: {
+  event: UpcomingEventResult;
+  className?: string;
+  style?: CSSProperties;
+}) {
   const rsvp = useRsvp();
 
   return (
-    <Card>
+    <Card className={cn(className)} style={style}>
       <CardContent className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
@@ -227,7 +246,14 @@ function EventRow({ event }: { event: UpcomingEventResult }) {
             size="sm"
             variant={event.my_rsvp === "going" ? "default" : "outline"}
             disabled={!event.rsvp_enabled || rsvp.isPending}
-            onClick={() => rsvp.mutate({ eventId: event.id, going: true })}
+            onClick={async () => {
+              try {
+                await rsvp.mutateAsync({ eventId: event.id, going: true });
+                toast("RSVP'd going");
+              } catch {
+                // Error handled by the mutation error state.
+              }
+            }}
           >
             Going
           </Button>
@@ -235,7 +261,14 @@ function EventRow({ event }: { event: UpcomingEventResult }) {
             size="sm"
             variant={event.my_rsvp === "not_going" ? "secondary" : "outline"}
             disabled={!event.rsvp_enabled || rsvp.isPending}
-            onClick={() => rsvp.mutate({ eventId: event.id, going: false })}
+            onClick={async () => {
+              try {
+                await rsvp.mutateAsync({ eventId: event.id, going: false });
+                toast("RSVP'd not going");
+              } catch {
+                // Error handled by the mutation error state.
+              }
+            }}
           >
             Not going
           </Button>

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { AlertTriangle, CalendarDays, MapPin, Search, Sparkles, Users } from "lucide-react";
 
 import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { FadeIn } from "@/components/ui/motion";
 import {
   Select,
   SelectContent,
@@ -18,6 +20,7 @@ import {
 import { useAuth } from "@/lib/auth/context";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useClubSearch, useRecommendedClubs, useUpcomingEvents } from "@/lib/queries";
+import { staggerStyle } from "@/lib/motion";
 import {
   CLUB_TYPE_LABELS,
   COMMITMENT_LABELS,
@@ -101,16 +104,18 @@ function MainContent() {
             <Skeleton className="h-20 w-full" />
           </div>
         ) : (upcoming.data ?? []).length === 0 ? (
-          <Card>
-            <CardContent className="py-6 text-sm text-muted-foreground">
-              Nothing on your calendar yet. Join a club and its events will show up here
-              automatically.
-            </CardContent>
-          </Card>
+          <FadeIn>
+            <Card>
+              <CardContent className="py-6 text-sm text-muted-foreground">
+                Nothing on your calendar yet. Join a club and its events will show up here
+                automatically.
+              </CardContent>
+            </Card>
+          </FadeIn>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {(upcoming.data ?? []).map((event) => (
-              <Card key={event.id}>
+            {(upcoming.data ?? []).map((event, index) => (
+              <Card key={event.id} className="animate-in fade-in" style={staggerStyle(index)}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -174,8 +179,14 @@ function MainContent() {
             Based on your interests and how much time you have each week.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            {recommended.map((club) => (
-              <ClubCard key={club.id} club={club} showReasons />
+            {recommended.map((club, index) => (
+              <ClubCard
+                key={club.id}
+                club={club}
+                showReasons
+                className="animate-in fade-in"
+                style={staggerStyle(index)}
+              />
             ))}
           </div>
         </section>
@@ -252,18 +263,22 @@ function MainContent() {
             <Skeleton className="h-40 w-full" />
           </div>
         ) : (clubSearch.data ?? []).length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              No clubs match those filters yet.
-            </CardContent>
-          </Card>
+          <FadeIn>
+            <Card>
+              <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                No clubs match those filters yet.
+              </CardContent>
+            </Card>
+          </FadeIn>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {(clubSearch.data ?? []).map((club) => (
+            {(clubSearch.data ?? []).map((club, index) => (
               <ClubCard
                 key={club.id}
                 club={club}
                 onOpen={() => navigate({ to: "/clubs/$clubId", params: { clubId: club.id } })}
+                className="animate-in fade-in"
+                style={staggerStyle(index)}
               />
             ))}
           </div>
@@ -277,6 +292,8 @@ function ClubCard({
   club,
   showReasons = false,
   onOpen,
+  className,
+  style,
 }: {
   club: {
     id: string;
@@ -293,10 +310,16 @@ function ClubCard({
   };
   showReasons?: boolean;
   onOpen?: () => void;
+  className?: string;
+  style?: CSSProperties;
 }) {
   return (
     <Card
-      className={onOpen ? "cursor-pointer transition-colors hover:border-primary/40" : undefined}
+      className={cn(
+        onOpen ? "cursor-pointer transition-colors hover:border-primary/40" : undefined,
+        className,
+      )}
+      style={style}
       onClick={onOpen}
     >
       <CardHeader className="pb-3">

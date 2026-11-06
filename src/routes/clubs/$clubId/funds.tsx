@@ -10,6 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton, SkeletonSpinner } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { FadeIn } from "@/components/ui/motion";
 import {
   Select,
   SelectContent,
@@ -18,11 +20,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { staggerStyle } from "@/lib/motion";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useClubContext } from "@/lib/hooks/use-club";
 import { can } from "@/lib/auth/permissions";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/domain";
 import type { DuesRow, ProfileRow, TransactionRow } from "@/lib/types/database";
+import { toast } from "sonner";
 
 /**
  * PRD 24: bookkeeping a student can run without a spreadsheet.
@@ -148,8 +152,14 @@ function FundsContent() {
                 <p className="text-sm text-muted-foreground">No transactions recorded yet.</p>
               ) : (
                 <ul className="divide-y">
-                  {rows.map((row) => (
-                    <li key={row.id} className="flex items-center justify-between gap-3 py-2.5">
+                  {rows.map((row, index) => (
+                    <li
+                      key={row.id}
+                      className={cn(
+                        "flex items-center justify-between gap-3 py-2.5 animate-in fade-in",
+                      )}
+                      style={staggerStyle(index)}
+                    >
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">
                           {row.description || row.category}
@@ -220,6 +230,7 @@ function QuickAdd({ clubId }: { clubId: string }) {
     onSuccess: () => {
       setAmount("");
       setDescription("");
+      toast("Transaction added");
       void queryClient.invalidateQueries({ queryKey: ["club", clubId, "finances"] });
       void queryClient.invalidateQueries({ queryKey: ["club", clubId, "transactions"] });
     },
@@ -318,7 +329,9 @@ function QuickAdd({ clubId }: { clubId: string }) {
           </Button>
 
           {mutation.error ? (
-            <p className="text-sm text-destructive">{mutation.error.message}</p>
+            <p className="form-message animate-in fade-in text-sm text-destructive duration-150">
+              {mutation.error.message}
+            </p>
           ) : null}
         </form>
       </CardContent>
@@ -352,6 +365,7 @@ function DuesPanel({ clubId }: { clubId: string }) {
     // Marking paid also records income, so the balance and the roster can never
     // disagree (PRD 46).
     onSuccess: () => {
+      toast("Dues marked paid");
       void queryClient.invalidateQueries({ queryKey: ["club", clubId] });
     },
   });
@@ -375,8 +389,12 @@ function DuesPanel({ clubId }: { clubId: string }) {
           </p>
         ) : (
           <ul className="divide-y">
-            {rows.map((row) => (
-              <li key={row.id} className="flex items-center justify-between gap-3 py-2.5">
+            {rows.map((row, index) => (
+              <li
+                key={row.id}
+                className={cn("flex items-center justify-between gap-3 py-2.5 animate-in fade-in")}
+                style={staggerStyle(index)}
+              >
                 <div>
                   <p className="text-sm font-medium">{row.profile?.full_name ?? "Member"}</p>
                   <p className="text-xs text-muted-foreground">
@@ -417,7 +435,9 @@ function DuesPanel({ clubId }: { clubId: string }) {
           </ul>
         )}
         {markPaid.error ? (
-          <p className="mt-2 text-sm text-destructive">{markPaid.error.message}</p>
+          <p className="form-message animate-in fade-in mt-2 text-sm text-destructive duration-150">
+            {markPaid.error.message}
+          </p>
         ) : null}
       </CardContent>
     </Card>

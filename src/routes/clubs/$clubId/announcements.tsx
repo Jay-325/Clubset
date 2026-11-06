@@ -11,13 +11,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton, SkeletonSpinner } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { FadeIn } from "@/components/ui/motion";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { can } from "@/lib/auth/permissions";
+import { staggerStyle } from "@/lib/motion";
 import { useClubContext } from "@/lib/hooks/use-club";
 import { useViewerId } from "@/lib/queries";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { AnnouncementRow, ProfileRow, TablesInsert } from "@/lib/types/database";
+import { toast } from "sonner";
 
 /**
  * PRD 23/36: announcements are how a club reaches everyone at once.
@@ -135,6 +139,7 @@ function AnnouncementsContent() {
       setPinned(false);
       setComposing(false);
       setFormError(null);
+      toast("Announcement posted");
     },
   });
 
@@ -146,7 +151,10 @@ function AnnouncementsContent() {
       const { error } = await supabase.from("announcements").delete().eq("id", announcementId);
       if (error) throw error;
     },
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      toast("Announcement deleted");
+    },
   });
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -232,12 +240,12 @@ function AnnouncementsContent() {
               </div>
 
               {formError ? (
-                <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <p className="form-message animate-in fade-in rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive duration-150">
                   {formError}
                 </p>
               ) : null}
               {create.error ? (
-                <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <p className="form-message animate-in fade-in rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive duration-150">
                   {create.error.message}
                 </p>
               ) : null}
@@ -257,22 +265,28 @@ function AnnouncementsContent() {
 
       <div className="space-y-3">
         {rows.length === 0 ? (
-          <Card>
-            <CardContent>
-              <p className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
-                <Bell className="size-5" />
-                Nothing announced yet.
-                {maySend
-                  ? " Post the first one above."
-                  : " Leaders will post here when there is news."}
-              </p>
-            </CardContent>
-          </Card>
+          <FadeIn>
+            <Card>
+              <CardContent>
+                <p className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
+                  <Bell className="size-5" />
+                  Nothing announced yet.
+                  {maySend
+                    ? " Post the first one above."
+                    : " Leaders will post here when there is news."}
+                </p>
+              </CardContent>
+            </Card>
+          </FadeIn>
         ) : (
-          rows.map((announcement) => {
+          rows.map((announcement, index) => {
             const canDelete = maySend || (viewerId !== null && announcement.author_id === viewerId);
             return (
-              <Card key={announcement.id}>
+              <Card
+                key={announcement.id}
+                className="animate-in fade-in"
+                style={staggerStyle(index)}
+              >
                 <CardHeader>
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -315,7 +329,7 @@ function AnnouncementsContent() {
       </div>
 
       {remove.error ? (
-        <p className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="form-message animate-in fade-in mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive duration-150">
           {remove.error.message}
         </p>
       ) : null}
