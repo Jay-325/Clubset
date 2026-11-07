@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/ui/motion";
 import { useAuth } from "@/lib/auth/context";
-import { useAdminLogin, useSignIn } from "@/lib/queries";
+import { normalizeAuthError, useAdminLogin, useSignIn } from "@/lib/queries";
 import { toast } from "sonner";
 
 type LoginTab = "student" | "admin";
@@ -122,10 +122,7 @@ function LoginPage() {
       // refusing the request). These never say anything about the allowlist.
       setAdminNotice({
         tone: "error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "We couldn't process that request. Please try again.",
+        text: normalizeAuthError(error),
       });
     }
   };
@@ -218,7 +215,7 @@ function LoginPage() {
 
               {signIn.error ? (
                 <p className="form-message animate-in fade-in rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive duration-150">
-                  {signIn.error.message}
+                  {normalizeAuthError(signIn.error)}
                 </p>
               ) : null}
 

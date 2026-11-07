@@ -21,9 +21,15 @@ const mockFrom = vi.fn(() => ({
 const mockAssertPasswordNotBreached = vi.hoisted(() => vi.fn());
 const mockSignUp = vi.hoisted(() => vi.fn().mockResolvedValue({ data: null, error: null }));
 const mockUpdateUser = vi.hoisted(() => vi.fn().mockResolvedValue({ error: null }));
+const mockEnforceAuthRateLimit = vi.hoisted(() => vi.fn().mockResolvedValue({ allowed: true }));
 
 vi.mock("@/lib/security/passwords", () => ({
   assertPasswordNotBreached: mockAssertPasswordNotBreached,
+}));
+
+vi.mock("@/lib/security/auth-rate-limit.functions", () => ({
+  enforceAuthRateLimit: mockEnforceAuthRateLimit,
+  RATE_LIMITED_MESSAGE: "Too many requests. Please wait a moment and try again.",
 }));
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -43,9 +49,11 @@ import {
   useMarkNotificationRead,
   useSignUp,
   useChangePassword,
+  normalizeAuthError,
 } from "./queries";
 
 const mockedGetSupabaseClient = vi.mocked(getSupabaseClient);
+const mockedEnforceAuthRateLimit = vi.mocked(mockEnforceAuthRateLimit);
 
 function makeWrapper(queryClient: QueryClient) {
   return ({ children }: { children: React.ReactNode }) =>
@@ -337,5 +345,103 @@ describe("useChangePassword runs assertPasswordNotBreached before updateUser", (
 
     expect(mockAssertPasswordNotBreached).toHaveBeenCalled();
     expect(mockUpdateUser).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Rate limiting on signup
+// ---------------------------------------------------------------------------
+
+describe("useSignUp rate limiting", () => {
+  const wrapper = makeWrapper(
+    new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    }),
+  );
+
+  beforeEach(() => {
+    mockAssertPasswordNotBreached.mockResolvedValue(undefined);
+    mockSignUp.mockResolvedValue({ data: null, error: null });
+    mockedEnforceAuthRateLimit.mockResolvedValue({ allowed: true });
+  });
+
+  it("calls enforceAuthRateLimit before signUp", async () => {
+    const { result } = renderHook(() => useSignUp(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        email: "student@school.edu",
+        password: "a-long-unique-passphrase",
+      });
+    });
+
+    expect(mockedEnforceAuthRateLimit).toHaveBeenCalledWith({
+      data: { email: "student@school.edu", operation: "signup" },
+    });
+    expect(mockedEnforceAuthRateLimit.mock.invocationCallOrder[0]!).toBeLessThan(
+      mockAssertPasswordNotBreached.mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it("rejects signup and never calls signUp when rate limited", async () => {
+    mockedEnforceAuthRateLimit.mockResolvedValue({ allowed: false });
+
+    const { result } = renderHook(() => useSignUp(), { wrapper });
+
+    await expect(
+      act(async () => {
+        await result.current.mutateAsync({
+          email: "student@school.edu",
+          password: "a-long-unique-passphrase",
+        });
+      }),
+    ).rejects.toThrow("Too many requests. Please wait a moment and try again.");
+
+    expect(mockedEnforceAuthRateLimit).toHaveBeenCalled();
+    expect(mockAssertPasswordNotBreached).not.toHaveBeenCalled();
+    expect(mockSignUp).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// normalizeAuthError
+// ---------------------------------------------------------------------------
+
+describe("normalizeAuthError", () => {
+  it("maps 'already registered' to a generic sign-in prompt", () => {
+    expect(normalizeAuthError(new Error("User already registered"))).toBe(
+      "An account already exists for this email address. Please sign in instead.",
+    );
+    expect(normalizeAuthError(new Error("user already exists"))).toBe(
+      "An account already exists for this email address. Please sign in instead.",
+    );
+  });
+
+  it("maps invalid credentials to a generic message", () => {
+    expect(normalizeAuthError(new Error("Invalid login credentials"))).toBe(
+      "Unable to sign in. Please check your email and password.",
+    );
+    expect(normalizeAuthError(new Error("Incorrect password"))).toBe(
+      "Unable to sign in. Please check your email and password.",
+    );
+  });
+
+  it("maps unconfirmed email to a verification prompt", () => {
+    expect(normalizeAuthError(new Error("Email not confirmed"))).toBe(
+      "Please verify your email address before signing in. Check your inbox for the verification link.",
+    );
+  });
+
+  it("maps rate-limit errors to the generic retry message", () => {
+    expect(normalizeAuthError(new Error("Too many requests"))).toBe(
+      "Too many requests. Please wait a moment and try again.",
+    );
+  });
+
+  it("returns a generic message for unknown errors", () => {
+    expect(normalizeAuthError(new Error("Some unexpected error"))).toBe(
+      "Something went wrong. Please try again.",
+    );
+    expect(normalizeAuthError(null)).toBe("Something went wrong. Please try again.");
   });
 });

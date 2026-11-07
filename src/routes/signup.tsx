@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FadeIn } from "@/components/ui/motion";
 import { useAuth } from "@/lib/auth/context";
-import { useSignUp } from "@/lib/queries";
+import { normalizeAuthError, useSignUp } from "@/lib/queries";
 import { toast } from "sonner";
 
 /**
@@ -69,11 +69,7 @@ function SignupPage() {
       // address before they can sign in and finish onboarding.
       setStep("verify");
     } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "We couldn't create your account. Please try again.",
-      );
+      setMessage(normalizeAuthError(error));
     }
   };
 

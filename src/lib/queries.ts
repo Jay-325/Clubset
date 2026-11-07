@@ -11,6 +11,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 
 import { assertPasswordNotBreached } from "@/lib/security/passwords";
+import {
+  enforceAuthRateLimit,
+  RATE_LIMITED_MESSAGE,
+} from "@/lib/security/auth-rate-limit.functions";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type {
   AdminClubOverviewRow,
@@ -65,8 +69,17 @@ export function normalizeEmail(email: string): string {
 export function useAdminLogin() {
   return useMutation({
     mutationFn: async (email: string): Promise<void> => {
-      const supabase = getSupabaseClient();
       const normalized = normalizeEmail(email);
+      const supabase = getSupabaseClient();
+
+      // Rate-limit the allowlist pre-check and the activation email it can
+      // trigger. Both are email-address-bound operations.
+      const rateLimit = await enforceAuthRateLimit({
+        data: { email: normalized, operation: "admin_allowlist" },
+      });
+      if (!rateLimit.allowed) {
+        throw new Error(RATE_LIMITED_MESSAGE);
+      }
 
       // 1. Ask the database. public.admin_allowlist has no client SELECT
       //    policy, so this RPC is the only way the browser can learn the answer.
@@ -152,16 +165,28 @@ export function useSignIn() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: { email: string; password?: string }) => {
+      const normalizedEmail = normalizeEmail(input.email);
       const supabase = getSupabaseClient();
+
       if (input.password) {
+        // Password login does not trigger an auth email, so no email-rate
+        // limit applies. Supabase Auth's own brute-force protections apply.
         const { error } = await supabase.auth.signInWithPassword({
-          email: normalizeEmail(input.email),
+          email: normalizedEmail,
           password: input.password,
         });
         if (error) throw error;
       } else {
+        // Magic-link sign-in sends an email: rate-limit it.
+        const rateLimit = await enforceAuthRateLimit({
+          data: { email: normalizedEmail, operation: "magic_link" },
+        });
+        if (!rateLimit.allowed) {
+          throw new Error(RATE_LIMITED_MESSAGE);
+        }
+
         const { error } = await supabase.auth.signInWithOtp({
-          email: normalizeEmail(input.email),
+          email: normalizedEmail,
           options: { shouldCreateUser: true },
         });
         if (error) throw error;
@@ -179,6 +204,18 @@ export function useSignUp() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: { email: string; password: string; fullName?: string }) => {
+      const normalizedEmail = normalizeEmail(input.email);
+
+      // Rate-limit signup before any Supabase Auth call that sends an email.
+      // Server-enforced: the check runs in a server function and hits the
+      // database, not in React state or a disabled button.
+      const rateLimit = await enforceAuthRateLimit({
+        data: { email: normalizedEmail, operation: "signup" },
+      });
+      if (!rateLimit.allowed) {
+        throw new Error(RATE_LIMITED_MESSAGE);
+      }
+
       // Signup is the first point a user chooses a password. The check must
       // finish before Supabase Auth creates the account, so a breached
       // password is never stored.
@@ -187,7 +224,7 @@ export function useSignUp() {
       const supabase = getSupabaseClient();
       const signUpOptions = input.fullName ? { data: { full_name: input.fullName } } : {};
       const { data, error } = await supabase.auth.signUp({
-        email: normalizeEmail(input.email),
+        email: normalizedEmail,
         password: input.password,
         ...(Object.keys(signUpOptions).length ? { options: signUpOptions } : {}),
       });
@@ -787,5 +824,53 @@ export function useAdminClubOverview(enabled = true) {
 // ---------------------------------------------------------------------------
 // Session typing helper
 // ---------------------------------------------------------------------------
+
+/**
+ * Normalize a Supabase Auth error into a user-safe message.
+ *
+ * Never echo the upstream error verbatim: messages like "User already
+ * registered" or "Invalid login credentials" reveal whether an email address
+ * is known to the auth system. Return a generic message instead so the UI
+ * cannot be used as an email-enumeration oracle.
+ *
+ * Legitimate users still get actionable guidance (verify your email, check
+ * your password) without confirming or denying the existence of any account.
+ */
+export function normalizeAuthError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const lower = message.toLowerCase();
+
+  // Signup: email already has an account (confirmed or not). Do not confirm
+  // or deny; tell the user to sign in instead.
+  if (
+    lower.includes("already registered") ||
+    lower.includes("user already exists") ||
+    lower.includes("already exists")
+  ) {
+    return "An account already exists for this email address. Please sign in instead.";
+  }
+
+  // Password login: wrong email or wrong password. Same message either way.
+  if (
+    lower.includes("invalid login") ||
+    lower.includes("incorrect password") ||
+    lower.includes("invalid credentials")
+  ) {
+    return "Unable to sign in. Please check your email and password.";
+  }
+
+  // Email not yet confirmed: actionable but does not reveal whether another
+  // email would behave differently.
+  if (lower.includes("email not confirmed") || lower.includes("not confirmed")) {
+    return "Please verify your email address before signing in. Check your inbox for the verification link.";
+  }
+
+  // Rate limit from Supabase Auth or our own rate limiter.
+  if (lower.includes("too many") || lower.includes("rate limit")) {
+    return RATE_LIMITED_MESSAGE;
+  }
+
+  return "Something went wrong. Please try again.";
+}
 
 export type { Session, Json };
