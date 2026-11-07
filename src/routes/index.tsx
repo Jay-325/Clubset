@@ -7,6 +7,11 @@ import {
   Search,
   Sparkles,
   Users,
+  Calendar,
+  CalendarClock,
+  CreditCard,
+  CheckCircle2,
+  BookOpen,
 } from "lucide-react";
 
 import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
@@ -101,8 +106,40 @@ function MainContent() {
         description="Every day is a new opportunity."
       />
 
+      {/* ---- Quick actions ---- */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <QuickActionCard
+          icon={<CalendarClock className="size-5 text-primary" />}
+          title="Create Event"
+          description="Schedule a new club meeting"
+          onClick={() => navigate({ to: "/calendar" })}
+          color="bg-primary/10 text-primary"
+        />
+        <QuickActionCard
+          icon={<Users className="size-5 text-primary" />}
+          title="My Clubs"
+          description="View your joined clubs"
+          onClick={() => navigate({ to: "/my-clubs" })}
+          color="bg-primary/10 text-primary"
+        />
+        <QuickActionCard
+          icon={<CheckCircle2 className="size-5 text-primary" />}
+          title="Attendance"
+          description="Check meeting attendance"
+          onClick={() => navigate({ to: "/my-clubs" })}
+          color="bg-primary/10 text-primary"
+        />
+        <QuickActionCard
+          icon={<CreditCard className="size-5 text-primary" />}
+          title="Finances"
+          description="Manage club funds"
+          onClick={() => navigate({ to: "/my-clubs" })}
+          color="bg-primary/10 text-primary"
+        />
+      </div>
+
       {/* ---- Welcome row: calendar + events side by side ---- */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px] mt-8">
         {/* Left: Upcoming events (dashboard style) */}
         <div className="space-y-6">
           <section className="space-y-3">
@@ -111,16 +148,11 @@ function MainContent() {
                 <CalendarDays className="size-4 text-primary" />
                 <h2 className="text-lg font-semibold">Coming up</h2>
               </div>
-              <Link
-                to="/calendar"
-                className="text-sm font-medium text-primary hover:underline"
-              >
+              <Link to="/calendar" className="text-sm font-medium text-primary hover:underline">
                 View all
               </Link>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Across all your joined clubs.
-            </p>
+            <p className="text-sm text-muted-foreground">Across all your joined clubs.</p>
           </section>
 
           {upcoming.isLoading ? (
@@ -218,9 +250,7 @@ function MainContent() {
           {/* Start a club button */}
           <Card>
             <CardContent className="p-6 text-center">
-              <p className="text-sm text-muted-foreground mb-4">
-                Ready to start something new?
-              </p>
+              <p className="text-sm text-muted-foreground mb-4">Ready to start something new?</p>
               <Button asChild className="w-full">
                 <Link to="/clubs/new">Start a new club</Link>
               </Button>
@@ -298,9 +328,7 @@ function MainContent() {
         ) : (clubSearch.data ?? []).length === 0 ? (
           <Card className="text-center py-12">
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                No clubs match those filters yet.
-              </p>
+              <p className="text-sm text-muted-foreground">No clubs match those filters yet.</p>
             </CardContent>
           </Card>
         ) : (
@@ -371,9 +399,7 @@ function EventCard({
             <Badge variant="outline">
               {EVENT_KIND_LABELS[event.kind as keyof typeof EVENT_KIND_LABELS]}
             </Badge>
-            {event.my_rsvp === "going" ? (
-              <Badge variant="secondary">Going</Badge>
-            ) : null}
+            {event.my_rsvp === "going" ? <Badge variant="secondary">Going</Badge> : null}
           </div>
         </div>
 
@@ -385,6 +411,38 @@ function EventCard({
             {event.conflict_count === 1 ? "" : "s"}. You decide which one to attend.
           </p>
         ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Quick action card for dashboard shortcuts. */
+function QuickActionCard({
+  icon,
+  title,
+  description,
+  onClick,
+  color,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  onClick: () => void;
+  color: string;
+}) {
+  return (
+    <Card>
+      <CardContent
+        className="p-5 cursor-pointer hover:bg-accent/50 transition-colors"
+        onClick={onClick}
+      >
+        <div className="flex items-start justify-between">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 {color}">
+            {icon}
+          </div>
+        </div>
+        <h3 className="text-sm font-semibold">{title}</h3>
+        <p className="text-xs text-muted-foreground mt-1">{description}</p>
       </CardContent>
     </Card>
   );
@@ -437,7 +495,9 @@ function ClubCard({
       <CardContent className="space-y-2 text-sm">
         <div className="flex flex-wrap gap-1.5">
           {club.fields.slice(0, 4).map((item) => (
-            <Badge key={item} variant="secondary">{item}</Badge>
+            <Badge key={item} variant="secondary">
+              {item}
+            </Badge>
           ))}
         </div>
         <p className="text-muted-foreground">

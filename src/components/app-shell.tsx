@@ -8,9 +8,10 @@ import {
   Bell,
   LogOut,
   PanelLeft,
+  Menu,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -85,18 +86,31 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data: unreadCount = 0 } = useUnreadNotificationCount();
   const router = useRouter();
   const location = useLocation();
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const active = activeNavItem(location.pathname);
+
+  // Click outside to close sidebar
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+        setSidebarOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [sidebarRef]);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* ===== Left Sidebar (desktop) ===== */}
       <aside
+        ref={sidebarRef}
         className={cn(
-          "fixed inset-y-0 left-0 z-30 w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border",
+          "fixed inset-y-0 left-0 z-30 bg-sidebar text-sidebar-foreground border-r border-sidebar-border",
           "transition-[width] duration-300 ease-in-out",
-          sidebarOpen ? "w-64" : "w-16",
+          sidebarOpen ? "w-64" : "w-0 hidden",
         )}
       >
         <div className="flex h-full flex-col">
@@ -117,65 +131,80 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Button>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 flex flex-col gap-1 p-3 overflow-y-auto">
-            {NAV_ITEMS.map((item) => {
-              const isActive = active?.to === item.to;
-              return (
-                <Button
-                  key={item.to}
-                  variant="ghost"
-                  size="sm"
-                  asChild
-                  className={cn(
-                    "w-full justify-start text-sm",
-                    isActive
-                      ? "bg-sidebar-accent text-sidebar-primary-foreground shadow-sm"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                  )}
-                >
-                  <Link to={item.to} activeOptions={{ exact: item.to === "/" }}>
-                    <item.icon className={cn("size-4", sidebarOpen ? "mr-2" : "mx-auto")} />
-                    {sidebarOpen && <span>{item.label}</span>}
-                  </Link>
-                </Button>
-              );
-            })}
-          </nav>
+          {sidebarOpen && (
+            <>
+              {/* Navigation */}
+              <nav className="flex-1 flex flex-col gap-1 p-3 overflow-y-auto">
+                {NAV_ITEMS.map((item) => {
+                  const isActive = active?.to === item.to;
+                  return (
+                    <Button
+                      key={item.to}
+                      variant="ghost"
+                      size="sm"
+                      asChild
+                      className={cn(
+                        "w-full justify-start text-sm",
+                        isActive
+                          ? "bg-sidebar-accent text-sidebar-primary-foreground shadow-sm"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                      )}
+                    >
+                      <Link to={item.to} activeOptions={{ exact: item.to === "/" }}>
+                        <item.icon className="size-4 mr-2" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </Button>
+                  );
+                })}
+              </nav>
 
-          {/* Footer: user + sign out */}
-          <div className="flex-shrink-0 p-3 border-t border-sidebar-border">
-            {profile ? (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 px-2">
-                  <span
-                    className={cn(sidebarOpen ? "text-sm" : "hidden", "text-sidebar-foreground")}
-                  >
-                    {profile.full_name || profile.email}
-                  </span>
-                  {profile.account_type === "administrator" ? (
-                    <Badge variant="secondary" className={cn(sidebarOpen ? "" : "hidden")}>
-                      Admin
-                    </Badge>
-                  ) : null}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    void signOut().then(() => router.navigate({ to: "/login" }));
-                  }}
-                  aria-label="Sign out"
-                  className={cn(sidebarOpen ? "w-full justify-start" : "mx-auto", "h-8 w-8")}
-                >
-                  <LogOut className={cn("size-4", sidebarOpen ? "mr-2" : "mx-auto")} />
-                  {sidebarOpen && <span className="text-xs text-sidebar-foreground">Sign out</span>}
-                </Button>
+              {/* Footer: user + sign out */}
+              <div className="flex-shrink-0 p-3 border-t border-sidebar-border">
+                {profile ? (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 px-2">
+                      <span className="text-sm text-sidebar-foreground">
+                        {profile.full_name || profile.email}
+                      </span>
+                      {profile.account_type === "administrator" ? (
+                        <Badge variant="secondary">Admin</Badge>
+                      ) : null}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        void signOut().then(() => router.navigate({ to: "/login" }));
+                      }}
+                      aria-label="Sign out"
+                      className="w-full justify-start h-8"
+                    >
+                      <LogOut className="size-4 mr-2" />
+                      <span className="text-xs text-sidebar-foreground">Sign out</span>
+                    </Button>
+                  </div>
+                ) : null}
               </div>
-            ) : null}
-          </div>
+            </>
+          )}
         </div>
       </aside>
+
+      {/* Floating sidebar toggle for mobile + collapsed desktop */}
+      <div className="fixed inset-y-0 left-0 z-30 flex items-center justify-start hidden md:block">
+        {!sidebarOpen && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Expand sidebar"
+            className="h-8 w-8 m-4"
+          >
+            <Menu className="size-5" />
+          </Button>
+        )}
+      </div>
 
       {/* Sidebar overlay for mobile */}
       <div className="fixed inset-0 z-20 bg-black/20 hidden md:hidden" />
