@@ -43,7 +43,8 @@ export function OtterBuddy({ onClick }: OtterBuddyProps = {}) {
       <div className="otter-view otter-hover-image" aria-hidden="true" />
       {bubbleOpen && (
         <div className="otter-bubble" role="status" aria-live="polite">
-          <strong className="text-primary-foreground">Otter:</strong> {meetingMessage(isLoading, nextEvent)}
+          <strong className="text-primary-foreground">Otter:</strong>{" "}
+          {meetingMessage(isLoading, nextEvent)}
         </div>
       )}
     </button>
