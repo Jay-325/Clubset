@@ -250,3 +250,60 @@ a staging project and the authorization cases below verified there:
 * `POST /rest/v1/rpc/record_audit` as `authenticated` → `42501`/404 (no grant);
 * `POST /rest/v1/rpc/apply_for_role` → row `submitted`, and a second call on an
   already-accepted application → error instead of reopening it.
+
+## 5. Administrator personal-information remediation (pre-public release)
+
+### 5.1 What was removed from the committed repository
+
+Real administrator contact details (names and email addresses) were removed from
+all **publicly distributable, non-history** locations:
+
+- `supabase/seed.sql` — now uses developer placeholders
+  (`admin.one@example.invalid`, `admin.two@example.invalid`) instead of the two
+  production administrator addresses. Seed data is development-only.
+- `scripts/verify-admin-auth.sql` — the local verification harness now uses the
+  same developer placeholders; it is not run against production.
+- `supabase/AUDIT_2026-10-24_schema_rls_indexes.md` and
+  `supabase/SCHEMA_RECONCILIATION_REPORT.md` — references to the production
+  administrator addresses were replaced with generic descriptions and pointers to
+  the provisioning process below.
+
+### 5.2 What was intentionally NOT changed
+
+- Already-applied migrations (`20261019000200`, `20261025005921`, and the other
+  applied `admin_allowlist` migrations) are **not edited**. They reproduce the
+  live schema and authorization state exactly as applied, and editing them would
+  break migration consistency without changing the live database. Their contents
+  remain the historical record of how the two authorized administrators were
+  provisioned.
+- The exact two authorized administrators in the live
+  `public.admin_allowlist` table remain intact. They were not revoked, deleted,
+  or modified.
+
+### 5.3 Fresh-environment provisioning
+
+Administrator provisioning is a manual, operator-performed step outside this
+repository (operator-supplied values, placeholders only in documentation):
+
+1. The operator obtains administrator email addresses through an authorized
+   out-of-band channel.
+2. Using direct database access (Supabase dashboard, `postgres`, or the
+   server-only `service_role` credential), the operator inserts one
+   `public.admin_allowlist` row per administrator
+   (`school_id`, `email` lowercase, `full_name`, `revoked_at` NULL).
+3. Revocation is recorded by setting `revoked_at`; `activate_administrator()`
+   refuses revoked rows.
+
+See `AGENTS.md` § "Administrator allowlist provisioning".
+
+### 5.4 Service-role key guarantees
+
+- `SUPABASE_SERVICE_ROLE_KEY` is read only in
+  `src/integrations/supabase/client.server.ts` (server-side, `process.env`).
+- `supabaseAdmin` is not imported by any client route, component, hook, or
+  shared module; no client-side import path reaches it.
+- The key is never prefixed `VITE_`, never returned in API responses or client
+  config, never logged, and never committed.
+- Privileged operations validate the requesting user's identity and
+  permissions independently before acting (the service-role client bypasses RLS,
+  so authorization is enforced in the application layer / database functions).

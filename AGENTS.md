@@ -153,6 +153,43 @@ Administrator *activation* is still the only path to `account_type =
 agnostic: `handle_new_auth_user()` links every new auth user to the deployment's
 school, so any verified address gets a working student account.
 
+### Administrator allowlist provisioning (developer-managed, private)
+
+`public.admin_allowlist` is **developer-managed and private**. `anon` and
+`authenticated` have no table privileges; every legitimate reader
+(`activate_administrator`, `check_administrator_allowlist`, `handle_new_auth_user`)
+is `SECURITY DEFINER` and reads the table on the caller's behalf. There is no
+application allowlist-management screen, and an activated school administrator
+must not be able to mint another administrator.
+
+Provisioning a fresh or production environment is a **manual, operator-performed
+step outside the committed repository**:
+
+1. The operator obtains the administrator email addresses through an authorized
+   out-of-band channel (never from this repository).
+2. Using direct database access (the Supabase dashboard, `postgres`, or the
+   server-only `service_role` credential), the operator inserts one
+   `public.admin_allowlist` row per administrator: `(school_id, email,
+   full_name)`, with `email` stored lowercase and `revoked_at` left `NULL`.
+3. The operator records `revoked_at` to revoke an administrator;
+   `activate_administrator()` refuses any row with `revoked_at` set.
+
+Rules for this repository:
+
+- Real administrator contact details (names, email addresses, phone numbers)
+  must **not** be committed to `supabase/seed.sql`, any migration, or any
+  documentation. `supabase/seed.sql` uses developer placeholders only and is
+  development-only.
+- Do not edit already-applied migrations to insert or remove allowlist rows;
+  they reproduce the live schema and authorization state as it was applied.
+- Do not put real administrator addresses in a new migration. If a new
+  migration touches `admin_allowlist`, it must not hard-code an address.
+- The exact two authorized administrators in the live database must remain
+  intact; do not revoke, delete, or modify them.
+- `check_administrator_allowlist()` remains the one `anon`-callable endpoint
+  (read-only, returns one boolean, no name/school/id). It is not a policy
+  predicate and must never be used inside one.
+
 ## 3. Database rules
 
 - **Migrations only.** Never run DDL against the live project by hand, and never

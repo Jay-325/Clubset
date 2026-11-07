@@ -8,7 +8,15 @@
 -- run this against a real school database.
 -- ============================================================================
 
--- The seed mirrors the deployed tenant exactly: one school, two administrators.
+-- The seed mirrors the deployed tenant shape: one school and two administrator
+-- allowlist entries so the Administrator Login path (PRD 5) can be exercised
+-- locally.
+--
+-- The email/full_name values below are DEVELOPER PLACEHOLDERS only. They are
+-- NOT the production administrator addresses. Production allowlist entries are
+-- provisioned by an authorized operator using operator-supplied values outside
+-- this repository (see the local-development provisioning notes in AGENTS.md).
+-- Never commit real administrator contact details here.
 -- Earlier revisions seeded a fabricated "Ridgeway High School" / ridgeway.edu
 -- tenant. It never existed in any environment and has been removed; do not
 -- reintroduce it.
@@ -34,13 +42,13 @@ on conflict (slug) do nothing;
 -- @fairfieldschools.net/.org) grants student access only. The allowlist is
 -- developer-managed; no signed-in user can write it (20261103000000).
 insert into public.admin_allowlist (school_id, email, full_name)
-select id, 'arinjaypal@gmail.com', 'Arinjay Pal'
+select id, 'admin.one@example.invalid', 'Administrator One'
 from public.schools
 where slug = 'fairfield'
 on conflict (school_id, email) do nothing;
 
 insert into public.admin_allowlist (school_id, email, full_name)
-select id, 'ray.d.villaflor@gmail.com', 'Ray Villaflor'
+select id, 'admin.two@example.invalid', 'Administrator Two'
 from public.schools
 where slug = 'fairfield'
 on conflict (school_id, email) do nothing;
