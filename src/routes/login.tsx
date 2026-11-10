@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AuthDivider, GoogleAuthButton } from "@/components/auth/google-auth-button";
+import { oauthErrorMessage, readOAuthError, removeOAuthErrorParams } from "@/lib/auth/oauth";
 import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/ui/motion";
 import { useAuth } from "@/lib/auth/context";
@@ -20,8 +22,9 @@ type LoginTab = "student" | "admin";
  * backend decides the account type (PRD 5, 40).
  *
  * The page exposes two side-by-side tabs:
- *   * Student      -- email / optional password sign in, plus "Create Student
- *                     Account" for a normal student signup (leads to onboarding)
+ *   * Student      -- Google one-click sign in/sign up, email / optional
+ *                     password sign in, plus "Create Student Account" for a
+ *                     normal student signup (leads to onboarding)
  *   * Administrator -- activation only, allowlist-only. Visually and
  *                     structurally separate from the student form. The address
  *                     is checked against the allowlist BEFORE any email is
@@ -86,6 +89,22 @@ function LoginPage() {
   useEffect(() => {
     if (next) sessionStorage.setItem("clubset_next", next);
   }, [next]);
+
+  // Returning from Google: Supabase reports a cancelled or failed trip in the
+  // URL (#error=... on the implicit flow the client uses, ?error=... under
+  // PKCE). Show one plain-language line and strip the parameters so a refresh
+  // does not repeat the message.
+  useEffect(() => {
+    const oauthError = readOAuthError(window.location);
+    if (!oauthError) return;
+
+    setStudentMessage(oauthErrorMessage(oauthError));
+
+    const cleaned = removeOAuthErrorParams(window.location.href);
+    if (cleaned !== window.location.href) {
+      window.history.replaceState({}, "", cleaned);
+    }
+  }, []);
 
   const handleStudentLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -177,7 +196,18 @@ function LoginPage() {
 
             {/* ---------------- Student log in ---------------- */}
             <TabsContent value="student" className="space-y-6">
-              <form onSubmit={handleStudentLogin} className="space-y-4 pt-2">
+              {/*
+                One-click sign in *and* sign up: Google decides which it is, and
+                a brand-new Google account gets a student profile from the
+                handle_new_auth_user() trigger, then onboarding from AuthProvider.
+                Administrator access is never granted here.
+              */}
+              <div className="space-y-3 pt-2">
+                <GoogleAuthButton disabled={signIn.isPending || adminLogin.isPending} />
+                <AuthDivider />
+              </div>
+
+              <form onSubmit={handleStudentLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="student-email">Email</Label>
                   <Input

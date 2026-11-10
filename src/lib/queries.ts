@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 
 import { assertPasswordNotBreached } from "@/lib/security/passwords";
+import { OAUTH_PROVIDER, oauthRedirectUrl } from "@/lib/auth/oauth";
 import {
   enforceAuthRateLimit,
   RATE_LIMITED_MESSAGE,
@@ -196,6 +197,38 @@ export function useSignIn() {
       queryClient.invalidateQueries({ queryKey: ["auth"] });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       void variables;
+    },
+  });
+}
+
+/**
+ * One-click Google sign-in / sign-up (PRD 4).
+ *
+ * There is no email to rate-limit here and no password to breach-check: Google
+ * authenticates the person, and Supabase Auth turns the returned profile into a
+ * session. The allowlist is never consulted -- a Google session is still an
+ * ordinary student session until `activate_administrator()` says otherwise (see
+ * AuthProvider), so this neither grants nor requests administrator access.
+ *
+ * The call resolves after the browser has been handed to Google; the app is no
+ * longer running, so there is no cache to invalidate. If the user cancels,
+ * Google/Supabase send them back with an `error` parameter, which the login page
+ * reports (see readOAuthError).
+ */
+export function useGoogleSignIn() {
+  return useMutation({
+    mutationFn: async (input?: { redirectTo?: string }): Promise<void> => {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: OAUTH_PROVIDER,
+        options: {
+          redirectTo: input?.redirectTo ?? oauthRedirectUrl(),
+          // Always show the chooser: a shared school laptop must not silently
+          // reuse whoever signed into Google last.
+          queryParams: { prompt: "select_account" },
+        },
+      });
+      if (error) throw error;
     },
   });
 }

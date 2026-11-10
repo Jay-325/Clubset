@@ -22,6 +22,7 @@ const mockAssertPasswordNotBreached = vi.hoisted(() => vi.fn());
 const mockSignUp = vi.hoisted(() => vi.fn().mockResolvedValue({ data: null, error: null }));
 const mockUpdateUser = vi.hoisted(() => vi.fn().mockResolvedValue({ error: null }));
 const mockEnforceAuthRateLimit = vi.hoisted(() => vi.fn().mockResolvedValue({ allowed: true }));
+const mockOAuthRedirectUrl = vi.hoisted(() => vi.fn(() => "http://localhost/login"));
 
 vi.mock("@/lib/security/passwords", () => ({
   assertPasswordNotBreached: mockAssertPasswordNotBreached,
@@ -30,6 +31,11 @@ vi.mock("@/lib/security/passwords", () => ({
 vi.mock("@/lib/security/auth-rate-limit.functions", () => ({
   enforceAuthRateLimit: mockEnforceAuthRateLimit,
   RATE_LIMITED_MESSAGE: "Too many requests. Please wait a moment and try again.",
+}));
+
+vi.mock("@/lib/auth/oauth", () => ({
+  OAUTH_PROVIDER: "google",
+  oauthRedirectUrl: mockOAuthRedirectUrl,
 }));
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -50,10 +56,12 @@ import {
   useSignUp,
   useChangePassword,
   normalizeAuthError,
+  useGoogleSignIn,
 } from "./queries";
 
 const mockedGetSupabaseClient = vi.mocked(getSupabaseClient);
 const mockedEnforceAuthRateLimit = vi.mocked(mockEnforceAuthRateLimit);
+const mockedOAuthRedirectUrl = vi.mocked(mockOAuthRedirectUrl);
 
 function makeWrapper(queryClient: QueryClient) {
   return ({ children }: { children: React.ReactNode }) =>
@@ -400,6 +408,71 @@ describe("useSignUp rate limiting", () => {
     expect(mockedEnforceAuthRateLimit).toHaveBeenCalled();
     expect(mockAssertPasswordNotBreached).not.toHaveBeenCalled();
     expect(mockSignUp).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// useGoogleSignIn
+// ---------------------------------------------------------------------------
+
+describe("useGoogleSignIn", () => {
+  const mockSignInWithOAuth = vi.fn().mockResolvedValue({ error: null });
+
+  const wrapper = makeWrapper(
+    new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    }),
+  );
+
+  beforeEach(() => {
+    mockSignInWithOAuth.mockClear();
+    mockedOAuthRedirectUrl.mockReturnValue("http://localhost/login");
+    mockedGetSupabaseClient.mockReturnValue({
+      auth: { signInWithOAuth: mockSignInWithOAuth },
+    } as any);
+  });
+
+  it("calls signInWithOAuth with provider google and the default redirect URL", async () => {
+    const { result } = renderHook(() => useGoogleSignIn(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync();
+    });
+
+    expect(mockedOAuthRedirectUrl).toHaveBeenCalledWith();
+    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+      provider: "google",
+      options: {
+        redirectTo: "http://localhost/login",
+        queryParams: { prompt: "select_account" },
+      },
+    });
+  });
+
+  it("uses an override redirect URL when supplied", async () => {
+    const { result } = renderHook(() => useGoogleSignIn(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ redirectTo: "https://clubset.lovable.app/login?tab=admin" });
+    });
+
+    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+      provider: "google",
+      options: {
+        redirectTo: "https://clubset.lovable.app/login?tab=admin",
+        queryParams: { prompt: "select_account" },
+      },
+    });
+  });
+
+  it("rejects when Supabase cannot start the OAuth flow", async () => {
+    mockSignInWithOAuth.mockResolvedValue({ error: new Error("OAuth provider not configured") });
+
+    const { result } = renderHook(() => useGoogleSignIn(), { wrapper });
+
+    await expect(act(async () => await result.current.mutateAsync())).rejects.toThrow(
+      "OAuth provider not configured",
+    );
   });
 });
 

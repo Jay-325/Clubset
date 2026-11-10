@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AuthDivider, GoogleAuthButton } from "@/components/auth/google-auth-button";
 import { FadeIn } from "@/components/ui/motion";
 import { useAuth } from "@/lib/auth/context";
 import { normalizeAuthError, useSignUp } from "@/lib/queries";
@@ -14,11 +15,17 @@ import { toast } from "sonner";
 /**
  * Student account creation (PRD 4).
  *
+ *   Continue with Google  -> Google -> Supabase Auth -> profile (trigger)
+ *   or
  *   Enter email + password
  *   -> create/activate student account (HIBP-checked password)
  *   -> email verification, if the Auth project requires it
  *   -> student profile setup/onboarding (/onboarding)
  *   -> Clubset home
+ *
+ * The Google path returns to /login rather than here, because AuthProvider owns
+ * post-sign-in routing (a returning Google user with a complete profile must go
+ * home, not into onboarding). See oauthRedirectUrl().
  *
  * The administrator flow is deliberately NOT here: administrator access is
  * activation-only via the existing AdminUser allowlist and is reached from the
@@ -112,41 +119,54 @@ function SignupPage() {
 
         <CardContent>
           {step === "account" ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
-                <Input
-                  id="signup-email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                />
+            <>
+              {/*
+                Google creates the account and signs the person in in one step.
+                The profile itself is provisioned by the handle_new_auth_user()
+                trigger, so onboarding is the same as for an email signup -- and
+                it still grants nothing beyond a student account.
+              */}
+              <div className="space-y-3">
+                <GoogleAuthButton disabled={signUp.isPending} />
+                <AuthDivider />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
-                <Input
-                  id="signup-password"
-                  type="password"
-                  required
-                  autoComplete="new-password"
-                  placeholder="Choose a strong password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Your password is checked against known data breaches before the account is
-                  created.
-                </p>
-              </div>
-              <Button type="submit" className="w-full" disabled={signUp.isPending}>
-                {signUp.isPending ? <Mail className="size-4" /> : null}
-                <ArrowRight className="ml-2 size-4" />
-                Create account
-              </Button>
-            </form>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Password</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    required
+                    autoComplete="new-password"
+                    placeholder="Choose a strong password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Your password is checked against known data breaches before the account is
+                    created.
+                  </p>
+                </div>
+                <Button type="submit" className="w-full" disabled={signUp.isPending}>
+                  {signUp.isPending ? <Mail className="size-4" /> : null}
+                  <ArrowRight className="ml-2 size-4" />
+                  Create account
+                </Button>
+              </form>
+            </>
           ) : (
             <>
               <CardHeader>
