@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Mail } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthDivider, GoogleAuthButton } from "@/components/auth/google-auth-button";
+import { TurnstileWidget, type TurnstileWidgetHandle } from "@/components/auth/turnstile-widget";
 import { FadeIn } from "@/components/ui/motion";
 import { useAuth } from "@/lib/auth/context";
+import { isTurnstileConfigured } from "@/lib/security/turnstile";
 import { normalizeAuthError, useSignUp } from "@/lib/queries";
 import { toast } from "sonner";
 
@@ -43,6 +45,9 @@ function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<TurnstileWidgetHandle>(null);
+  const captchaRequired = isTurnstileConfigured();
 
   // Already signed in (for example after clicking the email verification link):
   // finish onboarding instead of re-showing the signup form.
@@ -61,8 +66,17 @@ function SignupPage() {
       return;
     }
 
+    if (captchaRequired && !captchaToken) {
+      setMessage("Please complete the human check first, then try again.");
+      return;
+    }
+
     try {
-      const result = await signUp.mutateAsync({ email, password });
+      const result = await signUp.mutateAsync({
+        email,
+        password,
+        ...(captchaToken ? { captchaToken } : {}),
+      });
 
       // If Supabase created a session (email auto-confirmed or no confirmation
       // required), continue straight to profile onboarding.
@@ -77,6 +91,9 @@ function SignupPage() {
       setStep("verify");
     } catch (error) {
       setMessage(normalizeAuthError(error));
+    } finally {
+      // Single-use token: a retry after a rejected signup needs a new one.
+      captchaRef.current?.reset();
     }
   };
 
@@ -165,6 +182,8 @@ function SignupPage() {
                   <ArrowRight className="ml-2 size-4" />
                   Create account
                 </Button>
+
+                <TurnstileWidget ref={captchaRef} onToken={setCaptchaToken} />
               </form>
             </>
           ) : (

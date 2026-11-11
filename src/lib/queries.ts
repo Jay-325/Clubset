@@ -69,8 +69,8 @@ export function normalizeEmail(email: string): string {
  */
 export function useAdminLogin() {
   return useMutation({
-    mutationFn: async (email: string): Promise<void> => {
-      const normalized = normalizeEmail(email);
+    mutationFn: async (input: { email: string; captchaToken?: string }): Promise<void> => {
+      const normalized = normalizeEmail(input.email);
       const supabase = getSupabaseClient();
 
       // Rate-limit the allowlist pre-check and the activation email it can
@@ -102,7 +102,10 @@ export function useAdminLogin() {
       //    true because an allowlisted teacher may not have an account yet.
       const { error } = await supabase.auth.signInWithOtp({
         email: normalized,
-        options: { shouldCreateUser: true },
+        options: {
+          shouldCreateUser: true,
+          ...(input.captchaToken ? { captchaToken: input.captchaToken } : {}),
+        },
       });
       if (error) throw error;
     },
@@ -165,16 +168,18 @@ export function useViewerId() {
 export function useSignIn() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { email: string; password?: string }) => {
+    mutationFn: async (input: { email: string; password?: string; captchaToken?: string }) => {
       const normalizedEmail = normalizeEmail(input.email);
       const supabase = getSupabaseClient();
 
       if (input.password) {
         // Password login does not trigger an auth email, so no email-rate
-        // limit applies. Supabase Auth's own brute-force protections apply.
+        // limit applies. Supabase Auth's own brute-force protections apply,
+        // plus the Turnstile token when captcha is enabled on the project.
         const { error } = await supabase.auth.signInWithPassword({
           email: normalizedEmail,
           password: input.password,
+          ...(input.captchaToken ? { options: { captchaToken: input.captchaToken } } : {}),
         });
         if (error) throw error;
       } else {
@@ -188,7 +193,10 @@ export function useSignIn() {
 
         const { error } = await supabase.auth.signInWithOtp({
           email: normalizedEmail,
-          options: { shouldCreateUser: true },
+          options: {
+            shouldCreateUser: true,
+            ...(input.captchaToken ? { captchaToken: input.captchaToken } : {}),
+          },
         });
         if (error) throw error;
       }
@@ -236,7 +244,12 @@ export function useGoogleSignIn() {
 export function useSignUp() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { email: string; password: string; fullName?: string }) => {
+    mutationFn: async (input: {
+      email: string;
+      password: string;
+      fullName?: string;
+      captchaToken?: string;
+    }) => {
       const normalizedEmail = normalizeEmail(input.email);
 
       // Rate-limit signup before any Supabase Auth call that sends an email.
@@ -255,7 +268,9 @@ export function useSignUp() {
       await assertPasswordNotBreached(input.password);
 
       const supabase = getSupabaseClient();
-      const signUpOptions = input.fullName ? { data: { full_name: input.fullName } } : {};
+      const signUpOptions: { data?: { full_name: string }; captchaToken?: string } = {};
+      if (input.fullName) signUpOptions.data = { full_name: input.fullName };
+      if (input.captchaToken) signUpOptions.captchaToken = input.captchaToken;
       const { data, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password: input.password,

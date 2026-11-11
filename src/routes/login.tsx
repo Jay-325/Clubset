@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GraduationCap, Mail, ShieldCheck, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AuthDivider, GoogleAuthButton } from "@/components/auth/google-auth-button";
+import {
+  TurnstileWidget,
+  type TurnstileWidgetHandle,
+} from "@/components/auth/turnstile-widget";
 import { oauthErrorMessage, readOAuthError, removeOAuthErrorParams } from "@/lib/auth/oauth";
+import { isTurnstileConfigured } from "@/lib/security/turnstile";
 import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/ui/motion";
 import { useAuth } from "@/lib/auth/context";
@@ -74,10 +79,17 @@ function LoginPage() {
   const [studentEmail, setStudentEmail] = useState("");
   const [studentPassword, setStudentPassword] = useState("");
   const [studentMessage, setStudentMessage] = useState<string | null>(null);
+  // Turnstile token per form: tokens are single-use, so the student and
+  // administrator forms must never share one.
+  const [studentCaptchaToken, setStudentCaptchaToken] = useState<string | null>(null);
+  const studentCaptchaRef = useRef<TurnstileWidgetHandle>(null);
+  const captchaRequired = isTurnstileConfigured();
 
   // Administrator tab state -- kept separate so switching tabs never leaks an
   // address typed into the other flow.
   const [adminEmail, setAdminEmail] = useState("");
+  const [adminCaptchaToken, setAdminCaptchaToken] = useState<string | null>(null);
+  const adminCaptchaRef = useRef<TurnstileWidgetHandle>(null);
   const [adminNotice, setAdminNotice] = useState<{
     tone: "info" | "error";
     text: string;
@@ -110,28 +122,60 @@ function LoginPage() {
     event.preventDefault();
     setStudentMessage(null);
 
-    if (!studentPassword) {
-      // Passwordless: sends a magic link (PRD 4, email-based authentication).
-      await signIn.mutateAsync({ email: studentEmail });
-      setStudentMessage("Check your email for a sign-in link.");
-      toast("Sign-in link sent");
+    if (captchaRequired && !studentCaptchaToken) {
+      setStudentMessage("Please complete the human check first, then try again.");
       return;
     }
 
-    await signIn.mutateAsync({ email: studentEmail, password: studentPassword });
-    setStudentMessage("Signed in.");
+    try {
+      if (!studentPassword) {
+        // Passwordless: sends a magic link (PRD 4, email-based authentication).
+        await signIn.mutateAsync({
+          email: studentEmail,
+          ...(studentCaptchaToken ? { captchaToken: studentCaptchaToken } : {}),
+        });
+        setStudentMessage("Check your email for a sign-in link.");
+        toast("Sign-in link sent");
+        return;
+      }
+
+      await signIn.mutateAsync({
+        email: studentEmail,
+        password: studentPassword,
+        ...(studentCaptchaToken ? { captchaToken: studentCaptchaToken } : {}),
+      });
+      setStudentMessage("Signed in.");
+    } catch {
+      // Rendered from signIn.error below; swallowing here only keeps a rejected
+      // promise from becoming an unhandled rejection.
+    } finally {
+      // Turnstile tokens are single-use: the next attempt (wrong password,
+      // resend link) needs a fresh challenge.
+      studentCaptchaRef.current?.reset();
+    }
   };
 
   const handleAdminLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     setAdminNotice(null);
 
+    if (captchaRequired && !adminCaptchaToken) {
+      setAdminNotice({
+        tone: "error",
+        text: "Please complete the human check first, then try again.",
+      });
+      return;
+    }
+
     try {
       // The allowlist is consulted before any email is sent (see useAdminLogin),
       // but the hook deliberately does not report the verdict: the message below
       // is identical whether the address is registered or not, so the page never
       // reveals allowlist membership.
-      await adminLogin.mutateAsync(adminEmail);
+      await adminLogin.mutateAsync({
+        email: adminEmail,
+        ...(adminCaptchaToken ? { captchaToken: adminCaptchaToken } : {}),
+      });
       setAdminNotice({
         tone: "info",
         text: "If that email is on your school's administrator allowlist, an activation link is on its way. Open it to finish setting up your account.",
@@ -143,6 +187,8 @@ function LoginPage() {
         tone: "error",
         text: normalizeAuthError(error),
       });
+    } finally {
+      adminCaptchaRef.current?.reset();
     }
   };
 
@@ -235,6 +281,8 @@ function LoginPage() {
                   {signIn.isPending ? <Mail className="mr-2 size-4" /> : null}
                   Continue
                 </Button>
+
+                <TurnstileWidget ref={studentCaptchaRef} onToken={setStudentCaptchaToken} />
               </form>
 
               {studentMessage ? (
@@ -297,6 +345,8 @@ function LoginPage() {
                   {adminLogin.isPending ? <Mail className="mr-2 size-4" /> : null}
                   Send activation link
                 </Button>
+
+                <TurnstileWidget ref={adminCaptchaRef} onToken={setAdminCaptchaToken} />
               </form>
 
               {adminNotice ? (
