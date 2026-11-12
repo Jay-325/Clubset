@@ -48,7 +48,8 @@ clubset/
 ├── SECONDARY_SECURITY_INVESTIGATION_REPORT.md  # NEW — adversarial re-test results
 ├── src/
 │   ├── components/
-│   │   ├── app-shell.tsx        # RequireAuth, AppShell, PageHeader
+│   │   ├── app-shell.tsx        # RequireAuth, AppShell, PageHeader; now uses the shadcn Sidebar
+│   │   │                         component for a responsive column (desktop) / off-canvas Sheet (mobile)
 │   │   ├── otter/OtterBuddy.tsx
 │   │   └── ui/                  # 46 shadcn/ui primitives
 │   ├── hooks/
@@ -105,8 +106,10 @@ clubset/
 │   │   ├── [.well-known]/oauth-protected-resource.ts   # returns 404 (was MCP discovery)
 │   │   ├── __root.tsx        # root route
 │   │   ├── admin.tsx         # Administrator dashboard
-│   │   ├── calendar.tsx
-│   │   ├── index.tsx         # home / club discovery
+│   │   ├── calendar.tsx      # dedicated scheduling workspace — functional month navigation, dynamic month,
+│   │   │                         agenda + month view, RSVP, conflict indicators
+│   │   ├── index.tsx         # home / club discovery — dashboard redesigned (overview, coming up, your clubs,
+│   │   │                         recommendations, search); mini-calendar removed
 │   │   ├── login.tsx         # Student + Administrator tabs; admin tab calls check_administrator_allowlist()
 │   │   ├── mcp.ts            # returns 404 for ALL methods (/mcp disabled)
 │   │   ├── my-clubs.tsx

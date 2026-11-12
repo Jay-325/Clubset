@@ -2,6 +2,39 @@
 @source "../src";
 @import "tw-animate-css";
 
+/* Self-hosted Plus Jakarta Sans (OFL, Google Fonts). Loaded locally so jsdom
+ * tests never make cross-origin font requests, and the browser avoids an
+ * external stylesheet dependency. font-display: swap keeps text visible
+ * immediately (no invisible-text flash) and swaps to the brand font once ready. */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/plus-jakarta-sans/PlusJakartaSans-400.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/plus-jakarta-sans/PlusJakartaSans-500.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/plus-jakarta-sans/PlusJakartaSans-600.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/plus-jakarta-sans/PlusJakartaSans-700.ttf") format("truetype");
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -59,6 +92,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: var(--font-sans);
   /* Centralized motion values (see src/lib/motion.ts). */
   --motion-duration-fast: 150ms;
   --motion-duration-normal: 250ms;
@@ -71,6 +105,7 @@
 
 :root {
   --radius: 1rem;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --background: oklch(0.96 0.004 240);
   --foreground: oklch(0.22 0.012 260);
   --card: oklch(1 0 0);
@@ -87,9 +122,9 @@
   --accent-foreground: oklch(0.26 0.02 258);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.88 0.008 245);
-  --input: oklch(0.93 0.008 242);
-  --ring: oklch(0.55 0.14 258 / 0.4);
+  --border: oklch(0.60 0.008 245);
+  --input: oklch(0.60 0.008 242);
+  --ring: oklch(0.55 0.14 258 / 0.9);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -106,6 +141,7 @@
 }
 
 .dark {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);
@@ -120,7 +156,7 @@
   --muted-foreground: oklch(0.704 0.04 256.788);
   --accent: oklch(0.279 0.041 260.031);
   --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
+  --destructive: oklch(0.58 0.191 22.216);
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);

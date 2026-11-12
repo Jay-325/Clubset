@@ -3,20 +3,29 @@ import { useMemo, useState } from "react";
 import {
   AlertTriangle,
   CalendarDays,
+  Clock,
   MapPin,
   Search,
   Sparkles,
   Users,
+  ChevronRight,
 } from "lucide-react";
 
 import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { FadeIn } from "@/components/ui/motion";
+import { FadeIn, StaggeredList } from "@/components/ui/motion";
 import {
   Select,
   SelectContent,
@@ -26,19 +35,20 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth/context";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
-import { useClubSearch, useRecommendedClubs, useUpcomingEvents } from "@/lib/queries";
+import { useClubSearch, useMyClubs, useRecommendedClubs, useUpcomingEvents } from "@/lib/queries";
 import { staggerStyle } from "@/lib/motion";
 import {
   CLUB_TYPE_LABELS,
   COMMITMENT_LABELS,
   EVENT_KIND_LABELS,
-  EVENT_PRIORITY_LABELS,
   PRESET_INTERESTS,
 } from "@/lib/domain";
 
 /**
- * PRD 20: the Main page is the discovery dashboard -- upcoming meetings,
- * important events, club updates, and recommendations, plus search and filters.
+ * PRD 20: the Main page is the student's personal Clubset home -- upcoming
+ * meetings, important updates, joined-club shortcuts, recommendations, plus
+ * search and filters. It is an overview, not a second scheduling page (the
+ * dedicated calendar lives at /calendar).
  */
 export const Route = createFileRoute("/")({
   component: MainPage,
@@ -77,6 +87,7 @@ function MainContent() {
 
   const recommendations = useRecommendedClubs();
   const upcoming = useUpcomingEvents(5);
+  const myClubs = useMyClubs();
 
   // PRD 21: recommendations are only shown separately when there is a profile
   // to base them on.
@@ -87,25 +98,31 @@ function MainContent() {
     commitment === ALL &&
     (profile?.interests.length ?? 0) > 0;
 
-  // Both lists are filtered on every render of this page, including while the
-  // student is typing, so the join is kept off the keystroke path.
   const recommended = useMemo(() => {
     const discovered = new Set((clubSearch.data ?? []).map((result) => result.id));
     return (recommendations.data ?? []).filter((club) => !discovered.has(club.id));
   }, [recommendations.data, clubSearch.data]);
 
+  const pinnedClubs = useMemo(
+    () =>
+      [...(myClubs.data ?? [])]
+        .sort((a, b) => Number(b.membership.is_priority) - Number(a.membership.is_priority))
+        .slice(0, 5),
+    [myClubs.data],
+  );
+
   return (
     <>
       <PageHeader
         title={`Hi, ${profile?.full_name?.split(" ")[0] ?? "there"}`}
-        description="Every day is a new opportunity."
+        description="Your home for clubs, events, and what's coming up next."
       />
 
-      {/* ---- Welcome row: calendar + events side by side ---- */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        {/* Left: Upcoming events (dashboard style) */}
-        <div className="space-y-6">
-          <section className="space-y-3">
+      {/* ===== Overview: two columns on desktop, stacked on mobile ===== */}
+      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        <div className="space-y-6 min-w-0">
+          {/* Left: coming up */}
+          <section className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CalendarDays className="size-4 text-primary" />
@@ -113,100 +130,107 @@ function MainContent() {
               </div>
               <Link
                 to="/calendar"
-                className="text-sm font-medium text-primary hover:underline"
+                className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
               >
-                View all
+                View all <ChevronRight className="size-3" />
               </Link>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Across all your joined clubs.
-            </p>
+            <p className="text-sm text-muted-foreground">Across all your joined clubs.</p>
+
+            {upcoming.isLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-14 w-full" />
+                <Skeleton className="h-14 w-full" />
+              </div>
+            ) : (upcoming.data ?? []).length === 0 ? (
+              <Card className="text-center py-10">
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Nothing on your calendar yet. Join a club and its events will show up here
+                    automatically.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <StaggeredList>
+                {(upcoming.data ?? []).map((event, index) => (
+                  <DashboardEventCard
+                    key={event.id}
+                    event={event}
+                    className="animate-in fade-in"
+                    style={staggerStyle(index)}
+                  />
+                ))}
+              </StaggeredList>
+            )}
           </section>
-
-          {upcoming.isLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-            </div>
-          ) : (upcoming.data ?? []).length === 0 ? (
-            <Card className="text-center py-12">
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Nothing on your calendar yet. Join a club and its events will show up here
-                  automatically.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {(upcoming.data ?? []).map((event, index) => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  className="animate-in fade-in"
-                  style={staggerStyle(index)}
-                />
-              ))}
-            </div>
-          )}
         </div>
+        <div className="space-y-6 min-w-0">
+          {/* Right: your clubs + recommendations */}
+          {/* ===== Your clubs: joined-club shortcuts ===== */}
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Your clubs</h2>
+              {myClubs.data && myClubs.data.length > 0 ? (
+                <Link
+                  to="/my-clubs"
+                  className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
+                >
+                  Manage all <ChevronRight className="size-3" />
+                </Link>
+              ) : null}
+            </div>
 
-        {/* Right: Mini calendar widget + recommendations */}
-        <div className="space-y-6">
-          {/* Mini calendar widget */}
-          <Card className="h-[400px]">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold">January 2026</CardTitle>
-                <div className="flex items-center gap-1">
-                  <Button variant="outline" size="icon" className="h-7 w-7 p-0">
-                    <span className="sr-only">Previous month</span>
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-7 w-7 p-0">
-                    <span className="sr-only">Next month</span>
-                  </Button>
-                </div>
+            {myClubs.isLoading ? (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
               </div>
-            </CardHeader>
-            <CardContent className="p-3">
-              <div className="grid w-full grid-cols-7 gap-0.5 text-center text-xs">
-                <div className="font-medium text-muted-foreground">Su</div>
-                <div className="font-medium text-muted-foreground">Mo</div>
-                <div className="font-medium text-muted-foreground">Tu</div>
-                <div className="font-medium text-muted-foreground">We</div>
-                <div className="font-medium text-muted-foreground">Th</div>
-                <div className="font-medium text-muted-foreground">Fr</div>
-                <div className="font-medium text-muted-foreground">Sa</div>
-              </div>
-              <div className="grid w-full grid-cols-7 gap-0.5 mt-2">
-                {[...Array(31)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="aspect-square rounded-lg flex items-center justify-center text-sm text-muted-foreground hover:bg-accent/50 cursor-pointer transition-colors"
-                  >
-                    {i + 1}
-                  </div>
+            ) : myClubs.data && myClubs.data.length === 0 ? (
+              <Card className="text-center py-10">
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    You have not joined a club yet. Browse clubs below to find one that fits.
+                  </p>
+                  <Button asChild className="mt-4 w-full">
+                    <Link to="/">Find clubs</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {pinnedClubs.map((club, index) => (
+                  <YourClubCard
+                    key={club.id}
+                    club={club}
+                    className="animate-in fade-in"
+                    style={staggerStyle(index)}
+                  />
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </section>
 
-          {/* Recommendations */}
+          {/* ===== Recommendations ===== */}
           {showRecommendations && recommended.length > 0 ? (
-            <section className="space-y-3">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Sparkles className="size-4 text-primary" />
-                Recommended for you
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Based on your interests and time availability.
-              </p>
-              <div className="space-y-3">
-                {recommended.slice(0, 3).map((club, index) => (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <Sparkles className="size-4 text-primary" />
+                  Recommended for you
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Based on your interests and time availability.
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {recommended.slice(0, 6).map((club, index) => (
                   <ClubCard
                     key={club.id}
                     club={club}
                     showReasons
+                    onOpen={() => navigate({ to: "/clubs/$clubId", params: { clubId: club.id } })}
                     className="animate-in fade-in"
                     style={staggerStyle(index)}
                   />
@@ -214,23 +238,11 @@ function MainContent() {
               </div>
             </section>
           ) : null}
-
-          {/* Start a club button */}
-          <Card>
-            <CardContent className="p-6 text-center">
-              <p className="text-sm text-muted-foreground mb-4">
-                Ready to start something new?
-              </p>
-              <Button asChild className="w-full">
-                <Link to="/clubs/new">Start a new club</Link>
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </div>
 
-      {/* ---- Search & filters (full width below) ---- */}
-      <section className="mt-10 space-y-4">
+      {/* ===== Find clubs: search & filters ===== */}
+      <section className="mt-10 space-y-4" id="find-clubs">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Find clubs</h2>
         </div>
@@ -291,16 +303,15 @@ function MainContent() {
         </div>
 
         {clubSearch.isLoading ? (
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Skeleton className="h-44 w-full" />
             <Skeleton className="h-44 w-full" />
             <Skeleton className="h-44 w-full" />
           </div>
         ) : (clubSearch.data ?? []).length === 0 ? (
           <Card className="text-center py-12">
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                No clubs match those filters yet.
-              </p>
+              <p className="text-sm text-muted-foreground">No clubs match those filters yet.</p>
             </CardContent>
           </Card>
         ) : (
@@ -321,8 +332,8 @@ function MainContent() {
   );
 }
 
-/** Compact event card for the dashboard. */
-function EventCard({
+/** Compact event card for the dashboard overview. */
+function DashboardEventCard({
   event,
   className,
   style,
@@ -345,14 +356,18 @@ function EventCard({
 
   return (
     <Card className={cn(className)} style={style}>
-      <CardContent className="p-4">
+      <CardContent className="p-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-sm text-muted-foreground">{event.club_name}</p>
-            <p className="font-medium">{event.title}</p>
+            <p className="truncate text-sm text-muted-foreground" title={event.club_name}>
+              {event.club_name}
+            </p>
+            <p className="font-medium line-clamp-1" title={event.title}>
+              {event.title}
+            </p>
             <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-1">
-                <CalendarDays className="size-3" />
+                <Clock className="size-3" />
                 {starts.toLocaleDateString(undefined, {
                   weekday: "short",
                   month: "short",
@@ -371,21 +386,72 @@ function EventCard({
             <Badge variant="outline">
               {EVENT_KIND_LABELS[event.kind as keyof typeof EVENT_KIND_LABELS]}
             </Badge>
-            {event.my_rsvp === "going" ? (
-              <Badge variant="secondary">Going</Badge>
-            ) : null}
+            {event.my_rsvp === "going" ? <Badge variant="secondary">Going</Badge> : null}
           </div>
         </div>
 
         {/* PRD 15/53.15: conflicts are FLAGGED, never auto-resolved. */}
         {event.conflict_count > 0 ? (
-          <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-amber-500/10 px-2 py-1.5 text-xs text-amber-700 dark:text-amber-400">
+          <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-500/10 px-2 py-1 text-xs text-amber-700 dark:text-amber-400">
             <AlertTriangle className="mt-0.5 size-3 shrink-0" />
             Overlaps with {event.conflict_count} other event
             {event.conflict_count === 1 ? "" : "s"}. You decide which one to attend.
           </p>
         ) : null}
       </CardContent>
+    </Card>
+  );
+}
+
+/** Compact shortcut card for a joined club. */
+function YourClubCard({
+  club,
+  className,
+  style,
+}: {
+  club: {
+    id: string;
+    name: string;
+    description: string;
+    type: string;
+    meeting_day: string | null;
+    meeting_time: string | null;
+    room: string | null;
+  };
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <Card className={cn(className)} style={style}>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="text-base font-semibold line-clamp-1" title={club.name}>
+            {club.name}
+          </CardTitle>
+          <Badge variant="outline" className="text-xs">
+            {CLUB_TYPE_LABELS[club.type as keyof typeof CLUB_TYPE_LABELS] ?? club.type}
+          </Badge>
+        </div>
+        {club.description ? (
+          <CardDescription className="line-clamp-1 text-xs">{club.description}</CardDescription>
+        ) : null}
+      </CardHeader>
+      <CardContent className="p-3 space-y-2">
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Clock className="size-3 shrink-0" />
+          {club.meeting_day && club.meeting_time
+            ? `${club.meeting_day}s at ${club.meeting_time.slice(0, 5)}`
+            : "Meeting time not set"}
+          {club.room ? ` · Room ${club.room}` : ""}
+        </p>
+      </CardContent>
+      <CardFooter className="pt-3">
+        <Button size="sm" asChild className="w-full">
+          <Link to="/clubs/$clubId" params={{ clubId: club.id }}>
+            Open club
+          </Link>
+        </Button>
+      </CardFooter>
     </Card>
   );
 }
@@ -427,7 +493,9 @@ function ClubCard({
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-lg">{club.name}</CardTitle>
+          <CardTitle className="text-lg line-clamp-1" title={club.name}>
+            {club.name}
+          </CardTitle>
           <Badge variant="outline">{CLUB_TYPE_LABELS[club.type]}</Badge>
         </div>
         {club.description ? (
@@ -437,7 +505,9 @@ function ClubCard({
       <CardContent className="space-y-2 text-sm">
         <div className="flex flex-wrap gap-1.5">
           {club.fields.slice(0, 4).map((item) => (
-            <Badge key={item} variant="secondary">{item}</Badge>
+            <Badge key={item} variant="secondary">
+              {item}
+            </Badge>
           ))}
         </div>
         <p className="text-muted-foreground">

@@ -3,11 +3,13 @@ import {
   CalendarDays,
   Compass,
   LayoutGrid,
+  Menu,
   Settings,
   Users,
   Bell,
   LogOut,
   PanelLeft,
+  X,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -20,9 +22,21 @@ import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/ui/motion";
 import { useAuth } from "@/lib/auth/context";
 import { useUnreadNotificationCount } from "@/lib/queries";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  useSidebar,
+} from "@/components/ui/sidebar";
 
 /**
- * PRD 39: four primary tabs -- Main, My Clubs, Calendar, Settings.
+ * PRD 39: four primary tabs -- Dashboard, Calendar, My Clubs, Settings.
  * Club-specific settings deliberately live inside each club instead.
  */
 const NAV_ITEMS = [
@@ -80,6 +94,22 @@ function activeNavItem(pathname: string): NavItem | undefined {
   return NAV_ITEMS.find((item) => item.to === pathname);
 }
 
+/** Mobile-only hamburger that opens the off-canvas sidebar sheet. */
+function MobileNavTrigger() {
+  const { openMobile, setOpenMobile } = useSidebar();
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => setOpenMobile(!openMobile)}
+      aria-label={openMobile ? "Close navigation" : "Open navigation"}
+      className="md:hidden h-11 w-11"
+    >
+      {openMobile ? <X className="size-5" /> : <Menu className="size-5" />}
+    </Button>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const { profile, signOut } = useAuth();
   const { data: unreadCount = 0 } = useUnreadNotificationCount();
@@ -90,114 +120,93 @@ export function AppShell({ children }: { children: ReactNode }) {
   const active = activeNavItem(location.pathname);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      {/* ===== Left Sidebar (desktop) ===== */}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-30 w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border",
-          "transition-[width] duration-300 ease-in-out",
-          sidebarOpen ? "w-64" : "w-16",
-        )}
-      >
-        <div className="flex h-full flex-col">
-          {/* Brand + toggle */}
-          <div className="flex h-14 items-center gap-3 px-4 border-b border-sidebar-border">
-            <Link to="/" className="flex items-center gap-2 font-semibold text-sidebar-foreground">
-              <LayoutGrid className="size-5 text-sidebar-primary" />
-              <span className={cn(sidebarOpen ? "block" : "hidden")}>Clubset</span>
-            </Link>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen((prev) => !prev)}
-              aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-              className={cn(sidebarOpen ? "ml-auto" : "mx-auto", "h-8 w-8")}
-            >
-              {sidebarOpen ? <PanelLeft className="size-5" /> : <LayoutGrid className="size-5" />}
-            </Button>
-          </div>
+    <SidebarProvider defaultOpen open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      {/* Desktop sidebar: a spacer reserves the column width and the pane is
+          fixed on top of it, so main content never slides underneath the
+          sidebar. Collapsing the sidebar shrinks the spacer to the icon width,
+          and main content expands to fill the remaining space automatically. */}
+      <Sidebar>
+        <SidebarHeader className="flex h-14 items-center gap-2 px-3 border-b border-sidebar-border">
+          <Link to="/" className="flex items-center gap-2 font-semibold text-sidebar-foreground">
+            <LayoutGrid className="size-5 text-sidebar-primary" />
+            <span className={cn(sidebarOpen ? "block" : "hidden")}>Clubset</span>
+          </Link>
+        </SidebarHeader>
 
-          {/* Navigation */}
-          <nav className="flex-1 flex flex-col gap-1 p-3 overflow-y-auto">
+        <SidebarContent className="flex-1 flex-col min-h-0 overflow-y-auto">
+          <SidebarMenu className="gap-1">
             {NAV_ITEMS.map((item) => {
               const isActive = active?.to === item.to;
               return (
-                <Button
-                  key={item.to}
-                  variant="ghost"
-                  size="sm"
-                  asChild
-                  className={cn(
-                    "w-full justify-start text-sm",
-                    isActive
-                      ? "bg-sidebar-accent text-sidebar-primary-foreground shadow-sm"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                  )}
-                >
-                  <Link to={item.to} activeOptions={{ exact: item.to === "/" }}>
-                    <item.icon className={cn("size-4", sidebarOpen ? "mr-2" : "mx-auto")} />
-                    {sidebarOpen && <span>{item.label}</span>}
-                  </Link>
-                </Button>
+                <SidebarMenuItem key={item.to}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    className={cn(
+                      "text-sm",
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-primary-foreground shadow-sm"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                    )}
+                  >
+                    <Link to={item.to} activeOptions={{ exact: item.to === "/" }}>
+                      <item.icon className="size-4 shrink-0" />
+                      <span className={cn(sidebarOpen ? "block" : "hidden")}>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               );
             })}
-          </nav>
+          </SidebarMenu>
+        </SidebarContent>
 
-          {/* Footer: user + sign out */}
-          <div className="flex-shrink-0 p-3 border-t border-sidebar-border">
-            {profile ? (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 px-2">
-                  <span
-                    className={cn(sidebarOpen ? "text-sm" : "hidden", "text-sidebar-foreground")}
-                  >
-                    {profile.full_name || profile.email}
-                  </span>
-                  {profile.account_type === "administrator" ? (
-                    <Badge variant="secondary" className={cn(sidebarOpen ? "" : "hidden")}>
-                      Admin
-                    </Badge>
-                  ) : null}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    void signOut().then(() => router.navigate({ to: "/login" }));
-                  }}
-                  aria-label="Sign out"
-                  className={cn(sidebarOpen ? "w-full justify-start" : "mx-auto", "h-8 w-8")}
-                >
-                  <LogOut className={cn("size-4", sidebarOpen ? "mr-2" : "mx-auto")} />
-                  {sidebarOpen && <span className="text-xs text-sidebar-foreground">Sign out</span>}
-                </Button>
+        <SidebarFooter className="flex-shrink-0 p-3 border-t border-sidebar-border">
+          {profile ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 px-2">
+                <span className={cn(sidebarOpen ? "text-sm" : "hidden", "text-sidebar-foreground")}>
+                  {profile.full_name || profile.email}
+                </span>
+                {profile.account_type === "administrator" ? (
+                  <Badge variant="secondary" className={cn(sidebarOpen ? "" : "hidden")}>
+                    Admin
+                  </Badge>
+                ) : null}
               </div>
-            ) : null}
-          </div>
-        </div>
-      </aside>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  void signOut().then(() => router.navigate({ to: "/login" }));
+                }}
+                aria-label="Sign out"
+                className={cn(sidebarOpen ? "w-full justify-start" : "mx-auto w-11", "h-11")}
+              >
+                <LogOut className={cn("size-4", sidebarOpen ? "mr-2" : "mx-auto")} />
+                {sidebarOpen && <span className="text-xs text-sidebar-foreground">Sign out</span>}
+              </Button>
+            </div>
+          ) : null}
+        </SidebarFooter>
+      </Sidebar>
 
-      {/* Sidebar overlay for mobile */}
-      <div className="fixed inset-0 z-20 bg-black/20 hidden md:hidden" />
-
-      {/* ===== Main Content ===== */}
-      <div className="flex-1 flex flex-col">
-        <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
-          <div className="flex h-14 items-center justify-between px-4">
-            <div className="flex items-center gap-2">
+      {/* Main content area: flex-1 fills the remaining width after the sidebar spacer. */}
+      <SidebarInset className="min-w-0">
+        <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
+          <div className="flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-3">
+              {/* Desktop collapse / expand toggle. */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setSidebarOpen((prev) => !prev)}
-                aria-label="Toggle sidebar"
-                className="hidden md:flex h-8 w-8"
+                aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+                className="hidden md:flex h-11 w-11"
               >
-                <PanelLeft className="size-5" />
+                {sidebarOpen ? <PanelLeft className="size-5" /> : <LayoutGrid className="size-5" />}
               </Button>
-              <div className={cn(sidebarOpen ? "hidden" : "flex", "items-center gap-2")}>
-                <LayoutGrid className="size-5 text-primary" />
-                <span className="font-semibold text-foreground">Clubset</span>
-              </div>
+              {/* Mobile off-canvas navigation control. */}
+              <MobileNavTrigger />
             </div>
 
             <div className="flex items-center gap-2">
@@ -206,7 +215,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 size="icon"
                 asChild
                 aria-label="Notifications"
-                className="h-8 w-8"
+                className="h-11 w-11"
               >
                 <Link to="/notifications">
                   <Bell className="size-4" />
@@ -235,7 +244,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     onClick={() => {
                       void signOut().then(() => router.navigate({ to: "/login" }));
                     }}
-                    className="h-8 w-8 hidden sm:flex"
+                    className="h-11 w-11 hidden sm:flex"
                   >
                     <LogOut className="size-4" />
                   </Button>
@@ -245,14 +254,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto min-w-0 p-4 sm:p-6 lg:p-8">
           <FadeIn>{children}</FadeIn>
         </main>
 
         {/* Otter mascot — floating in the back corner on every page. */}
         <OtterBuddy />
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
 
