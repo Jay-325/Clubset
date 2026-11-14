@@ -5,7 +5,6 @@ import {
   LayoutGrid,
   Settings,
   Users,
-  Bell,
   LogOut,
   PanelLeft,
   Menu,
@@ -17,10 +16,27 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OtterBuddy } from "@/components/otter/OtterBuddy";
+import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
 import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/ui/motion";
 import { useAuth } from "@/lib/auth/context";
+<<<<<<< Updated upstream
 import { useUnreadNotificationCount } from "@/lib/queries";
+=======
+import { useNotifications, useUnreadNotificationCount } from "@/lib/queries";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  useSidebar,
+} from "@/components/ui/sidebar";
+>>>>>>> Stashed changes
 
 /**
  * PRD 39: four primary tabs -- Main, My Clubs, Calendar, Settings.
@@ -230,6 +246,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
 
             <div className="flex items-center gap-2">
+<<<<<<< Updated upstream
               <Button
                 variant="ghost"
                 size="icon"
@@ -246,6 +263,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                   ) : null}
                 </Link>
               </Button>
+=======
+              <NotificationDropdown unreadCount={unreadCount} />
+>>>>>>> Stashed changes
 
               {profile ? (
                 <div className="flex items-center gap-2 pl-2">

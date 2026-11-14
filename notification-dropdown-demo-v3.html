@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clubset — Notification Dropdown Demo v3 (Dark Mode)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0f172a; /* slate-900 */
+    color: #f1f5f9;
+    min-height: 100vh;
+  }
+  .header-card {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+  }
+  .bell-btn {
+    @apply relative h-12 w-12 flex items-center justify-center rounded-full bg-slate-800/50 border border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white transition-all duration-200 cursor-pointer;
+  }
+  .bell-btn:focus {
+    @apply ring-2 ring-slate-400 outline-none;
+  }
+  .bell-badge {
+    @apply absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-rose-500 border border-slate-900 border-2 shadow-sm;
+  }
+  /* Dropdown goes UP */
+  .dropdown {
+    @apply absolute bottom-full mb-2 right-0 w-80 rounded-2xl border border-slate-700 bg-slate-900/90 backdrop-blur-md p-3 shadow-2xl;
+    animation: dropdown-up 0.2s ease-out;
+  }
+  @keyframes dropdown-up {
+    from { opacity: 0; transform: translateY(8px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .dropdown::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    right: 1.5rem;
+    width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid rgba(15, 23, 42, 0.9);
+  }
+  .notif-card {
+    @apply p-3 rounded-xl cursor-pointer transition-all duration-150 border border-transparent;
+    @apply group hover:bg-slate-800/50;
+  }
+  .notif-card.unread {
+    @apply bg-slate-800/30 border-slate-700/50;
+  }
+  .notif-avatar {
+    @apply w-8 h-8 rounded-lg flex items-center justify-center bg-slate-700 text-slate-400 text-xs font-medium shrink-0;
+  }
+  .view-all {
+    @apply w-full py-2.5 rounded-lg text-sm font-medium text-blue-400 hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700;
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+  <div class="absolute inset-0 flex items-center justify-center">
+    <div class="max-w-2xl w-full p-8">
+      
+      <!-- Header Card (Dark Mode) -->
+      <div class="header-card p-6 mb-8">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center text-white">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            </div>
+            <div>
+              <h1 class="text-xl font-bold text-slate-100 tracking-tight">Clubset</h1>
+              <p class="text-xs text-slate-400 uppercase tracking-wider">Student Clubs</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <!-- Notification Bell + Avatar -->
+            <div class="relative group">
+              <button class="bell-btn" aria-label="Notifications" onclick="toggleDropdown()">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+                <span class="bell-badge"></span>
+              </button>
+
+              <!-- Dropdown (GOES UP - Dark Mode) -->
+              <div id="notifDropdown" class="dropdown hidden">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="text-sm font-bold text-slate-200">Notifications</h3>
+                  <button onclick="markAllRead()" class="text-[10px] text-blue-400 hover:text-blue-300 font-medium bg-slate-800/50 hover:bg-slate-700 px-2 py-1 rounded border border-slate-700/50">
+                    Mark All As Read
+                  </button>
+                </div>
+
+                <!-- Notifications -->
+                <div class="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+                  <!-- Unread -->
+                  <div class="notif-card unread" onclick="handleNotif(0)">
+                    <div class="flex items-start gap-2">
+                      <div class="notif-avatar">R</div>
+                      <div class="min-w-0 flex-1">
+                        <p class="text-xs font-bold text-blue-400 leading-tight">Ray has an updated grade of A- (92.09%)</p>
+                        <p class="mt-0.5 text-xs text-slate-400 line-clamp-1">in AP Physics C: Mechanics & E&amp;M: Quarterly Mark</p>
+                        <p class="mt-0.5 text-[10px] text-slate-500">Today, 10:17 AM</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Unread -->
+                  <div class="notif-card unread" onclick="handleNotif(1)">
+                    <div class="flex items-start gap-2">
+                      <div class="notif-avatar">R</div>
+                      <div class="min-w-0 flex-1">
+                        <p class="text-xs font-bold text-blue-400 leading-tight">Ray received a score of 5 out of 5</p>
+                        <p class="mt-0.5 text-xs text-slate-400 line-clamp-1">on Lab: Momentum, Collision Carts in AP Physics C: Mechanics & E&amp;M</p>
+                        <p class="mt-0.5 text-[10px] text-slate-500">Today, 10:17 AM</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Unread -->
+                  <div class="notif-card unread" onclick="handleNotif(2)">
+                    <div class="flex items-start gap-2">
+                      <div class="notif-avatar">R</div>
+                      <div class="min-w-0 flex-1">
+                        <p class="text-xs font-bold text-blue-400 leading-tight">Ray has an updated grade of A- (92.09%)</p>
+                        <p class="mt-0.5 text-xs text-slate-400 line-clamp-1">in AP Physics C: Mechanics & E&amp;M: Quarterly Mark</p>
+                        <p class="mt-0.5 text-[10px] text-slate-500">Today, 10:15 AM</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Unread -->
+                  <div class="notif-card unread" onclick="handleNotif(3)">
+                    <div class="flex items-start gap-2">
+                      <div class="notif-avatar">R</div>
+                      <div class="min-w-0 flex-1">
+                        <p class="text-xs font-bold text-blue-400 leading-tight">Ray received a score of 5 out of 5</p>
+                        <p class="mt-0.5 text-xs text-slate-400 line-clamp-1">on Lab: Momentum, Inelastic Collision in AP Physics C: Mechanics & E&amp;M</p>
+                        <p class="mt-0.5 text-[10px] text-slate-500">Today, 10:15 AM</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Read -->
+                  <div class="notif-card read" onclick="handleNotif(4)">
+                    <div class="flex items-start gap-2">
+                      <div class="notif-avatar">R</div>
+                      <div class="min-w-0 flex-1">
+                        <p class="text-xs font-bold text-slate-500 leading-tight">Ray has an updated grade of A- (92.09%)</p>
+                        <p class="mt-0.5 text-xs text-slate-500 line-clamp-1">in AP Physics C: Mechanics & E&amp;M: Quarterly Mark</p>
+                        <p class="mt-0.5 text-[10px] text-slate-600">Yesterday, 4:30 PM</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-2 pt-2 border-t border-slate-700">
+                  <button class="view-all" onclick="viewAll()">
+                    <svg class="mr-2 w-4 h-4 shrink-0 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    View all notifications
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- User Avatar -->
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-slate-600 to-slate-500 flex items-center justify-center text-white font-bold text-xs shadow-sm border border-slate-600">
+              AR
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Demo Info -->
+      <main class="space-y-6">
+        <div class="bg-slate-800/50 backdrop-blur rounded-2xl border border-slate-700/50 p-6 shadow-sm">
+          <h2 class="text-lg font-bold text-slate-100 mb-3">What changed (v3 — Dark Mode)</h2>
+          <ul class="space-y-3 text-sm text-slate-400">
+            <li class="flex items-start gap-3">
+              <span class="text-blue-400 shrink-0">✓</span>
+              <span><strong>Dark mode</strong> — slate-900 background, white text, blue accents.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-blue-400 shrink-0">✓</span>
+              <span><strong>Dropdown goes UP</strong> — doesn't cover page content below.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-blue-400 shrink-0">✓</span>
+              <span><strong>Blue dot + sender name</strong> — matches the screenshot style.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-blue-400 shrink-0">✓</span>
+              <span><strong>Mark All As Read</strong> button at top right of dropdown.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-blue-400 shrink-0">✓</span>
+              <span><strong>Timestamps below each message</strong> in muted gray.</span>
+            </li>
+          </ul>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    let isOpen = false;
+
+    function toggleDropdown() {
+      const dropdown = document.getElementById('notifDropdown');
+      isOpen = !isOpen;
+      if (isOpen) {
+        dropdown.classList.remove('hidden');
+        dropdown.classList.add('block');
+      } else {
+        dropdown.classList.remove('block');
+        dropdown.classList.add('hidden');
+      }
+    }
+
+    function handleNotif(index) {
+      const cards = document.querySelectorAll('.notif-card');
+      const card = cards[index];
+      card.classList.remove('unread');
+      card.classList.add('read');
+      
+      const badge = document.querySelector('.bell-badge');
+      const unreadCount = document.querySelectorAll('.notif-card.unread').length;
+      if (unreadCount === 0) {
+        badge.style.display = 'none';
+      }
+      
+      toggleDropdown();
+    }
+
+    function markAllRead() {
+      const cards = document.querySelectorAll('.notif-card');
+      cards.forEach(card => {
+        card.classList.remove('unread');
+        card.classList.add('read');
+      });
+      const badge = document.querySelector('.bell-badge');
+      badge.style.display = 'none';
+      toggleDropdown();
+    }
+
+    function viewAll() {
+      alert('Navigating to /notifications');
+      toggleDropdown();
+    }
+
+    // Close on outside click
+    document.addEventListener('mousedown', (e) => {
+      const dropdown = document.getElementById('notifDropdown');
+      const bell = document.querySelector('.bell-btn');
+      if (dropdown && bell && !dropdown.contains(e.target) && !bell.contains(e.target)) {
+        dropdown.classList.remove('block');
+        dropdown.classList.add('hidden');
+        isOpen = false;
+      }
+    });
+  </script>
+</body>
+</html>

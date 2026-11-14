@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clubset — Notification Dropdown Demo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+  }
+  .bell-badge {
+    @apply absolute -right-1 -top-1 h-2 w-2 rounded-full bg-red-500 border border-white border-2;
+  }
+  .dropdown {
+    @apply absolute z-50 mt-1 w-72 rounded-md border border-slate-200 bg-white p-2 shadow-lg;
+    animation: dropdown-in 0.15s ease-out;
+  }
+  @keyframes dropdown-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .notif-item {
+    @apply px-3 py-2.5 text-sm rounded-sm cursor-pointer transition-colors;
+  }
+  .notif-item.unread {
+    @apply bg-amber-50/50;
+  }
+  .notif-item:hover {
+    @apply bg-slate-50;
+  }
+  .notif-dot {
+    @apply mt-1 h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0;
+  }
+  .view-all {
+    @apply px-3 py-2 text-sm text-primary-600 font-medium;
+    @apply hover:bg-slate-50;
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+  <div class="absolute inset-0 flex items-center justify-center">
+    <div class="max-w-2xl w-full p-8">
+      <!-- Header -->
+      <header class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-10">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center bg-primary-100 text-primary-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+          </div>
+          <span class="text-sm font-semibold text-slate-900">Clubset</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Notification Bell (HOVER TO SEE DROPDOWN) -->
+          <div class="relative group">
+            <button class="h-11 w-11 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors" aria-label="Notifications">
+              <i data-lucide="bell" class="w-5 h-5"></i>
+              <span class="bell-badge"></span>
+            </button>
+
+            <!-- Dropdown (shown on hover) -->
+            <div class="dropdown hidden group-hover:block pointer-events-none group-hover:pointer-events-auto">
+              <!-- Header -->
+              <div class="px-3 py-2 text-xs font-semibold tracking-wider uppercase opacity-70">
+                Notifications
+              </div>
+
+              <!-- Notification Items -->
+              <div class="notif-item unread">
+                <div class="flex items-start gap-2">
+                  <div class="notif-dot"></div>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-xs font-medium leading-tight">Meeting reminder</p>
+                    <p class="mt-0.5 text-xs text-slate-500 line-clamp-1">Robotics Team regional qualifier prep starts in 30 minutes.</p>
+                    <p class="mt-0.5 text-[10px] text-slate-400">Thu, Oct 29 · 3:30 PM</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="notif-item">
+                <div class="flex items-start gap-2">
+                  <div class="min-w-0 flex-1">
+                    <p class="text-xs font-medium leading-tight">New member joined</p>
+                    <p class="mt-0.5 text-xs text-slate-500 line-clamp-1">Alex Rivera joined Green Earth Club.</p>
+                    <p class="mt-0.5 text-[10px] text-slate-400">Wed, Oct 28 · 2:15 PM</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="notif-item unread">
+                <div class="flex items-start gap-2">
+                  <div class="notif-dot"></div>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-xs font-medium leading-tight">Application approved</p>
+                    <p class="mt-0.5 text-xs text-slate-500 line-clamp-1">Your club Debate Society has been approved.</p>
+                    <p class="mt-0.5 text-[10px] text-slate-400">Tue, Oct 27 · 10:00 AM</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="my-1 h-px bg-slate-100"></div>
+
+              <!-- View All -->
+              <div class="view-all cursor-pointer" onclick="alert('Navigating to /notifications')">
+                <svg class="mr-2 w-4 h-4 shrink-0 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                View all notifications
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Demo content -->
+      <main class="mt-12 space-y-8">
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+          <h2 class="text-lg font-semibold text-slate-900 mb-2">How it works</h2>
+          <ul class="space-y-3 text-sm text-slate-600">
+            <li class="flex items-start gap-3">
+              <span class="text-primary-600 shrink-0">✓</span>
+              <span><strong>Hover</strong> the bell icon (top right) to see notifications drop down.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-primary-600 shrink-0">✓</span>
+              <span><strong>Click</strong> the bell to toggle the dropdown open/closed.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-primary-600 shrink-0">✓</span>
+              <span>Click <strong>View all notifications</strong> to go to the full notifications page.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-primary-600 shrink-0">✓</span>
+              <span>Click <strong>outside</strong> the dropdown to close it.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-primary-600 shrink-0">✓</span>
+              <span>Unread items show an amber dot; clicking an item marks it as read.</span>
+            </li>
+          </ul>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // Close dropdown when clicking outside
+    document.addEventListener('mousedown', (e) => {
+      const dropdown = document.querySelector('.dropdown');
+      const bell = document.querySelector('button[aria-label="Notifications"]');
+      if (dropdown && bell && !dropdown.contains(e.target) && !bell.contains(e.target)) {
+        dropdown.classList.remove('block');
+        dropdown.classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

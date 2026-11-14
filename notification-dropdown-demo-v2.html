@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clubset — Notification Dropdown Demo v2</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%);
+    min-height: 100vh;
+  }
+  
+  /* Header glass card */
+  .header-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 1.5rem;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Bell button */
+  .bell-btn {
+    @apply relative h-12 w-12 flex items-center justify-center rounded-full bg-white/80 border border-slate-200 text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer;
+  }
+  .bell-btn:focus {
+    @apply ring-2 ring-primary-200 outline-none;
+  }
+  .bell-badge {
+    @apply absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-rose-500 border border-white border-2 shadow-sm;
+  }
+
+  /* Dropdown - goes UP instead of down */
+  .dropdown {
+    @apply absolute bottom-full mb-2 right-0 w-80 rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-md p-3 shadow-2xl;
+    animation: dropdown-up 0.2s ease-out;
+  }
+  @keyframes dropdown-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  .dropdown::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    right: 1.5rem;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid white;
+    border-top-color: rgba(255, 255, 255, 0.9);
+  }
+
+  /* Notification items */
+  .notif-card {
+    @apply p-3 rounded-xl cursor-pointer transition-all duration-150 border border-transparent;
+    @apply group hover:bg-rose-50/50;
+  }
+  .notif-card.unread {
+    @apply bg-rose-50/30 border-rose-100;
+  }
+  .notif-card.read {
+    @apply opacity-80;
+  }
+
+  .notif-avatar {
+    @apply w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 text-slate-500 text-xs font-medium shrink-0;
+  }
+
+  .view-all {
+    @apply w-full py-2.5 rounded-lg text-sm font-medium text-primary-600 hover:bg-rose-50 transition-colors border border-transparent hover:border-rose-100;
+  }
+
+  .empty-state {
+    @apply p-6 text-center;
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+  <div class="absolute inset-0 flex items-center justify-center">
+    <div class="max-w-2xl w-full p-8">
+      
+      <!-- Header Card -->
+      <div class="header-card p-6 mb-8">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-200 to-orange-200 flex items-center justify-center text-rose-600">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            </div>
+            <div>
+              <h1 class="text-xl font-bold text-slate-900 tracking-tight">Clubset</h1>
+              <p class="text-xs text-slate-500 uppercase tracking-wider">Student Clubs</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <!-- Notification Bell + Avatar -->
+            <div class="relative group">
+              <button class="bell-btn" aria-label="Notifications" onclick="toggleDropdown()">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+                <span class="bell-badge"></span>
+              </button>
+
+              <!-- Dropdown (GOES UP) -->
+              <div id="notifDropdown" class="dropdown hidden">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="text-sm font-bold text-slate-900">Notifications</h3>
+                  <button onclick="markAllRead()" class="text-[10px] text-rose-600 hover:text-rose-700 font-medium">Mark all read</button>
+                </div>
+
+                <!-- Notifications -->
+                <div class="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+                  <!-- Unread -->
+                  <div class="notif-card unread" onclick="handleNotif(0)">
+                    <div class="flex items-start gap-2">
+                      <div class="notif-avatar">M</div>
+                      <div class="min-w-0 flex-1">
+                        <p class="text-xs font-bold text-slate-900 leading-tight">Meeting reminder</p>
+                        <p class="mt-0.5 text-xs text-slate-500 line-clamp-1">Robotics Team qualifier prep starts in 30 minutes.</p>
+                        <p class="mt-0.5 text-[10px] text-slate-400">Thu, Oct 29 · 3:30 PM</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Read -->
+                  <div class="notif-card read" onclick="handleNotif(1)">
+                    <div class="flex items-start gap-2">
+                      <div class="notif-avatar" style="background:#dbeafe; color:#2563eb;">E</div>
+                      <div class="min-w-0 flex-1">
+                        <p class="text-xs font-bold text-slate-900 leading-tight">New member joined</p>
+                        <p class="mt-0.5 text-xs text-slate-500 line-clamp-1">Alex Rivera joined Green Earth Club.</p>
+                        <p class="mt-0.5 text-[10px] text-slate-400">Wed, Oct 28 · 2:15 PM</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Read -->
+                  <div class="notif-card read" onclick="handleNotif(2)">
+                    <div class="flex items-start gap-2">
+                      <div class="notif-avatar" style="background:#fce7f3; color:#be185d;">A</div>
+                      <div class="min-w-0 flex-1">
+                        <p class="text-xs font-bold text-slate-900 leading-tight">Application approved</p>
+                        <p class="mt-0.5 text-xs text-slate-500 line-clamp-1">Debate Society is now active.</p>
+                        <p class="mt-0.5 text-[10px] text-slate-400">Tue, Oct 27 · 10:00 AM</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-2 pt-2 border-t border-slate-100">
+                  <button class="view-all" onclick="viewAll()">
+                    <svg class="mr-2 w-4 h-4 shrink-0 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    View all notifications
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- User Avatar -->
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-200 to-blue-200 flex items-center justify-center text-purple-700 font-bold text-xs shadow-sm border border-white">
+              AR
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Demo Info -->
+      <main class="space-y-6">
+        <div class="bg-white/80 backdrop-blur rounded-2xl border border-white/50 p-6 shadow-sm">
+          <h2 class="text-lg font-bold text-slate-900 mb-3">What changed</h2>
+          <ul class="space-y-3 text-sm text-slate-600">
+            <li class="flex items-start gap-3">
+              <span class="text-rose-500 shrink-0">✓</span>
+              <span><strong>Dropdown goes UP</strong> instead of down — doesn't cover page content below.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-rose-500 shrink-0">✓</span>
+              <span><strong>Click-to-toggle</strong> instead of hover-only — works better on mobile.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-rose-500 shrink-0">✓</span>
+              <span><strong>Avatar + bell together</strong> — unified user cluster in header.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-rose-500 shrink-0">✓</span>
+              <span><strong>Softer pastel aesthetic</strong> — cream background, rounded cards, rose accents.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-rose-500 shrink-0">✓</span>
+              <span><strong>Mark all read</strong> button at the top of the dropdown.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="text-rose-500 shrink-0">✓</span>
+              <span><strong>Card-like notifications</strong> with sender avatars and soft hover states.</span>
+            </li>
+          </ul>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    let isOpen = false;
+
+    function toggleDropdown() {
+      const dropdown = document.getElementById('notifDropdown');
+      isOpen = !isOpen;
+      if (isOpen) {
+        dropdown.classList.remove('hidden');
+        dropdown.classList.add('block');
+      } else {
+        dropdown.classList.remove('block');
+        dropdown.classList.add('hidden');
+      }
+    }
+
+    function handleNotif(index) {
+      const cards = document.querySelectorAll('.notif-card');
+      const card = cards[index];
+      card.classList.remove('unread');
+      card.classList.add('read');
+      
+      const badge = document.querySelector('.bell-badge');
+      const unreadCount = document.querySelectorAll('.notif-card.unread').length;
+      if (unreadCount === 0) {
+        badge.style.display = 'none';
+      }
+      
+      toggleDropdown();
+    }
+
+    function markAllRead() {
+      const cards = document.querySelectorAll('.notif-card');
+      cards.forEach(card => {
+        card.classList.remove('unread');
+        card.classList.add('read');
+      });
+      const badge = document.querySelector('.bell-badge');
+      badge.style.display = 'none';
+      toggleDropdown();
+    }
+
+    function viewAll() {
+      alert('Navigating to /notifications');
+      toggleDropdown();
+    }
+
+    // Close on outside click
+    document.addEventListener('mousedown', (e) => {
+      const dropdown = document.getElementById('notifDropdown');
+      const bell = document.querySelector('.bell-btn');
+      if (dropdown && bell && !dropdown.contains(e.target) && !bell.contains(e.target)) {
+        dropdown.classList.remove('block');
+        dropdown.classList.add('hidden');
+        isOpen = false;
+      }
+    });
+  </script>
+</body>
+</html>
