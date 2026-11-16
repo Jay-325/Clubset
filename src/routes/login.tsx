@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GraduationCap, Mail, ShieldCheck, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AuthDivider, GoogleAuthButton } from "@/components/auth/google-auth-button";
+import {
+  TurnstileWidget,
+  type TurnstileWidgetHandle,
+} from "@/components/auth/turnstile-widget";
+import { oauthErrorMessage, readOAuthError, removeOAuthErrorParams } from "@/lib/auth/oauth";
 import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/ui/motion";
 import { useAuth } from "@/lib/auth/context";
-import { useAdminLogin, useSignIn } from "@/lib/queries";
+import { normalizeAuthError, useAdminLogin, useSignIn } from "@/lib/queries";
 import { toast } from "sonner";
 
 type LoginTab = "student" | "admin";
@@ -20,8 +26,9 @@ type LoginTab = "student" | "admin";
  * backend decides the account type (PRD 5, 40).
  *
  * The page exposes two side-by-side tabs:
- *   * Student      -- email / optional password sign in, plus "Create Student
- *                     Account" for a normal student signup (leads to onboarding)
+ *   * Student      -- Google one-click sign in/sign up, email / optional
+ *                     password sign in, plus "Create Student Account" for a
+ *                     normal student signup (leads to onboarding)
  *   * Administrator -- activation only, allowlist-only. Visually and
  *                     structurally separate from the student form. The address
  *                     is checked against the allowlist BEFORE any email is
@@ -71,10 +78,16 @@ function LoginPage() {
   const [studentEmail, setStudentEmail] = useState("");
   const [studentPassword, setStudentPassword] = useState("");
   const [studentMessage, setStudentMessage] = useState<string | null>(null);
+  // Turnstile token per form: tokens are single-use, so the student and
+  // administrator forms must never share one.
+  const [studentCaptchaToken, setStudentCaptchaToken] = useState<string | null>(null);
+  const studentCaptchaRef = useRef<TurnstileWidgetHandle>(null);
 
   // Administrator tab state -- kept separate so switching tabs never leaks an
   // address typed into the other flow.
   const [adminEmail, setAdminEmail] = useState("");
+  const [adminCaptchaToken, setAdminCaptchaToken] = useState<string | null>(null);
+  const adminCaptchaRef = useRef<TurnstileWidgetHandle>(null);
   const [adminNotice, setAdminNotice] = useState<{
     tone: "info" | "error";
     text: string;
@@ -87,20 +100,59 @@ function LoginPage() {
     if (next) sessionStorage.setItem("clubset_next", next);
   }, [next]);
 
+  // Returning from Google: Supabase reports a cancelled or failed trip in the
+  // URL (#error=... on the implicit flow the client uses, ?error=... under
+  // PKCE). Show one plain-language line and strip the parameters so a refresh
+  // does not repeat the message.
+  useEffect(() => {
+    const oauthError = readOAuthError(window.location);
+    if (!oauthError) return;
+
+    // Email links also land here (see emailRedirectUrl). GoTrue reports an
+    // expired verification or activation link as access_denied/otp_expired,
+    // which is not a Google failure.
+    setStudentMessage(
+      oauthError.errorCode === "otp_expired"
+        ? "That link is invalid or has expired. Enter your email below and leave the password blank to get a new sign-in link."
+        : oauthErrorMessage(oauthError),
+    );
+
+    const cleaned = removeOAuthErrorParams(window.location.href);
+    if (cleaned !== window.location.href) {
+      window.history.replaceState({}, "", cleaned);
+    }
+  }, []);
+
   const handleStudentLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     setStudentMessage(null);
 
-    if (!studentPassword) {
-      // Passwordless: sends a magic link (PRD 4, email-based authentication).
-      await signIn.mutateAsync({ email: studentEmail });
-      setStudentMessage("Check your email for a sign-in link.");
-      toast("Sign-in link sent");
-      return;
-    }
+    try {
+      if (!studentPassword) {
+        // Passwordless: sends a magic link (PRD 4, email-based authentication).
+        await signIn.mutateAsync({
+          email: studentEmail,
+          ...(studentCaptchaToken ? { captchaToken: studentCaptchaToken } : {}),
+        });
+        setStudentMessage("Check your email for a sign-in link.");
+        toast("Sign-in link sent");
+        return;
+      }
 
-    await signIn.mutateAsync({ email: studentEmail, password: studentPassword });
-    setStudentMessage("Signed in.");
+      await signIn.mutateAsync({
+        email: studentEmail,
+        password: studentPassword,
+        ...(studentCaptchaToken ? { captchaToken: studentCaptchaToken } : {}),
+      });
+      setStudentMessage("Signed in.");
+    } catch {
+      // Rendered from signIn.error below; swallowing here only keeps a rejected
+      // promise from becoming an unhandled rejection.
+    } finally {
+      // Turnstile tokens are single-use: the next attempt (wrong password,
+      // resend link) needs a fresh challenge.
+      studentCaptchaRef.current?.reset();
+    }
   };
 
   const handleAdminLogin = async (event: React.FormEvent) => {
@@ -112,7 +164,10 @@ function LoginPage() {
       // but the hook deliberately does not report the verdict: the message below
       // is identical whether the address is registered or not, so the page never
       // reveals allowlist membership.
-      await adminLogin.mutateAsync(adminEmail);
+      await adminLogin.mutateAsync({
+        email: adminEmail,
+        ...(adminCaptchaToken ? { captchaToken: adminCaptchaToken } : {}),
+      });
       setAdminNotice({
         tone: "info",
         text: "If that email is on your school's administrator allowlist, an activation link is on its way. Open it to finish setting up your account.",
@@ -122,11 +177,10 @@ function LoginPage() {
       // refusing the request). These never say anything about the allowlist.
       setAdminNotice({
         tone: "error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "We couldn't process that request. Please try again.",
+        text: normalizeAuthError(error),
       });
+    } finally {
+      adminCaptchaRef.current?.reset();
     }
   };
 
@@ -180,7 +234,18 @@ function LoginPage() {
 
             {/* ---------------- Student log in ---------------- */}
             <TabsContent value="student" className="space-y-6">
-              <form onSubmit={handleStudentLogin} className="space-y-4 pt-2">
+              {/*
+                One-click sign in *and* sign up: Google decides which it is, and
+                a brand-new Google account gets a student profile from the
+                handle_new_auth_user() trigger, then onboarding from AuthProvider.
+                Administrator access is never granted here.
+              */}
+              <div className="space-y-3 pt-2">
+                <GoogleAuthButton disabled={signIn.isPending || adminLogin.isPending} />
+                <AuthDivider />
+              </div>
+
+              <form onSubmit={handleStudentLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="student-email">Email</Label>
                   <Input
@@ -208,6 +273,8 @@ function LoginPage() {
                   {signIn.isPending ? <Mail className="mr-2 size-4" /> : null}
                   Continue
                 </Button>
+
+                <TurnstileWidget ref={studentCaptchaRef} onToken={setStudentCaptchaToken} />
               </form>
 
               {studentMessage ? (
@@ -218,7 +285,7 @@ function LoginPage() {
 
               {signIn.error ? (
                 <p className="form-message animate-in fade-in rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive duration-150">
-                  {signIn.error.message}
+                  {normalizeAuthError(signIn.error)}
                 </p>
               ) : null}
 
@@ -270,6 +337,8 @@ function LoginPage() {
                   {adminLogin.isPending ? <Mail className="mr-2 size-4" /> : null}
                   Send activation link
                 </Button>
+
+                <TurnstileWidget ref={adminCaptchaRef} onToken={setAdminCaptchaToken} />
               </form>
 
               {adminNotice ? (

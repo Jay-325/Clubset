@@ -286,18 +286,18 @@ currently has **no** upload/download code — it only displays `receipt_path`.
 
 ### 6.17 P3 — Doc/UI drift
 `README.md` and `login.tsx` still tell users to configure `VITE_SUPABASE_ANON_KEY`
-instead of `VITE_SUPABASE_PUBLISHABLE_KEY`; `README.md` references the removed
-`ms.rivera@ridgeway.edu` seed.
+instead of `VITE_SUPABASE_PUBLISHABLE_KEY`. The `ms.rivera@ridgeway.edu` seed was
+removed from `supabase/seed.sql` in this remediation; the placeholder seed entries
+now use developer placeholders only (see `AGENTS.md`).
 
 ---
 
 ## 7. Ridgeway residue to remove (per task)
 - `20260101000100` — deletes `ms.rivera@ridgeway.edu`, inserts allowlist row under `slug='ridgeway'`.
 - `20260101000200` — denylist of `ms.rivera@ridgeway.edu`; Ridgeway fallback in `activate_administrator`.
-- `supabase/seed.sql` — seeds `Ridgeway High School` / `ridgeway.edu` + `arinjaypal@gmail.com` allowlist.
-- `README.md` — instructs `ms.rivera@ridgeway.edu`.
-These are **already-applied history**; a corrective migration (not an edit of applied
-files) is required, plus a decision on the development seed.
+- `supabase/seed.sql` — now seeds developer placeholders only; the `Ridgeway High School` / `ridgeway.edu` fabricated tenant is gone.
+- `README.md` — no longer instructs `ms.rivera@ridgeway.edu`.
+These are **already-applied migration history**; the applied migration files are intentionally NOT edited (they must reproduce the live schema and authorization state). Fresh-environment administrator provisioning is handled manually by an authorized operator using operator-supplied values outside the committed repository, documented with placeholders only in `AGENTS.md`.
 
 ---
 

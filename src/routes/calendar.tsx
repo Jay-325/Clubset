@@ -1,6 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertTriangle, CalendarDays, Clock, MapPin } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+} from "lucide-react";
 
 import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +16,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { FadeIn } from "@/components/ui/motion";
+import { FadeIn, StaggeredList } from "@/components/ui/motion";
 import { useRsvp, useUpcomingEvents } from "@/lib/queries";
 import { staggerStyle } from "@/lib/motion";
 import { EVENT_KINDS, EVENT_PRIORITY_LABELS } from "@/lib/domain";
@@ -39,6 +46,14 @@ function dayKey(date: Date): string {
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
+function startOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function monthOffset(date: Date, months: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+}
+
 function CalendarPage() {
   return (
     <RequireAuth>
@@ -53,6 +68,7 @@ function CalendarContent() {
   // PRD 13: 100 events is enough to cover a full term of weekly meetings.
   const upcoming = useUpcomingEvents(100);
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(undefined);
+  const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
 
   const groups = useMemo(() => {
     const byDay = new Map<string, { date: Date; events: UpcomingEventResult[] }>();
@@ -73,6 +89,13 @@ function CalendarContent() {
     ? groups.filter((group) => dayKey(group.date) === dayKey(selectedDay))
     : groups;
 
+  const monthLabel = currentMonth.toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
+
+  const previousMonthDisabled = false; // navigation is unbounded; data drives what is shown
+
   return (
     <>
       <PageHeader
@@ -89,7 +112,7 @@ function CalendarContent() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* ---- Agenda (the primary view) ---- */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           {selectedDay ? (
             <h2 className="text-lg font-semibold">
               {selectedDay.toLocaleDateString(undefined, {
@@ -101,6 +124,11 @@ function CalendarContent() {
           ) : (
             <h2 className="text-lg font-semibold">Agenda</h2>
           )}
+          <p className="text-sm text-muted-foreground">
+            {selectedDay
+              ? "Events scheduled for the selected day."
+              : "Upcoming events across all your joined clubs, grouped by day."}
+          </p>
 
           {upcoming.isLoading ? (
             <div className="space-y-4">
@@ -118,31 +146,45 @@ function CalendarContent() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-6">
+            <StaggeredList>
               {visibleGroups.map((group) => (
                 <DayGroup key={dayKey(group.date)} date={group.date} events={group.events} />
               ))}
-            </div>
+            </StaggeredList>
           )}
         </div>
 
-        {/* ---- Month picker ---- */}
-        <aside className="order-first lg:order-last">
+        {/* ---- Month calendar ---- */}
+        <aside className="order-first lg:order-last min-w-0">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold">January 2026</h3>
-                <div className="flex items-center gap-1">
-                  <Button variant="outline" size="icon" className="h-8 w-8 p-0">
-                    <span className="sr-only">Previous month</span>
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8 p-0">
-                    <span className="sr-only">Next month</span>
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentMonth((m) => monthOffset(m, -1))}
+                  aria-label="Previous month"
+                  className="h-11 w-11 p-0"
+                >
+                  <ChevronLeft className="size-4" />
+                  <span className="sr-only">Previous month</span>
+                </Button>
+                <h3 className="text-sm font-semibold">{monthLabel}</h3>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentMonth((m) => monthOffset(m, +1))}
+                  aria-label="Next month"
+                  className="h-11 w-11 p-0"
+                >
+                  <ChevronRight className="size-4" />
+                  <span className="sr-only">Next month</span>
+                </Button>
               </div>
               <Calendar
                 mode="single"
+                month={currentMonth}
+                onMonthChange={setCurrentMonth}
                 selected={selectedDay}
                 onSelect={setSelectedDay}
                 modifiers={{
@@ -160,27 +202,34 @@ function CalendarContent() {
               <p className="mt-3 px-1 text-xs text-muted-foreground text-center">
                 Underlined days have events. Amber days have a scheduling conflict.
               </p>
+
+              {/* Quick stats for the selected day */}
+              {selectedDay && visibleGroups.length > 0 && (
+                <Card className="mt-4">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-semibold">Today's summary</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Events today</span>
+                        <span className="text-sm font-semibold">
+                          {visibleGroups[0]?.events.length ?? 0}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">You are going to</span>
+                        <span className="text-sm font-semibold">
+                          {visibleGroups[0]?.events.filter((e) => e.my_rsvp === "going").length ??
+                            0}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </CardContent>
           </Card>
-
-          {/* Quick stats for the selected day */}
-          {selectedDay && visibleGroups.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold">Today's summary</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Events today</span>
-                    <span className="text-sm font-semibold">
-                      {visibleGroups[0]?.events.length ?? 0}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </aside>
       </div>
     </>
@@ -198,7 +247,7 @@ function DayGroup({ date, events }: { date: Date; events: UpcomingEventResult[] 
           day: "numeric",
         })}
       </h3>
-      <div className="space-y-2">
+      <StaggeredList>
         {events.map((event, index) => (
           <EventRow
             key={event.id}
@@ -207,7 +256,7 @@ function DayGroup({ date, events }: { date: Date; events: UpcomingEventResult[] 
             style={staggerStyle(index)}
           />
         ))}
-      </div>
+      </StaggeredList>
     </section>
   );
 }
@@ -228,8 +277,12 @@ function EventRow({
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-sm text-muted-foreground">{event.club_name}</p>
-            <p className="font-medium">{event.title}</p>
+            <p className="truncate text-sm text-muted-foreground" title={event.club_name}>
+              {event.club_name}
+            </p>
+            <p className="font-medium line-clamp-1" title={event.title}>
+              {event.title}
+            </p>
             <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-1">
                 <Clock className="size-3" />
@@ -261,7 +314,7 @@ function EventRow({
 
         {/* PRD 15: the overlap is shown, never auto-resolved. */}
         {event.conflict_count > 0 ? (
-          <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-amber-500/10 px-2 py-1.5 text-xs text-amber-700 dark:text-amber-400">
+          <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-amber-500/10 px-2 py-1 text-xs text-amber-700 dark:text-amber-400">
             <AlertTriangle className="mt-0.5 size-3 shrink-0" />
             Overlaps with {event.conflict_count} other event
             {event.conflict_count === 1 ? "" : "s"}. You decide which one to attend.
@@ -270,7 +323,7 @@ function EventRow({
 
         {/* PRD 15: Clubset never RSVPs on the student's behalf -- the buttons
             are the only thing that writes an attendance expectation. */}
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             variant={event.my_rsvp === "going" ? "default" : "outline"}

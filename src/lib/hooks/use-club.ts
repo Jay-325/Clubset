@@ -38,7 +38,7 @@ export function useClubContext(clubId: string) {
       const [
         { data: membership },
         { data: assignments },
-        { data: profile },
+        { data: isAdmin },
         { data: linkedAdmin },
       ] = await Promise.all([
         supabase
@@ -52,7 +52,7 @@ export function useClubContext(clubId: string) {
           .select("leadership_roles(permissions)")
           .eq("club_id", clubId)
           .eq("user_id", userId),
-        supabase.from("profiles").select("account_type").eq("id", userId).single(),
+        supabase.rpc("is_user_administrator", { target_user_id: userId }),
         supabase
           .from("club_administrators")
           .select("administrator_id")
@@ -75,7 +75,7 @@ export function useClubContext(clubId: string) {
         club,
         membership: membership ?? null,
         permissions: [...new Set(permissions)],
-        isAdministrator: profile?.account_type === "administrator",
+        isAdministrator: Boolean(isAdmin),
         isLinkedAdministrator: Boolean(linkedAdmin),
       };
     },

@@ -715,6 +715,7 @@ export type Database = {
       current_profile: { Args: Record<string, never>; Returns: ProfileRow };
       current_school_id: { Args: Record<string, never>; Returns: string };
       is_administrator: { Args: Record<string, never>; Returns: boolean };
+      is_user_administrator: { Args: { target_user_id: string }; Returns: boolean };
       is_club_member: { Args: { target_club: string }; Returns: boolean };
       is_club_admin: { Args: { target_club: string }; Returns: boolean };
       is_club_leader: { Args: { target_club: string }; Returns: boolean };

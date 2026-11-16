@@ -21,31 +21,65 @@ const mockFrom = vi.fn(() => ({
 const mockAssertPasswordNotBreached = vi.hoisted(() => vi.fn());
 const mockSignUp = vi.hoisted(() => vi.fn().mockResolvedValue({ data: null, error: null }));
 const mockUpdateUser = vi.hoisted(() => vi.fn().mockResolvedValue({ error: null }));
+const mockSignInWithPassword = vi.hoisted(() => vi.fn().mockResolvedValue({ error: null }));
+const mockSignInWithOtp = vi.hoisted(() => vi.fn().mockResolvedValue({ error: null }));
+const mockRpc = vi.hoisted(() => vi.fn());
+const mockEnforceAuthRateLimit = vi.hoisted(() => vi.fn().mockResolvedValue({ allowed: true }));
+const mockOAuthRedirectUrl = vi.hoisted(() => vi.fn(() => "http://localhost/login"));
+const mockEmailRedirectUrl = vi.hoisted(() => vi.fn(() => "https://clubset.vercel.app/login"));
 
 vi.mock("@/lib/security/passwords", () => ({
   assertPasswordNotBreached: mockAssertPasswordNotBreached,
+  BREACHED_PASSWORD_MESSAGE:
+    "This password has appeared in a known data breach. Please choose a different password.",
+  PASSWORD_CHECK_UNAVAILABLE_MESSAGE:
+    "We couldn't verify this password right now. Please try again.",
+}));
+
+vi.mock("@/lib/security/auth-rate-limit.functions", () => ({
+  enforceAuthRateLimit: mockEnforceAuthRateLimit,
+  RATE_LIMITED_MESSAGE: "Too many requests. Please wait a moment and try again.",
+}));
+
+vi.mock("@/lib/auth/oauth", () => ({
+  OAUTH_PROVIDER: "google",
+  oauthRedirectUrl: mockOAuthRedirectUrl,
+  emailRedirectUrl: mockEmailRedirectUrl,
 }));
 
 vi.mock("@/lib/supabase/client", () => ({
   getSupabaseClient: vi.fn(() => ({
     from: mockFrom,
+    rpc: mockRpc,
     auth: {
       signUp: mockSignUp,
       updateUser: mockUpdateUser,
+      signInWithPassword: mockSignInWithPassword,
+      signInWithOtp: mockSignInWithOtp,
     },
   })),
 }));
 
 import { getSupabaseClient } from "@/lib/supabase/client";
 import {
+  BREACHED_PASSWORD_MESSAGE,
+  PASSWORD_CHECK_UNAVAILABLE_MESSAGE,
+} from "@/lib/security/passwords";
+import {
   useNotifications,
   useUnreadNotificationCount,
   useMarkNotificationRead,
   useSignUp,
+  useSignIn,
+  useAdminLogin,
   useChangePassword,
+  normalizeAuthError,
+  useGoogleSignIn,
 } from "./queries";
 
 const mockedGetSupabaseClient = vi.mocked(getSupabaseClient);
+const mockedEnforceAuthRateLimit = vi.mocked(mockEnforceAuthRateLimit);
+const mockedOAuthRedirectUrl = vi.mocked(mockOAuthRedirectUrl);
 
 function makeWrapper(queryClient: QueryClient) {
   return ({ children }: { children: React.ReactNode }) =>
@@ -62,9 +96,16 @@ beforeEach(() => {
   });
   mockUpdate.mockReturnValue({ eq: mockEq });
   mockEq.mockReturnValue({ error: null });
+  mockRpc.mockResolvedValue({ data: true, error: null });
   mockedGetSupabaseClient.mockReturnValue({
     from: mockFrom,
-    auth: { signUp: mockSignUp, updateUser: mockUpdateUser },
+    rpc: mockRpc,
+    auth: {
+      signUp: mockSignUp,
+      updateUser: mockUpdateUser,
+      signInWithPassword: mockSignInWithPassword,
+      signInWithOtp: mockSignInWithOtp,
+    },
   } as any);
 });
 
@@ -337,5 +378,375 @@ describe("useChangePassword runs assertPasswordNotBreached before updateUser", (
 
     expect(mockAssertPasswordNotBreached).toHaveBeenCalled();
     expect(mockUpdateUser).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Rate limiting on signup
+// ---------------------------------------------------------------------------
+
+describe("useSignUp rate limiting", () => {
+  const wrapper = makeWrapper(
+    new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    }),
+  );
+
+  beforeEach(() => {
+    mockAssertPasswordNotBreached.mockResolvedValue(undefined);
+    mockSignUp.mockResolvedValue({ data: null, error: null });
+    mockedEnforceAuthRateLimit.mockResolvedValue({ allowed: true });
+  });
+
+  it("calls enforceAuthRateLimit before signUp", async () => {
+    const { result } = renderHook(() => useSignUp(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        email: "student@school.edu",
+        password: "a-long-unique-passphrase",
+      });
+    });
+
+    expect(mockedEnforceAuthRateLimit).toHaveBeenCalledWith({
+      data: { email: "student@school.edu", operation: "signup" },
+    });
+    expect(mockedEnforceAuthRateLimit.mock.invocationCallOrder[0]!).toBeLessThan(
+      mockAssertPasswordNotBreached.mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it("rejects signup and never calls signUp when rate limited", async () => {
+    mockedEnforceAuthRateLimit.mockResolvedValue({ allowed: false });
+
+    const { result } = renderHook(() => useSignUp(), { wrapper });
+
+    await expect(
+      act(async () => {
+        await result.current.mutateAsync({
+          email: "student@school.edu",
+          password: "a-long-unique-passphrase",
+        });
+      }),
+    ).rejects.toThrow("Too many requests. Please wait a moment and try again.");
+
+    expect(mockedEnforceAuthRateLimit).toHaveBeenCalled();
+    expect(mockAssertPasswordNotBreached).not.toHaveBeenCalled();
+    expect(mockSignUp).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// useGoogleSignIn
+// ---------------------------------------------------------------------------
+
+describe("useGoogleSignIn", () => {
+  const mockSignInWithOAuth = vi.fn().mockResolvedValue({ error: null });
+
+  const wrapper = makeWrapper(
+    new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    }),
+  );
+
+  beforeEach(() => {
+    mockSignInWithOAuth.mockClear();
+    mockedOAuthRedirectUrl.mockReturnValue("http://localhost/login");
+    mockedGetSupabaseClient.mockReturnValue({
+      auth: { signInWithOAuth: mockSignInWithOAuth },
+    } as any);
+  });
+
+  it("calls signInWithOAuth with provider google and the default redirect URL", async () => {
+    const { result } = renderHook(() => useGoogleSignIn(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync();
+    });
+
+    expect(mockedOAuthRedirectUrl).toHaveBeenCalledWith();
+    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+      provider: "google",
+      options: {
+        redirectTo: "http://localhost/login",
+        queryParams: { prompt: "select_account" },
+      },
+    });
+  });
+
+  it("uses an override redirect URL when supplied", async () => {
+    const { result } = renderHook(() => useGoogleSignIn(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ redirectTo: "https://clubset.lovable.app/login?tab=admin" });
+    });
+
+    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+      provider: "google",
+      options: {
+        redirectTo: "https://clubset.lovable.app/login?tab=admin",
+        queryParams: { prompt: "select_account" },
+      },
+    });
+  });
+
+  it("rejects when Supabase cannot start the OAuth flow", async () => {
+    mockSignInWithOAuth.mockResolvedValue({ error: new Error("OAuth provider not configured") });
+
+    const { result } = renderHook(() => useGoogleSignIn(), { wrapper });
+
+    await expect(act(async () => await result.current.mutateAsync())).rejects.toThrow(
+      "OAuth provider not configured",
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// normalizeAuthError
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// CAPTCHA token forwarding: every protected Auth call must carry the token
+// ---------------------------------------------------------------------------
+
+describe("CAPTCHA tokens reach Supabase Auth", () => {
+  const wrapper = makeWrapper(
+    new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    }),
+  );
+
+  beforeEach(() => {
+    mockAssertPasswordNotBreached.mockResolvedValue(undefined);
+    mockEnforceAuthRateLimit.mockResolvedValue({ allowed: true });
+    mockSignUp.mockResolvedValue({ data: null, error: null });
+    mockSignInWithPassword.mockResolvedValue({ error: null });
+    mockSignInWithOtp.mockResolvedValue({ error: null });
+    mockRpc.mockResolvedValue({ data: true, error: null });
+  });
+
+  it("forwards the token to signInWithPassword", async () => {
+    const { result } = renderHook(() => useSignIn(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        email: "student@school.edu",
+        password: "a-long-unique-passphrase",
+        captchaToken: "token-password",
+      });
+    });
+
+    expect(mockSignInWithPassword).toHaveBeenCalledWith({
+      email: "student@school.edu",
+      password: "a-long-unique-passphrase",
+      options: { captchaToken: "token-password" },
+    });
+  });
+
+  it("forwards the token to signInWithOtp for a magic link", async () => {
+    const { result } = renderHook(() => useSignIn(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        email: "student@school.edu",
+        captchaToken: "token-magic",
+      });
+    });
+
+    expect(mockSignInWithOtp).toHaveBeenCalledWith({
+      email: "student@school.edu",
+      options: {
+        shouldCreateUser: true,
+        captchaToken: "token-magic",
+        emailRedirectTo: "https://clubset.vercel.app/login",
+      },
+    });
+  });
+
+  it("forwards the token to signUp", async () => {
+    const { result } = renderHook(() => useSignUp(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        email: "student@school.edu",
+        password: "a-long-unique-passphrase",
+        captchaToken: "token-signup",
+      });
+    });
+
+    expect(mockSignUp).toHaveBeenCalledWith({
+      email: "student@school.edu",
+      password: "a-long-unique-passphrase",
+      options: {
+        captchaToken: "token-signup",
+        emailRedirectTo: "https://clubset.vercel.app/login",
+      },
+    });
+  });
+
+  it("forwards the token to the administrator activation email", async () => {
+    const { result } = renderHook(() => useAdminLogin(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        email: "teacher@school.edu",
+        captchaToken: "token-admin",
+      });
+    });
+
+    expect(mockSignInWithOtp).toHaveBeenCalledWith({
+      email: "teacher@school.edu",
+      options: {
+        shouldCreateUser: true,
+        captchaToken: "token-admin",
+        emailRedirectTo: "https://clubset.vercel.app/login",
+      },
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Email returns: every flow that sends a link must name the canonical origin
+// ---------------------------------------------------------------------------
+
+describe("email links return to the canonical origin", () => {
+  const wrapper = makeWrapper(
+    new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    }),
+  );
+
+  beforeEach(() => {
+    mockAssertPasswordNotBreached.mockResolvedValue(undefined);
+    mockEnforceAuthRateLimit.mockResolvedValue({ allowed: true });
+    mockSignUp.mockResolvedValue({ data: null, error: null });
+    mockSignInWithOtp.mockResolvedValue({ error: null });
+    mockRpc.mockResolvedValue({ data: true, error: null });
+  });
+
+  it("sends signup verification to the canonical /login", async () => {
+    const { result } = renderHook(() => useSignUp(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        email: "student@school.edu",
+        password: "a-long-unique-passphrase",
+      });
+    });
+
+    expect(mockSignUp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({ emailRedirectTo: "https://clubset.vercel.app/login" }),
+      }),
+    );
+  });
+
+  it("sends the magic link to the canonical /login", async () => {
+    const { result } = renderHook(() => useSignIn(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ email: "student@school.edu" });
+    });
+
+    expect(mockSignInWithOtp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({ emailRedirectTo: "https://clubset.vercel.app/login" }),
+      }),
+    );
+  });
+
+  it("sends the administrator activation link to the canonical /login", async () => {
+    const { result } = renderHook(() => useAdminLogin(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ email: "teacher@school.edu" });
+    });
+
+    expect(mockSignInWithOtp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({ emailRedirectTo: "https://clubset.vercel.app/login" }),
+      }),
+    );
+  });
+});
+
+describe("normalizeAuthError", () => {
+  it("maps 'already registered' to a generic sign-in prompt", () => {
+    expect(normalizeAuthError(new Error("User already registered"))).toBe(
+      "An account already exists for this email address. Please sign in instead.",
+    );
+    expect(normalizeAuthError(new Error("user already exists"))).toBe(
+      "An account already exists for this email address. Please sign in instead.",
+    );
+  });
+
+  it("maps invalid credentials to a generic message", () => {
+    expect(normalizeAuthError(new Error("Invalid login credentials"))).toBe(
+      "Unable to sign in. Please check your email and password.",
+    );
+    expect(normalizeAuthError(new Error("Incorrect password"))).toBe(
+      "Unable to sign in. Please check your email and password.",
+    );
+  });
+
+  it("maps unconfirmed email to a verification prompt", () => {
+    expect(normalizeAuthError(new Error("Email not confirmed"))).toBe(
+      "Please verify your email address before signing in. Check your inbox for the verification link.",
+    );
+  });
+
+  it("maps rate-limit errors to the generic retry message", () => {
+    expect(normalizeAuthError(new Error("Too many requests"))).toBe(
+      "Too many requests. Please wait a moment and try again.",
+    );
+  });
+
+  it("returns a generic message for unknown errors", () => {
+    expect(normalizeAuthError(new Error("Some unexpected error"))).toBe(
+      "Something went wrong. Please try again.",
+    );
+    expect(normalizeAuthError(null)).toBe("Something went wrong. Please try again.");
+  });
+
+  it("explains the password policy instead of hiding it behind the generic message", () => {
+    // Exact message GoTrue returns for a password that fails the project policy.
+    const upstream = new Error(
+      "Password should contain at least one character of each: abcdefghijklmnopqrstuvwxyz, ABCDEFGHIJKLMNOPQRSTUVWXYZ, 0123456789.",
+    );
+
+    expect(normalizeAuthError(upstream)).toBe(
+      "Please choose a stronger password with lower case and upper case letters and at least one number.",
+    );
+  });
+
+  it("keeps the app's own actionable password messages intact", () => {
+    expect(normalizeAuthError(new Error(BREACHED_PASSWORD_MESSAGE))).toBe(
+      BREACHED_PASSWORD_MESSAGE,
+    );
+    expect(normalizeAuthError(new Error(PASSWORD_CHECK_UNAVAILABLE_MESSAGE))).toBe(
+      PASSWORD_CHECK_UNAVAILABLE_MESSAGE,
+    );
+  });
+
+  it("reports a failed human check without echoing upstream captcha text", () => {
+    expect(
+      normalizeAuthError(
+        new Error("captcha protection: request disallowed (invalid-input-response)"),
+      ),
+    ).toBe("The human check could not be completed. Please complete the check and try again.");
+
+    // The exact message the hosted Auth server returned on 2026-11-15 when a
+    // protected call arrived with no token at all.
+    expect(
+      normalizeAuthError(
+        new Error("captcha protection: request disallowed (no captcha_token found)"),
+      ),
+    ).toBe("The human check could not be completed. Please complete the check and try again.");
+  });
+
+  it("reports an unreachable auth server as a connection problem", () => {
+    expect(normalizeAuthError(new TypeError("Failed to fetch"))).toBe(
+      "We couldn't reach the sign-in service. Check your connection and try again.",
+    );
   });
 });

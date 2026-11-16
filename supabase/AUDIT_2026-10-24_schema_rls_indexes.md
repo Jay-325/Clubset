@@ -500,12 +500,17 @@ A student can insert a row already marked `status='accepted'`, with
 `reviewed_by` and `reviewed_at` set. It grants no role, but it pollutes reviewer
 queues and the audit narrative. Add `and status = 'draft'`.
 
-### M5 — Personal address hard-coded in a migration
-`20261019000200_authorize_administrator.sql` inserts `arinjaypal@gmail.com` into
-`public.admin_allowlist`. That is VCS-visible PII, and every fresh environment
-grants that account administrator rights. Move the row to `supabase/seed.sql`
-(local only) or document it as a deliberate production bootstrap with the
-revocation path.
+### M5 — Administrator allowlist provisioning is operator-managed
+`20261019000200_authorize_administrator.sql` and `20261025005921_authorize_second_administrator.sql`
+insert administrator allowlist rows into `public.admin_allowlist`. Those migrations are
+already applied and must not be edited; their contents are the live production
+authorization state and the two authorized administrators must remain intact.
+
+Real administrator contact details are deliberately NOT committed to seed data or
+documentation. `supabase/seed.sql` now uses developer placeholders (see the local
+development provisioning notes in `AGENTS.md`). Provisioning a fresh environment
+requires an authorized operator to insert operator-supplied allowlist values outside
+the committed repository; the process is documented with placeholders only.
 
 ### M6 — No `force row level security`
 `20260101000001_core_schema.sql:287-291` is the only enable block in the repo and

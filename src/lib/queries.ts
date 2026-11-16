@@ -10,7 +10,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 
-import { assertPasswordNotBreached } from "@/lib/security/passwords";
+import {
+  assertPasswordNotBreached,
+  BREACHED_PASSWORD_MESSAGE,
+  PASSWORD_CHECK_UNAVAILABLE_MESSAGE,
+} from "@/lib/security/passwords";
+import { emailRedirectUrl, OAUTH_PROVIDER, oauthRedirectUrl } from "@/lib/auth/oauth";
+import {
+  enforceAuthRateLimit,
+  RATE_LIMITED_MESSAGE,
+} from "@/lib/security/auth-rate-limit.functions";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type {
   AdminClubOverviewRow,
@@ -64,9 +73,18 @@ export function normalizeEmail(email: string): string {
  */
 export function useAdminLogin() {
   return useMutation({
-    mutationFn: async (email: string): Promise<void> => {
+    mutationFn: async (input: { email: string; captchaToken?: string }): Promise<void> => {
+      const normalized = normalizeEmail(input.email);
       const supabase = getSupabaseClient();
-      const normalized = normalizeEmail(email);
+
+      // Rate-limit the allowlist pre-check and the activation email it can
+      // trigger. Both are email-address-bound operations.
+      const rateLimit = await enforceAuthRateLimit({
+        data: { email: normalized, operation: "admin_allowlist" },
+      });
+      if (!rateLimit.allowed) {
+        throw new Error(RATE_LIMITED_MESSAGE);
+      }
 
       // 1. Ask the database. public.admin_allowlist has no client SELECT
       //    policy, so this RPC is the only way the browser can learn the answer.
@@ -88,7 +106,11 @@ export function useAdminLogin() {
       //    true because an allowlisted teacher may not have an account yet.
       const { error } = await supabase.auth.signInWithOtp({
         email: normalized,
-        options: { shouldCreateUser: true },
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: emailRedirectUrl(),
+          ...(input.captchaToken ? { captchaToken: input.captchaToken } : {}),
+        },
       });
       if (error) throw error;
     },
@@ -151,18 +173,36 @@ export function useViewerId() {
 export function useSignIn() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { email: string; password?: string }) => {
+    mutationFn: async (input: { email: string; password?: string; captchaToken?: string }) => {
+      const normalizedEmail = normalizeEmail(input.email);
       const supabase = getSupabaseClient();
+
       if (input.password) {
+        // Password login does not trigger an auth email, so no email-rate
+        // limit applies. Supabase Auth's own brute-force protections apply,
+        // plus the Turnstile token when captcha is enabled on the project.
         const { error } = await supabase.auth.signInWithPassword({
-          email: normalizeEmail(input.email),
+          email: normalizedEmail,
           password: input.password,
+          ...(input.captchaToken ? { options: { captchaToken: input.captchaToken } } : {}),
         });
         if (error) throw error;
       } else {
+        // Magic-link sign-in sends an email: rate-limit it.
+        const rateLimit = await enforceAuthRateLimit({
+          data: { email: normalizedEmail, operation: "magic_link" },
+        });
+        if (!rateLimit.allowed) {
+          throw new Error(RATE_LIMITED_MESSAGE);
+        }
+
         const { error } = await supabase.auth.signInWithOtp({
-          email: normalizeEmail(input.email),
-          options: { shouldCreateUser: true },
+          email: normalizedEmail,
+          options: {
+            shouldCreateUser: true,
+            emailRedirectTo: emailRedirectUrl(),
+            ...(input.captchaToken ? { captchaToken: input.captchaToken } : {}),
+          },
         });
         if (error) throw error;
       }
@@ -175,19 +215,74 @@ export function useSignIn() {
   });
 }
 
+/**
+ * One-click Google sign-in / sign-up (PRD 4).
+ *
+ * There is no email to rate-limit here and no password to breach-check: Google
+ * authenticates the person, and Supabase Auth turns the returned profile into a
+ * session. The allowlist is never consulted -- a Google session is still an
+ * ordinary student session until `activate_administrator()` says otherwise (see
+ * AuthProvider), so this neither grants nor requests administrator access.
+ *
+ * The call resolves after the browser has been handed to Google; the app is no
+ * longer running, so there is no cache to invalidate. If the user cancels,
+ * Google/Supabase send them back with an `error` parameter, which the login page
+ * reports (see readOAuthError).
+ */
+export function useGoogleSignIn() {
+  return useMutation({
+    mutationFn: async (input?: { redirectTo?: string }): Promise<void> => {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: OAUTH_PROVIDER,
+        options: {
+          redirectTo: input?.redirectTo ?? oauthRedirectUrl(),
+          // Always show the chooser: a shared school laptop must not silently
+          // reuse whoever signed into Google last.
+          queryParams: { prompt: "select_account" },
+        },
+      });
+      if (error) throw error;
+    },
+  });
+}
+
 export function useSignUp() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { email: string; password: string; fullName?: string }) => {
+    mutationFn: async (input: {
+      email: string;
+      password: string;
+      fullName?: string;
+      captchaToken?: string;
+    }) => {
+      const normalizedEmail = normalizeEmail(input.email);
+
+      // Rate-limit signup before any Supabase Auth call that sends an email.
+      // Server-enforced: the check runs in a server function and hits the
+      // database, not in React state or a disabled button.
+      const rateLimit = await enforceAuthRateLimit({
+        data: { email: normalizedEmail, operation: "signup" },
+      });
+      if (!rateLimit.allowed) {
+        throw new Error(RATE_LIMITED_MESSAGE);
+      }
+
       // Signup is the first point a user chooses a password. The check must
       // finish before Supabase Auth creates the account, so a breached
       // password is never stored.
       await assertPasswordNotBreached(input.password);
 
       const supabase = getSupabaseClient();
-      const signUpOptions = input.fullName ? { data: { full_name: input.fullName } } : {};
+      const signUpOptions: {
+        data?: { full_name: string };
+        captchaToken?: string;
+        emailRedirectTo: string;
+      } = { emailRedirectTo: emailRedirectUrl() };
+      if (input.fullName) signUpOptions.data = { full_name: input.fullName };
+      if (input.captchaToken) signUpOptions.captchaToken = input.captchaToken;
       const { data, error } = await supabase.auth.signUp({
-        email: normalizeEmail(input.email),
+        email: normalizedEmail,
         password: input.password,
         ...(Object.keys(signUpOptions).length ? { options: signUpOptions } : {}),
       });
@@ -787,5 +882,91 @@ export function useAdminClubOverview(enabled = true) {
 // ---------------------------------------------------------------------------
 // Session typing helper
 // ---------------------------------------------------------------------------
+
+/**
+ * Normalize a Supabase Auth error into a user-safe message.
+ *
+ * Never echo the upstream error verbatim: messages like "User already
+ * registered" or "Invalid login credentials" reveal whether an email address
+ * is known to the auth system. Return a generic message instead so the UI
+ * cannot be used as an email-enumeration oracle.
+ *
+ * Legitimate users still get actionable guidance (verify your email, check
+ * your password) without confirming or denying the existence of any account.
+ */
+export function normalizeAuthError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const lower = message.toLowerCase();
+
+  // The app's own password messages are already safe and actionable, and they
+  // exist only in this codebase, so pass them through verbatim instead of
+  // flattening them into the generic fallback at the bottom of this function.
+  if (message === BREACHED_PASSWORD_MESSAGE || message === PASSWORD_CHECK_UNAVAILABLE_MESSAGE) {
+    return message;
+  }
+
+  // Signup: email already has an account (confirmed or not). Do not confirm
+  // or deny; tell the user to sign in instead.
+  if (
+    lower.includes("already registered") ||
+    lower.includes("user already exists") ||
+    lower.includes("already exists")
+  ) {
+    return "An account already exists for this email address. Please sign in instead.";
+  }
+
+  // Password login: wrong email or wrong password. Same message either way.
+  if (
+    lower.includes("invalid login") ||
+    lower.includes("incorrect password") ||
+    lower.includes("invalid credentials")
+  ) {
+    return "Unable to sign in. Please check your email and password.";
+  }
+
+  // Email not yet confirmed: actionable but does not reveal whether another
+  // email would behave differently.
+  if (lower.includes("email not confirmed") || lower.includes("not confirmed")) {
+    return "Please verify your email address before signing in. Check your inbox for the verification link.";
+  }
+
+  // Rate limit from Supabase Auth or our own rate limiter.
+  if (lower.includes("too many") || lower.includes("rate limit")) {
+    return RATE_LIMITED_MESSAGE;
+  }
+
+  // Signup: the project's password policy rejected the choice (GoTrue replies
+  // "Password should contain at least one character of each: ..."). The
+  // requirements are public, so naming them reveals nothing about any account.
+  if (
+    lower.includes("password should") ||
+    lower.includes("weak password") ||
+    lower.includes("password is too short") ||
+    lower.includes("stronger password")
+  ) {
+    return "Please choose a stronger password with lower case and upper case letters and at least one number.";
+  }
+
+  // Captcha (Turnstile) rejected the request, or the widget could not produce
+  // a token. Never echo the upstream captcha diagnostics. The widget resets
+  // itself after every attempt, so the user only needs to solve the new
+  // challenge -- a full page reload would lose the typed credentials.
+  if (lower.includes("captcha")) {
+    return "The human check could not be completed. Please complete the check and try again.";
+  }
+
+  // The request never reached Supabase Auth: offline, blocked by an extension,
+  // CORS, or a DNS failure. This is the one case where retrying may help.
+  if (
+    lower.includes("failed to fetch") ||
+    lower.includes("networkerror") ||
+    lower.includes("network error") ||
+    lower.includes("load failed")
+  ) {
+    return "We couldn't reach the sign-in service. Check your connection and try again.";
+  }
+
+  return "Something went wrong. Please try again.";
+}
 
 export type { Session, Json };

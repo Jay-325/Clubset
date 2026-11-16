@@ -2067,6 +2067,7 @@ export type Database = {
         Returns: boolean
       }
       is_administrator: { Args: never; Returns: boolean }
+      is_user_administrator: { Args: { target_user_id: string }; Returns: boolean }
       is_club_admin: { Args: { target_club: string }; Returns: boolean }
       is_club_leader: { Args: { target_club: string }; Returns: boolean }
       is_club_member: { Args: { target_club: string }; Returns: boolean }
