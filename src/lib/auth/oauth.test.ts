@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  CANONICAL_APP_ORIGIN,
+  emailRedirectUrl,
   oauthErrorMessage,
   oauthRedirectUrl,
   parseOAuthError,
@@ -31,11 +33,48 @@ describe("oauthRedirectUrl", () => {
   });
 });
 
+describe("emailRedirectUrl", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("uses the canonical production origin", () => {
+    expect(CANONICAL_APP_ORIGIN).toBe("https://clubset.vercel.app");
+    expect(emailRedirectUrl("https://clubset.vercel.app")).toBe("https://clubset.vercel.app/login");
+  });
+
+  it("normalises a trailing slash", () => {
+    expect(emailRedirectUrl("https://clubset.vercel.app/")).toBe(
+      "https://clubset.vercel.app/login",
+    );
+  });
+
+  it("rejects an origin that is not on the allow-list", () => {
+    expect(emailRedirectUrl("https://evil.example.com")).toBe("https://clubset.vercel.app/login");
+    expect(emailRedirectUrl("http://localhost:3000")).toBe("https://clubset.vercel.app/login");
+  });
+
+  it("accepts an origin explicitly listed for local or preview testing", () => {
+    vi.stubEnv("VITE_AUTH_REDIRECT_ORIGINS", "http://127.0.0.1:8080, https://preview.example");
+
+    expect(emailRedirectUrl("http://127.0.0.1:8080")).toBe("http://127.0.0.1:8080/login");
+    expect(emailRedirectUrl("https://preview.example")).toBe("https://preview.example/login");
+    // Listing one origin does not open the door to any other.
+    expect(emailRedirectUrl("https://other.example")).toBe("https://clubset.vercel.app/login");
+  });
+
+  it("falls back to the canonical origin when the page origin is unlisted", () => {
+    // jsdom serves the tests from an origin the hosted allow-list does not have.
+    expect(emailRedirectUrl()).toBe("https://clubset.vercel.app/login");
+  });
+});
+
 describe("parseOAuthError", () => {
   it("reads an error from the query string (PKCE-style return)", () => {
     expect(parseOAuthError("?error=access_denied&error_description=User+denied+access")).toEqual({
       code: "access_denied",
       description: "User denied access",
+      errorCode: null,
     });
   });
 
@@ -43,6 +82,15 @@ describe("parseOAuthError", () => {
     expect(parseOAuthError("#error=access_denied")).toEqual({
       code: "access_denied",
       description: null,
+      errorCode: null,
+    });
+  });
+
+  it("keeps GoTrue's machine-readable error code", () => {
+    expect(parseOAuthError("#error=access_denied&error_code=otp_expired")).toEqual({
+      code: "access_denied",
+      description: null,
+      errorCode: "otp_expired",
     });
   });
 

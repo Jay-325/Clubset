@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { loadTurnstileScript, turnstileSiteKey, type TurnstileApi } from "@/lib/security/turnstile";
 
@@ -34,6 +35,10 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
     const apiRef = useRef<TurnstileApi | null>(null);
     const widgetIdRef = useRef<string | null>(null);
     const [failed, setFailed] = useState(false);
+    // Bumped by the retry control. It is the only way to re-run the mount effect
+    // after a failed script load: the script loader drops its cached rejection,
+    // so the next attempt really hits the network again.
+    const [attempt, setAttempt] = useState(0);
 
     const siteKey = turnstileSiteKey();
 
@@ -105,7 +110,7 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
         apiRef.current = null;
         widgetIdRef.current = null;
       };
-    }, [siteKey, theme, onToken]);
+    }, [siteKey, theme, onToken, attempt]);
 
     if (!siteKey) return null;
 
@@ -113,9 +118,24 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
       <div className={cn("space-y-1", className)}>
         <div ref={containerRef} data-testid="turnstile-widget" className="flex justify-center" />
         {failed ? (
-          <p role="alert" className="text-xs text-destructive">
-            The human check could not load. Check your connection and reload the page.
-          </p>
+          <div
+            role="alert"
+            className="flex flex-wrap items-center justify-center gap-2 text-xs text-destructive"
+          >
+            <span>The human check could not load. Check your connection and try again.</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                onToken(null);
+                setFailed(false);
+                setAttempt((current) => current + 1);
+              }}
+            >
+              Try again
+            </Button>
+          </div>
         ) : null}
       </div>
     );

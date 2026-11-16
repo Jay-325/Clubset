@@ -10,7 +10,6 @@ import { AuthDivider, GoogleAuthButton } from "@/components/auth/google-auth-but
 import { TurnstileWidget, type TurnstileWidgetHandle } from "@/components/auth/turnstile-widget";
 import { FadeIn } from "@/components/ui/motion";
 import { useAuth } from "@/lib/auth/context";
-import { isTurnstileConfigured } from "@/lib/security/turnstile";
 import { normalizeAuthError, useSignUp } from "@/lib/queries";
 import { toast } from "sonner";
 
@@ -47,7 +46,6 @@ function SignupPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const captchaRef = useRef<TurnstileWidgetHandle>(null);
-  const captchaRequired = isTurnstileConfigured();
 
   // Already signed in (for example after clicking the email verification link):
   // finish onboarding instead of re-showing the signup form.
@@ -63,11 +61,6 @@ function SignupPage() {
 
     if (!email || !password) {
       setMessage("Please enter your email and a password.");
-      return;
-    }
-
-    if (captchaRequired && !captchaToken) {
-      setMessage("Please complete the human check first, then try again.");
       return;
     }
 

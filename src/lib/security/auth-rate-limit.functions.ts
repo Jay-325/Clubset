@@ -69,30 +69,44 @@ function validateInput(data: unknown): { email: string; operation: AuthRateLimit
   return { email, operation: operation as AuthRateLimitOperation };
 }
 
-async function checkOne(key: string, operation: string, config: RateLimitConfig): Promise<boolean> {
-  // Lazy-import server-only dependencies inside the handler so this module
-  // can be imported from client code without pulling server-only code into
-  // the browser bundle.
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  // `check_rate_limit` is defined in a migration and is not in the generated
-  // Supabase types, so the RPC call is typed through `any`.
-  const rpc = supabaseAdmin.rpc as unknown as (
-    name: string,
-    params: Record<string, unknown>,
-  ) => Promise<{ data: unknown; error: unknown }>;
-  const { data: allowed, error } = await rpc("check_rate_limit", {
-    p_key: key,
-    p_operation: operation,
-    p_limit: config.perEmail,
-    p_window_seconds: config.windowSeconds,
-  });
-  if (error) {
-    // Fail open: if the rate-limit store is unreachable, do not block
-    // legitimate sign-ups. Log server-side only.
-    console.error("[auth rate limit] check failed:", String(error));
+export async function checkOne(
+  key: string,
+  operation: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<boolean> {
+  try {
+    // Lazy-import server-only dependencies inside the handler so this module
+    // can be imported from client code without pulling server-only code into
+    // the browser bundle.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // `check_rate_limit` is defined in a migration and is not in the generated
+    // Supabase types, so the RPC call is typed through `any`.
+    const rpc = supabaseAdmin.rpc as unknown as (
+      name: string,
+      params: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: unknown }>;
+    const { data: allowed, error } = await rpc("check_rate_limit", {
+      p_key: key,
+      p_operation: operation,
+      p_limit: limit,
+      p_window_seconds: windowSeconds,
+    });
+    if (error) {
+      // Fail open: if the rate-limit store is unreachable, do not block
+      // legitimate sign-ups. Log server-side only.
+      console.error("[auth rate limit] check failed:", String(error));
+      return true;
+    }
+    return allowed === true;
+  } catch (error) {
+    // The service-role client throws on construction when its env vars are
+    // missing, before any request is made. That is the same "store
+    // unreachable" case as an error response and must fail open too --
+    // otherwise every email-sending auth flow dies before reaching Supabase.
+    console.error("[auth rate limit] check threw:", String(error));
     return true;
   }
-  return allowed === true;
 }
 
 export const enforceAuthRateLimit = createServerFn({ method: "POST" })
@@ -121,10 +135,17 @@ export const enforceAuthRateLimit = createServerFn({ method: "POST" })
       }
     }
 
-    // Check both the email bucket and the IP bucket. Both must pass.
+    // Check both the email bucket and the IP bucket. Both must pass, each
+    // against its own limit -- a shared school network needs the wider
+    // per-IP allowance, not the per-email one.
     const [emailAllowed, ipAllowed] = await Promise.all([
-      checkOne(`email:${normalizedEmail}:${data.operation}`, data.operation, config),
-      checkOne(`ip:${ip}:${data.operation}`, data.operation, config),
+      checkOne(
+        `email:${normalizedEmail}:${data.operation}`,
+        data.operation,
+        config.perEmail,
+        config.windowSeconds,
+      ),
+      checkOne(`ip:${ip}:${data.operation}`, data.operation, config.perIp, config.windowSeconds),
     ]);
 
     return { allowed: emailAllowed && ipAllowed };

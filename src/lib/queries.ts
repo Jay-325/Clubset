@@ -10,8 +10,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 
-import { assertPasswordNotBreached } from "@/lib/security/passwords";
-import { OAUTH_PROVIDER, oauthRedirectUrl } from "@/lib/auth/oauth";
+import {
+  assertPasswordNotBreached,
+  BREACHED_PASSWORD_MESSAGE,
+  PASSWORD_CHECK_UNAVAILABLE_MESSAGE,
+} from "@/lib/security/passwords";
+import { emailRedirectUrl, OAUTH_PROVIDER, oauthRedirectUrl } from "@/lib/auth/oauth";
 import {
   enforceAuthRateLimit,
   RATE_LIMITED_MESSAGE,
@@ -104,6 +108,7 @@ export function useAdminLogin() {
         email: normalized,
         options: {
           shouldCreateUser: true,
+          emailRedirectTo: emailRedirectUrl(),
           ...(input.captchaToken ? { captchaToken: input.captchaToken } : {}),
         },
       });
@@ -195,6 +200,7 @@ export function useSignIn() {
           email: normalizedEmail,
           options: {
             shouldCreateUser: true,
+            emailRedirectTo: emailRedirectUrl(),
             ...(input.captchaToken ? { captchaToken: input.captchaToken } : {}),
           },
         });
@@ -268,7 +274,11 @@ export function useSignUp() {
       await assertPasswordNotBreached(input.password);
 
       const supabase = getSupabaseClient();
-      const signUpOptions: { data?: { full_name: string }; captchaToken?: string } = {};
+      const signUpOptions: {
+        data?: { full_name: string };
+        captchaToken?: string;
+        emailRedirectTo: string;
+      } = { emailRedirectTo: emailRedirectUrl() };
       if (input.fullName) signUpOptions.data = { full_name: input.fullName };
       if (input.captchaToken) signUpOptions.captchaToken = input.captchaToken;
       const { data, error } = await supabase.auth.signUp({
@@ -888,6 +898,13 @@ export function normalizeAuthError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   const lower = message.toLowerCase();
 
+  // The app's own password messages are already safe and actionable, and they
+  // exist only in this codebase, so pass them through verbatim instead of
+  // flattening them into the generic fallback at the bottom of this function.
+  if (message === BREACHED_PASSWORD_MESSAGE || message === PASSWORD_CHECK_UNAVAILABLE_MESSAGE) {
+    return message;
+  }
+
   // Signup: email already has an account (confirmed or not). Do not confirm
   // or deny; tell the user to sign in instead.
   if (
@@ -916,6 +933,37 @@ export function normalizeAuthError(error: unknown): string {
   // Rate limit from Supabase Auth or our own rate limiter.
   if (lower.includes("too many") || lower.includes("rate limit")) {
     return RATE_LIMITED_MESSAGE;
+  }
+
+  // Signup: the project's password policy rejected the choice (GoTrue replies
+  // "Password should contain at least one character of each: ..."). The
+  // requirements are public, so naming them reveals nothing about any account.
+  if (
+    lower.includes("password should") ||
+    lower.includes("weak password") ||
+    lower.includes("password is too short") ||
+    lower.includes("stronger password")
+  ) {
+    return "Please choose a stronger password with lower case and upper case letters and at least one number.";
+  }
+
+  // Captcha (Turnstile) rejected the request, or the widget could not produce
+  // a token. Never echo the upstream captcha diagnostics. The widget resets
+  // itself after every attempt, so the user only needs to solve the new
+  // challenge -- a full page reload would lose the typed credentials.
+  if (lower.includes("captcha")) {
+    return "The human check could not be completed. Please complete the check and try again.";
+  }
+
+  // The request never reached Supabase Auth: offline, blocked by an extension,
+  // CORS, or a DNS failure. This is the one case where retrying may help.
+  if (
+    lower.includes("failed to fetch") ||
+    lower.includes("networkerror") ||
+    lower.includes("network error") ||
+    lower.includes("load failed")
+  ) {
+    return "We couldn't reach the sign-in service. Check your connection and try again.";
   }
 
   return "Something went wrong. Please try again.";

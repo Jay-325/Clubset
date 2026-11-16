@@ -1,5 +1,5 @@
 /**
- * Google OAuth (PKCE-agnostic) helpers shared by /login and /signup.
+ * Auth redirect and error helpers shared by /login and /signup.
  *
  * The Supabase client is created with `detectSessionInUrl: true`, so it owns
  * the return trip: Google -> Supabase `/auth/v1/callback` -> this app, and the
@@ -28,9 +28,11 @@ export const OAUTH_PROVIDER = "google" as const;
  *   * The `next` path survives the round trip because login.tsx parks it in
  *     sessionStorage, which is per-tab and outlives the external redirect.
  *
- * In production `origin` is the Supabase `site_url` (https://clubset.lovable.app),
- * which Supabase accepts for `/auth/v1/authorize`; in development the dev-server
- * origin is accepted too.
+ * `origin` is the browser's own origin (for example https://clubset.vercel.app),
+ * which the hosted project accepts because it is on the redirect allow-list.
+ * This is the OAuth return target only; the hosted Site URL is what GoTrue falls
+ * back to for emailed links, and it still points at an obsolete domain. Email
+ * links therefore pass an explicit target -- see emailRedirectUrl below.
  */
 export function oauthRedirectUrl(origin?: string): string {
   const base = (origin ?? (typeof window === "undefined" ? "" : window.location.origin)).replace(
@@ -40,12 +42,44 @@ export function oauthRedirectUrl(origin?: string): string {
   return `${base}/login`;
 }
 
+/**
+ * The one production origin Supabase is configured to return auth emails to.
+ * The hosted project's Site URL still names the obsolete Joinin deployment, so
+ * any flow that must come back to Clubset has to pass this explicitly.
+ */
+export const CANONICAL_APP_ORIGIN = "https://clubset.vercel.app";
+
+/**
+ * Where Supabase should send the browser after an emailed link.
+ *
+ * Supabase validates `emailRedirectTo` against the hosted redirect allow-list
+ * and silently falls back to the Site URL for an unlisted value, so only exact
+ * origins are ever accepted here. Local and preview origins are opt-in through
+ * VITE_AUTH_REDIRECT_ORIGINS and must be added to that allow-list first.
+ */
+export function emailRedirectUrl(origin?: string): string {
+  const env = import.meta.env as Record<string, string | undefined>;
+  const current =
+    origin ?? (typeof window === "undefined" ? CANONICAL_APP_ORIGIN : window.location.origin);
+  const candidate = current.replace(/\/+$/, "");
+
+  const configured = (env["VITE_AUTH_REDIRECT_ORIGINS"] ?? "")
+    .split(",")
+    .map((value) => value.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+
+  const allowed = [CANONICAL_APP_ORIGIN, ...configured];
+  return `${allowed.includes(candidate) ? candidate : CANONICAL_APP_ORIGIN}/login`;
+}
+
 /** Query/fragment keys GoTrue uses to report a failed or cancelled OAuth trip. */
 const OAUTH_ERROR_KEYS = ["error", "error_description", "error_code", "error_uri"] as const;
 
 export interface OAuthUrlError {
   code: string;
   description: string | null;
+  /** GoTrue's machine-readable reason, when present (for example otp_expired). */
+  errorCode?: string | null;
 }
 
 /**
@@ -65,7 +99,11 @@ export function parseOAuthError(raw: string): OAuthUrlError | null {
   if (!code) return null;
 
   const description = params.get("error_description");
-  return { code, description: description ? description.replace(/\+/g, " ") : null };
+  return {
+    code,
+    description: description ? description.replace(/\+/g, " ") : null,
+    errorCode: params.get("error_code"),
+  };
 }
 
 /**

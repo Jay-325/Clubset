@@ -254,3 +254,63 @@ student, club leader, and administrator workflows work correctly. Cross-club iso
 is verified. No data inconsistencies or broken workflows were introduced. The application
 is functionally ready for a controlled school pilot, subject to remote verification of
 the migrated schema and RLS policies.
+
+---
+
+# Update — 2026-11-15: Email authentication remediation
+
+**Checkout:** `main` @ `d70895d`, changes **uncommitted** (`git status` shows 6 modified
+files and 3 new untracked files). Nothing was committed, pushed or deployed, and no
+hosted configuration was changed.
+
+**Trigger:** a report that email authentication shows "Something went wrong. Please try
+again." on `clubset.vercel.app`. Full analysis in `EMAIL_AUTH_INVESTIGATION_REPORT.md`,
+changes and their evidence in `EMAIL_AUTH_REMEDIATION_REPORT.md`, per-flow results in
+`AUTHENTICATION_REGRESSION_REPORT.md`.
+
+## Fixed in code
+
+| Change | Effect |
+|---|---|
+| Removed the always-on client Turnstile gate from `/login` (student + administrator) and `/signup` | A blocked/failed widget can no longer make the forms unsubmittable. The server remains the enforcement point. |
+| `normalizeAuthError()` now explains password-policy, breached-password, captcha and network failures | The generic message stops swallowing actionable causes. |
+| Auth rate limiter fails open on a thrown service-role client (not only on an RPC error) | Magic link, signup and administrator activation no longer die before reaching Supabase Auth when `SUPABASE_SERVICE_ROLE_KEY` is absent. |
+| Rate limiter applies `perIp` to the IP bucket | The declared 10/h (signup, magic link) and 20/h (admin) allowances are real; previously 5/h and 10/h. |
+
+No schema, RLS, grant, migration or route-shape change.
+
+## Regression results (this checkout)
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` | pass |
+| `npm run test` | 8 files, 91 tests pass (58 at the 2026-11-07 run; the suite has grown since) |
+| `npm run build` | pass; **bundle sizes byte-identical** before/after this change (`index` 336.38 kB, `client` 236.19 kB, `styles` 86.75 kB) |
+| `npm run check:sql` | all 48 SQL files parse cleanly |
+| `npm run lint` | 6 pre-existing errors in touched files, **no new ones** |
+
+Bundle note: the 2026-11-07 baseline table above records `index` 367.76 kB. Current
+`HEAD` builds at 336.38 kB, so that baseline is stale; the 2026-11-15 change has a
+measured delta of exactly zero.
+
+## Still open (needs the project owner)
+
+1. **Hosted Auth Site URL / Redirect URLs (F5).** Unreadable from this environment.
+   `mailer_autoconfirm` is `false`, so verification is required, and where the emailed
+   link lands is decided entirely by the dashboard. **Not changed**, because GoTrue
+   rejects a `redirect_to` that is not on the allow-list and a blind change would make
+   the flow worse.
+2. **`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` in the Vercel server environment.**
+   Until set, the rate limiter fails open and logs on every email flow — correct but not
+   enforcing.
+3. **No password-reset flow exists.** Product gap, not a regression; listed, not built.
+4. **Accounts created by Google or magic link have no password.** A password attempt on
+   such an account is still reported as wrong credentials; steering those users to the
+   magic-link option is a UX follow-up.
+
+## Not re-tested on 2026-11-15
+
+Click-through of the deployed site (no browser automation), real email delivery, real
+Google sign-in, and a real administrator activation. Those flows were verified through
+automated tests, the code path, and live read-only endpoint probes only.
+

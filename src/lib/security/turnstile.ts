@@ -70,11 +70,6 @@ export function turnstileSiteKey(env: PublicEnv = import.meta.env as PublicEnv):
   return FALLBACK_TURNSTILE_SITE_KEY;
 }
 
-/** True when a widget can be rendered at all. */
-export function isTurnstileConfigured(env?: PublicEnv): boolean {
-  return Boolean(turnstileSiteKey(env));
-}
-
 let scriptPromise: Promise<void> | null = null;
 
 /**

@@ -13,7 +13,6 @@ import {
   type TurnstileWidgetHandle,
 } from "@/components/auth/turnstile-widget";
 import { oauthErrorMessage, readOAuthError, removeOAuthErrorParams } from "@/lib/auth/oauth";
-import { isTurnstileConfigured } from "@/lib/security/turnstile";
 import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/ui/motion";
 import { useAuth } from "@/lib/auth/context";
@@ -83,7 +82,6 @@ function LoginPage() {
   // administrator forms must never share one.
   const [studentCaptchaToken, setStudentCaptchaToken] = useState<string | null>(null);
   const studentCaptchaRef = useRef<TurnstileWidgetHandle>(null);
-  const captchaRequired = isTurnstileConfigured();
 
   // Administrator tab state -- kept separate so switching tabs never leaks an
   // address typed into the other flow.
@@ -110,7 +108,14 @@ function LoginPage() {
     const oauthError = readOAuthError(window.location);
     if (!oauthError) return;
 
-    setStudentMessage(oauthErrorMessage(oauthError));
+    // Email links also land here (see emailRedirectUrl). GoTrue reports an
+    // expired verification or activation link as access_denied/otp_expired,
+    // which is not a Google failure.
+    setStudentMessage(
+      oauthError.errorCode === "otp_expired"
+        ? "That link is invalid or has expired. Enter your email below and leave the password blank to get a new sign-in link."
+        : oauthErrorMessage(oauthError),
+    );
 
     const cleaned = removeOAuthErrorParams(window.location.href);
     if (cleaned !== window.location.href) {
@@ -121,11 +126,6 @@ function LoginPage() {
   const handleStudentLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     setStudentMessage(null);
-
-    if (captchaRequired && !studentCaptchaToken) {
-      setStudentMessage("Please complete the human check first, then try again.");
-      return;
-    }
 
     try {
       if (!studentPassword) {
@@ -158,14 +158,6 @@ function LoginPage() {
   const handleAdminLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     setAdminNotice(null);
-
-    if (captchaRequired && !adminCaptchaToken) {
-      setAdminNotice({
-        tone: "error",
-        text: "Please complete the human check first, then try again.",
-      });
-      return;
-    }
 
     try {
       // The allowlist is consulted before any email is sent (see useAdminLogin),
