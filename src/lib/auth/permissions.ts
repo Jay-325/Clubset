@@ -59,6 +59,7 @@ export function managementSections(
     { key: "chat", label: "Chat", path: `/clubs/${base}/chat`, permission: null },
     { key: "calendar", label: "Calendar", path: `/clubs/${base}/calendar`, permission: null },
     { key: "funds", label: "Funds", path: `/clubs/${base}/funds`, permission: null },
+    { key: "finance", label: "Finance", path: `/clubs/${base}/finance`, permission: null },
     {
       key: "members",
       label: "Members",
