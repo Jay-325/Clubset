@@ -82,7 +82,9 @@ export async function checkOne(
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // `check_rate_limit` is defined in a migration and is not in the generated
     // Supabase types, so the RPC call is typed through `any`.
-    const rpc = supabaseAdmin.rpc as unknown as (
+    // `supabaseAdmin` is a Proxy that returns prototype methods unbound; `rpc`
+    // reads `this.rest`, so it must stay bound to the client or it throws.
+    const rpc = supabaseAdmin.rpc.bind(supabaseAdmin) as unknown as (
       name: string,
       params: Record<string, unknown>,
     ) => Promise<{ data: unknown; error: unknown }>;
