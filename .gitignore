@@ -65,3 +65,5 @@ opencode.local.json
 *.njsproj
 *.sln
 *.sw?
+.vercel
+.env*
