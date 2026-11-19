@@ -31,7 +31,8 @@ function readEnv(): { url: string; anonKey: string } {
   if (!url || !anonKey) {
     throw new Error(
       "Supabase is not configured: set VITE_SUPABASE_URL and " +
-        "VITE_SUPABASE_PUBLISHABLE_KEY (or edit src/lib/supabase/public-config.ts).",
+        "VITE_SUPABASE_PUBLISHABLE_KEY in your environment (.env for local " +
+        "development, platform environment variables for deployment).",
     );
   }
 

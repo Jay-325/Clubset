@@ -101,15 +101,15 @@ function AnnouncementsContent() {
     queryFn: async (): Promise<ProfileRow[]> => {
       const supabase = getSupabaseClient();
       if (authorIds.length === 0) return [];
-      const { data, error } = await supabase.from("profiles").select("*").in("id", authorIds);
+      const { data, error } = await supabase.from("profiles").select("id, full_name").in("id", authorIds);
       if (error) throw error;
-      return (data ?? []) as ProfileRow[];
+      return (data ?? []) as unknown as ProfileRow[];
     },
     enabled: authorIds.length > 0,
   });
 
   const nameById = new Map(
-    (authors.data ?? []).map((person) => [person.id, person.full_name || person.email] as const),
+    (authors.data ?? []).map((person) => [person.id, person.full_name] as const),
   );
 
   const invalidate = () => {

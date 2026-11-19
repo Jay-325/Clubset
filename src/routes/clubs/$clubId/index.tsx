@@ -12,9 +12,15 @@ import { Skeleton, SkeletonSpinner } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useClubContext } from "@/lib/hooks/use-club";
-import { useApplyToClub } from "@/lib/queries";
+import { useApplyToClub, useClubVerifications, useVerifyClub, useViewerId } from "@/lib/queries";
 import { isActiveMember, managementSections, quickActions } from "@/lib/auth/permissions";
-import { CLUB_STATUS_LABELS, CLUB_TYPE_LABELS, COMMITMENT_LABELS } from "@/lib/domain";
+import {
+  CLUB_STATUS_LABELS,
+  CLUB_TYPE_LABELS,
+  COMMITMENT_LABELS,
+  REQUIRED_STUDENT_VERIFICATIONS,
+  verificationAction,
+} from "@/lib/domain";
 import type { AnnouncementRow, ChatBannerRow, ClubRow } from "@/lib/types/database";
 
 /**
@@ -177,8 +183,85 @@ function PublicWelcomePage({
             {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
           </CardContent>
         </Card>
+
+        {club.status === "awaiting_student_verification" ? <VerificationCard club={club} /> : null}
       </div>
     </>
+  );
+}
+
+/**
+ * PRD 7 step 2: a student-created club goes live once three distinct students
+ * (founder included) confirm it. The founder shares this page; the server owns
+ * the count, the duplicate rule and the student-only rule.
+ */
+function VerificationCard({ club }: { club: ClubRow }) {
+  const viewer = useViewerId();
+  const verifications = useClubVerifications(club.id);
+  const verify = useVerifyClub();
+
+  const verifiedUserIds = (verifications.data ?? []).map((row) => row.user_id);
+  const confirmed = verifiedUserIds.length;
+  const action = verificationAction({
+    viewerId: viewer.data ?? null,
+    founderId: club.founder_id,
+    verifiedUserIds,
+    status: club.status,
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Student confirmation</CardTitle>
+        <CardDescription>
+          Three students in total are needed before an administrator can approve this club.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div>
+          <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+            <span>
+              {confirmed} of {REQUIRED_STUDENT_VERIFICATIONS} students
+            </span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-muted">
+            <div
+              className="h-2 rounded-full bg-primary transition-all"
+              style={{
+                width: `${Math.min(100, (confirmed / REQUIRED_STUDENT_VERIFICATIONS) * 100)}%`,
+              }}
+            />
+          </div>
+        </div>
+
+        {action === "founder" ? (
+          <p className="text-sm text-muted-foreground">
+            You are the founder. Share this page with two classmates so they can confirm it.
+          </p>
+        ) : action === "verified" ? (
+          <p className="text-sm text-muted-foreground">
+            {confirmed >= REQUIRED_STUDENT_VERIFICATIONS
+              ? "All three students have confirmed. An administrator now needs to review the club."
+              : "You have confirmed this club. It needs more students before review."}
+          </p>
+        ) : action === "verify" ? (
+          <Button
+            className="w-full"
+            onClick={() => verify.mutate(club.id)}
+            disabled={verify.isPending}
+          >
+            {verify.isPending ? <SkeletonSpinner /> : null}
+            Confirm this club
+          </Button>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            This club is no longer collecting student confirmations.
+          </p>
+        )}
+
+        {verify.error ? <p className="text-sm text-destructive">{verify.error.message}</p> : null}
+      </CardContent>
+    </Card>
   );
 }
 

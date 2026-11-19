@@ -10,8 +10,11 @@
   // Never add TURNSTILE_SECRET_KEY, a Supabase service-role key, or database
   // passwords to this file.
   "vars": {
-    "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY2Rkem10anFocnN4ZHhpZXduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NzM1OTQsImV4cCI6MjEwNjU0OTU5NH0.RWjVmU4oyA-u39E72dVt8dBOa_L0Q32zOvEkNwqbaLQ",
-    "VITE_SUPABASE_URL": "https://omcddzmtjqhrsxdxiewn.supabase.co",
-    "VITE_TURNSTILE_SITE_KEY": "0x4AAAAAAF76helKiOEKD9yk"
+    // Public runtime variables for the Cloudflare Worker. The deployment
+    // platform must supply real values for these; empty placeholders prevent
+    // a live project key from being baked into the built artifact.
+    "VITE_SUPABASE_ANON_KEY": "",
+    "VITE_SUPABASE_URL": "",
+    "VITE_TURNSTILE_SITE_KEY": ""
   }
 }

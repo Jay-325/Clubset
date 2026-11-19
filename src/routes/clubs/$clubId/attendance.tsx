@@ -400,11 +400,11 @@ function AddManually({ onAdd, pending }: { onAdd: (studentId: string) => void; p
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, full_name")
         .ilike("full_name", `%${term.trim()}%`)
         .limit(6);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as ProfileRow[];
     },
     enabled: term.trim().length >= 2,
   });

@@ -35,13 +35,20 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth/context";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
-import { useClubSearch, useMyClubs, useRecommendedClubs, useUpcomingEvents } from "@/lib/queries";
+import {
+  useClubSearch,
+  useMyClubs,
+  usePendingClubs,
+  useRecommendedClubs,
+  useUpcomingEvents,
+} from "@/lib/queries";
 import { staggerStyle } from "@/lib/motion";
 import {
   CLUB_TYPE_LABELS,
   COMMITMENT_LABELS,
   EVENT_KIND_LABELS,
   PRESET_INTERESTS,
+  REQUIRED_STUDENT_VERIFICATIONS,
 } from "@/lib/domain";
 
 /**
@@ -88,6 +95,7 @@ function MainContent() {
   const recommendations = useRecommendedClubs();
   const upcoming = useUpcomingEvents(5);
   const myClubs = useMyClubs();
+  const pendingClubs = usePendingClubs();
 
   // PRD 21: recommendations are only shown separately when there is a profile
   // to base them on.
@@ -240,6 +248,41 @@ function MainContent() {
           ) : null}
         </div>
       </div>
+
+      {/* ===== Clubs still collecting student confirmations ===== */}
+      {(pendingClubs.data ?? []).length > 0 ? (
+        <section className="mt-10 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Waiting for student confirmation</h2>
+            <p className="text-sm text-muted-foreground">Three students are needed.</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {(pendingClubs.data ?? []).map((club, index) => (
+              <Card key={club.id} className="animate-in fade-in" style={staggerStyle(index)}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base line-clamp-1" title={club.name}>
+                    {club.name}
+                  </CardTitle>
+                  {club.description ? (
+                    <CardDescription className="line-clamp-2">{club.description}</CardDescription>
+                  ) : null}
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <p className="text-muted-foreground">
+                    {club.club_verifications.length} of {REQUIRED_STUDENT_VERIFICATIONS} students
+                    confirmed
+                  </p>
+                  <Button size="sm" asChild className="w-full">
+                    <Link to="/clubs/$clubId" params={{ clubId: club.id }}>
+                      Open club
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* ===== Find clubs: search & filters ===== */}
       <section className="mt-10 space-y-4" id="find-clubs">

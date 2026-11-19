@@ -153,20 +153,18 @@ function LeadershipContent() {
     queryKey: ["club", clubId, "applicant-names", applicantIds],
     queryFn: async (): Promise<ProfileRow[]> => {
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase.from("profiles").select("*").in("id", applicantIds);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", applicantIds);
       if (error) throw error;
-      return (data ?? []) as ProfileRow[];
+      return (data ?? []) as unknown as ProfileRow[];
     },
     enabled: applicantIds.length > 0,
   });
 
   const nameById = useMemo(
-    () =>
-      new Map(
-        (applicants.data ?? []).map(
-          (person) => [person.id, person.full_name || person.email] as const,
-        ),
-      ),
+    () => new Map((applicants.data ?? []).map((person) => [person.id, person.full_name] as const)),
     [applicants.data],
   );
 
@@ -314,7 +312,9 @@ function LeadershipContent() {
                     Start from a suggested role
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {SUGGESTED_ROLES.map((suggestion) => (
+                    {SUGGESTED_ROLES.filter(
+                      (suggestion) => !roleRows.some((role) => role.name === suggestion.name),
+                    ).map((suggestion) => (
                       <Button
                         key={suggestion.name}
                         type="button"
@@ -391,11 +391,7 @@ function LeadershipContent() {
                   ) : null}
 
                   <Button type="submit" disabled={createRole.isPending}>
-                    {createRole.isPending ? (
-                      <SkeletonSpinner />
-                    ) : (
-                      <Crown className="size-4" />
-                    )}
+                    {createRole.isPending ? <SkeletonSpinner /> : <Crown className="size-4" />}
                     Create position
                   </Button>
                 </form>

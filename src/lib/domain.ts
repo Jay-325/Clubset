@@ -341,6 +341,30 @@ export const REQUIREMENTS_USE_FINALIZED_ATTENDANCE: RequirementKind[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// PRD 7 step 2: what the viewer can do on a club awaiting student verification
+// ---------------------------------------------------------------------------
+
+export type VerificationAction = "verify" | "verified" | "founder" | "closed";
+
+/**
+ * Decides which verification control the club page shows.
+ *
+ * Pure and null-safe: a club whose founder profile was deleted has
+ * founder_id = null, and a null viewer must never compare equal to it.
+ */
+export function verificationAction(input: {
+  viewerId: string | null;
+  founderId: string | null;
+  verifiedUserIds: readonly string[];
+  status: ClubStatus;
+}): VerificationAction {
+  if (input.status !== "awaiting_student_verification" || input.viewerId === null) return "closed";
+  if (input.viewerId === input.founderId) return "founder";
+  if (input.verifiedUserIds.includes(input.viewerId)) return "verified";
+  return "verify";
+}
+
+// ---------------------------------------------------------------------------
 // PRD 4: grade levels
 // ---------------------------------------------------------------------------
 

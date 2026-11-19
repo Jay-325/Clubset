@@ -151,9 +151,12 @@ function DataContent() {
     queryFn: async (): Promise<ProfileRow[]> => {
       const supabase = getSupabaseClient();
       if (memberIds.length === 0) return [];
-      const { data, error } = await supabase.from("profiles").select("*").in("id", memberIds);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", memberIds);
       if (error) throw error;
-      return (data ?? []) as ProfileRow[];
+      return (data ?? []) as unknown as ProfileRow[];
     },
     enabled: memberIds.length > 0,
   });

@@ -4,7 +4,18 @@ import { useQuery } from "@tanstack/react-query";
 
 import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton, SkeletonSpinner } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -121,9 +132,14 @@ function AdminContent() {
                               {row.administrator_count === 1 ? "" : "s"}
                             </p>
                           </div>
-                          <Badge variant="outline">
-                            {CLUB_STATUS_LABELS[row.status as ClubStatus]}
-                          </Badge>
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline">
+                              {CLUB_STATUS_LABELS[row.status as ClubStatus]}
+                            </Badge>
+                            {row.status === "approved" ? (
+                              <RevokeApproval clubId={row.club_id} name={row.name} />
+                            ) : null}
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -192,6 +208,44 @@ function PendingClub({
 
       {review.error ? (
         <p className="mt-2 text-sm text-destructive">{review.error.message}</p>
+      ) : null}
+    </div>
+  );
+}
+
+/** PRD 37: an administrator can reverse a decision that was wrong. */
+function RevokeApproval({ clubId, name }: { clubId: string; name: string }) {
+  const review = useReviewClub();
+
+  return (
+    <div className="text-right">
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button size="sm" variant="outline" disabled={review.isPending}>
+            Revoke approval
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke {name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The club becomes rejected. The founder loses their leadership access until an
+              administrator approves the club again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={() => review.mutate({ clubId, approved: false })}
+            >
+              Revoke approval
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {review.error ? (
+        <p className="mt-1 text-xs text-destructive">{review.error.message}</p>
       ) : null}
     </div>
   );

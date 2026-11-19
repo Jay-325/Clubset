@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { CheckCircle2, Plus, X } from "lucide-react";
 
@@ -18,12 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth/context";
-import {
-  useClubVerifications,
-  useCreateClub,
-  useSubmitClubForReview,
-  useVerifyClub,
-} from "@/lib/queries";
+import { useClubVerifications, useCreateClub, useSubmitClubForReview } from "@/lib/queries";
 import {
   CLUB_STATUS_LABELS,
   CLUB_TYPES,
@@ -303,7 +298,6 @@ function NewClubFlow() {
  */
 function VerificationStep({ clubId, onDone }: { clubId: string; onDone: () => void }) {
   const verifications = useClubVerifications(clubId);
-  const verify = useVerifyClub();
   const submit = useSubmitClubForReview();
 
   const verifiedCount = verifications.data?.length ?? 0;
@@ -354,21 +348,17 @@ function VerificationStep({ clubId, onDone }: { clubId: string; onDone: () => vo
           ) : null}
 
           {!complete ? (
-            <>
+            <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Once two other students have confirmed, you can send this to an administrator for
-                approval.
+                Share this club's page with two other students so they can confirm it. The founder
+                is already counted, so it needs two more confirmations.
               </p>
-              <Button
-                onClick={() => verify.mutate(clubId)}
-                disabled={verify.isPending}
-                variant="outline"
-                className="w-full"
-              >
-                {verify.isPending ? <SkeletonSpinner /> : null}I am one of
-                the verifiers
+              <Button variant="outline" className="w-full" asChild>
+                <Link to="/clubs/$clubId" params={{ clubId }}>
+                  Open the club page to share
+                </Link>
               </Button>
-            </>
+            </div>
           ) : (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
@@ -386,9 +376,9 @@ function VerificationStep({ clubId, onDone }: { clubId: string; onDone: () => vo
             </div>
           )}
 
-          {verify.error || submit.error ? (
+          {submit.error ? (
             <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {(verify.error ?? submit.error)?.message}
+              {submit.error.message}
             </p>
           ) : null}
 

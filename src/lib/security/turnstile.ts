@@ -19,13 +19,11 @@
  * Public site key.
  *
  * The key is safe to ship (the same as the Supabase anon key pattern in
- * public-config.ts) and is the fallback for builds whose host does not inject
- * `VITE_TURNSTILE_SITE_KEY` -- which is every Lovable-hosted build, because
- * Lovable runs its own build pipeline. Without a resolved key the widget cannot
- * render and every enforced auth call would fail closed, so a working default
- * matters here.
+ * public-config.ts). This fallback is intentionally empty: a build or deployment
+ * without `VITE_TURNSTILE_SITE_KEY` fails clearly (the widget does not render)
+ * instead of silently verifying against a live project.
  */
-export const FALLBACK_TURNSTILE_SITE_KEY = "0x4AAAAAAF76helKiOEKD9yk";
+export const FALLBACK_TURNSTILE_SITE_KEY = "";
 
 /** `render=explicit` -- we render each widget into its own container. */
 export const TURNSTILE_SCRIPT_SRC =

@@ -414,7 +414,9 @@ export function useMyClubs() {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from("memberships")
-        .select("*, clubs(id, name, description, type, meeting_day, meeting_time, room, commitment)")
+        .select(
+          "*, clubs(id, name, description, type, meeting_day, meeting_time, room, commitment)",
+        )
         .eq("status", "active");
       if (error) throw error;
 
@@ -497,6 +499,33 @@ export function useClubVerifications(clubId: string) {
   });
 }
 
+/**
+ * Clubs the school is still confirming, with the students who have signed on.
+ *
+ * `search_clubs` only returns approved clubs, so discovery of a pending club
+ * has to read the table directly. clubs_select_school already allows
+ * school-wide discovery for 'awaiting_student_verification'.
+ */
+export type PendingClubRow = ClubRow & {
+  club_verifications: Array<{ user_id: string }>;
+};
+
+export function usePendingClubs() {
+  return useQuery({
+    queryKey: ["clubs", "pending"],
+    queryFn: async (): Promise<PendingClubRow[]> => {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from("clubs")
+        .select("*, club_verifications(user_id)")
+        .eq("status", "awaiting_student_verification")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as PendingClubRow[];
+    },
+  });
+}
+
 export function useVerifyClub() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -505,10 +534,14 @@ export function useVerifyClub() {
       const { error } = await supabase
         .from("club_verifications")
         .insert({ club_id: clubId, kind: "verifier" });
-      if (error) throw error;
+      // The unique (club_id, user_id) constraint means a repeat click or a
+      // second tab is already-verified, not an error worth showing.
+      if (error && error.code !== "23505") throw error;
     },
-    onSuccess: (_data, clubId) =>
-      queryClient.invalidateQueries({ queryKey: ["club", clubId, "verifications"] }),
+    onSuccess: (_data, clubId) => {
+      void queryClient.invalidateQueries({ queryKey: ["club", clubId, "verifications"] });
+      void queryClient.invalidateQueries({ queryKey: ["clubs", "pending"] });
+    },
   });
 }
 
@@ -541,7 +574,14 @@ export function useReviewClub() {
       });
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin"] }),
+    onSuccess: (_data, input) => {
+      // Approval provisions the founder's membership and President role, so
+      // every club-facing cache is now stale -- not just the admin list.
+      void queryClient.invalidateQueries({ queryKey: ["admin"] });
+      void queryClient.invalidateQueries({ queryKey: ["clubs"] });
+      void queryClient.invalidateQueries({ queryKey: ["club", input.clubId] });
+      void queryClient.invalidateQueries({ queryKey: ["club-context", input.clubId] });
+    },
   });
 }
 
