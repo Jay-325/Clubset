@@ -37,23 +37,10 @@ import {
   useRemoveMemberRole,
   useRemoveMember,
 } from "@/lib/queries";
-import type {
-  DuesRow,
-  GradeLevel,
-  LeadershipRoleRow,
-  MembershipRow,
-  ProfileRow,
-} from "@/lib/types/database";
+import type { DuesRow, GradeLevel, LeadershipRoleRow, MembershipRow, ProfileRow } from "@/lib/types/database";
 import type { RoleAssignmentWithRole } from "@/lib/queries";
 import { toast } from "sonner";
 
-/**
- * PRD 9/11: membership management, split into "who is in the club" and "who
- * wants in" so accepting a request is one tap rather than a settings hunt.
- *
- * The gate here is display-only. review_membership re-checks the permission in
- * Postgres, so a forged accept fails server-side regardless (PRD 41).
- */
 export const Route = createFileRoute("/clubs/$clubId/members")({
   component: MembersPage,
 });
@@ -80,8 +67,6 @@ function MembersContent() {
   const removeRole = useRemoveMemberRole(clubId);
   const removeMember = useRemoveMember(clubId);
 
-  // PRD 38: an administrator linked to this club manages it even without a
-  // leadership role, so they pass the same gate as a president.
   const allowed =
     context.data === null || context.data === undefined
       ? false
@@ -116,9 +101,7 @@ function MembersContent() {
   const duesRows = dues.data ?? [];
   const assignments = roleAssignments.data ?? [];
 
-  // Build a map of member_id -> role info
   const memberRoleMap = new Map(assignments.map((a) => [a.user_id, a.leadership_roles]));
-  // Build a map of member_id -> dues info
   const memberDuesMap = new Map(duesRows.map((d) => [d.user_id, d]));
 
   return (
@@ -173,8 +156,7 @@ function MembersContent() {
                         dues={memberDuesMap.get(row.user_id) ?? null}
                         allRoles={assignments.map((a) => a.leadership_roles).filter(Boolean)}
                         onRoleChange={(newRoleId) =>
-                          assignRole.mutate({ userId: row.user_id, roleId: newRoleId })
-                        }
+                          assignRole.mutate({ userId: row.user_id, roleId: newRoleId })}
                         onRemoveRole={() => removeRole.mutate({ userId: row.user_id })}
                         onRemoveMember={() => removeMember.mutate({ userId: row.user_id })}
                       />
@@ -191,8 +173,6 @@ function MembersContent() {
             <CardHeader>
               <CardTitle className="text-base">Pending join requests</CardTitle>
               <CardDescription>
-                {/* PRD 9: accepting is all it takes -- chat access and the rest
-                    of the club follow automatically in the database. */}
                 Accepting someone adds them to the group chat automatically. No further setup is
                 needed.
               </CardDescription>
@@ -331,7 +311,12 @@ function MemberRow({
               Remove role
             </Button>
           ) : null}
-          <Button size="sm" variant="destructive" onClick={handleRemove} disabled={isRemoving}>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={handleRemove}
+            disabled={isRemoving}
+          >
             {isRemoving ? <SkeletonSpinner /> : <X className="size-4" />}
             Remove
           </Button>
