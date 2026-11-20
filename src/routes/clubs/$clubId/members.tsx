@@ -7,6 +7,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton, SkeletonSpinner } from "@/components/ui/skeleton";
 import {
   Table,
@@ -20,8 +27,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { can } from "@/lib/auth/permissions";
 import { useClubContext } from "@/lib/hooks/use-club";
 import { GRADE_LABELS } from "@/lib/domain";
-import { useClubMembers, useJoinRequests, useReviewMembership } from "@/lib/queries";
-import type { GradeLevel, ProfileRow } from "@/lib/types/database";
+import {
+  useClubMembers,
+  useJoinRequests,
+  useReviewMembership,
+  useDues,
+  useRoleAssignments,
+  useAssignMemberRole,
+  useRemoveMemberRole,
+  useRemoveMember,
+} from "@/lib/queries";
+import type {
+  DuesRow,
+  GradeLevel,
+  LeadershipRoleRow,
+  MembershipRow,
+  ProfileRow,
+} from "@/lib/types/database";
+import type { RoleAssignmentWithRole } from "@/lib/queries";
+import { toast } from "sonner";
 
 /**
  * PRD 9/11: membership management, split into "who is in the club" and "who
@@ -50,6 +74,11 @@ function MembersContent() {
   const members = useClubMembers(clubId);
   const requests = useJoinRequests(clubId);
   const review = useReviewMembership();
+  const dues = useDues(clubId);
+  const roleAssignments = useRoleAssignments(clubId);
+  const assignRole = useAssignMemberRole(clubId);
+  const removeRole = useRemoveMemberRole(clubId);
+  const removeMember = useRemoveMember(clubId);
 
   // PRD 38: an administrator linked to this club manages it even without a
   // leadership role, so they pass the same gate as a president.
@@ -60,7 +89,7 @@ function MembersContent() {
         context.data.isLinkedAdministrator ||
         context.data.isAdministrator;
 
-  if (context.isLoading) {
+  if (context.isLoading || members.isLoading || dues.isLoading || roleAssignments.isLoading) {
     return <Skeleton className="h-72 w-full" />;
   }
 
@@ -84,12 +113,19 @@ function MembersContent() {
 
   const memberRows = members.data ?? [];
   const requestRows = requests.data ?? [];
+  const duesRows = dues.data ?? [];
+  const assignments = roleAssignments.data ?? [];
+
+  // Build a map of member_id -> role info
+  const memberRoleMap = new Map(assignments.map((a) => [a.user_id, a.leadership_roles]));
+  // Build a map of member_id -> dues info
+  const memberDuesMap = new Map(duesRows.map((d) => [d.user_id, d]));
 
   return (
     <>
       <PageHeader
         title={`${context.data?.club.name ?? "Club"} members`}
-        description="Review who is in the club and who wants to join."
+        description="Review who is in this club, their roles, and dues status."
       />
 
       <Tabs defaultValue="members">
@@ -112,9 +148,7 @@ function MembersContent() {
               <CardDescription>Everyone who has been accepted into this club.</CardDescription>
             </CardHeader>
             <CardContent>
-              {members.isLoading ? (
-                <Skeleton className="h-40 w-full" />
-              ) : memberRows.length === 0 ? (
+              {memberRows.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
                   No active members yet.
                 </p>
@@ -124,18 +158,26 @@ function MembersContent() {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Grade</TableHead>
-                      <TableHead>Joined</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead className="text-right">Dues</TableHead>
+                      <TableHead className="text-right">Joined</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {memberRows.map((row) => (
-                      <TableRow key={row.id}>
-                        <TableCell className="font-medium">
-                          {row.profile.full_name || "Unnamed student"}
-                        </TableCell>
-                        <TableCell>{gradeLabel(row.profile.grade)}</TableCell>
-                        <TableCell>{formatDate(row.joined_at ?? row.created_at)}</TableCell>
-                      </TableRow>
+                      <MemberRow
+                        key={row.id}
+                        row={row}
+                        role={memberRoleMap.get(row.user_id) ?? null}
+                        dues={memberDuesMap.get(row.user_id) ?? null}
+                        allRoles={assignments.map((a) => a.leadership_roles).filter(Boolean)}
+                        onRoleChange={(newRoleId) =>
+                          assignRole.mutate({ userId: row.user_id, roleId: newRoleId })
+                        }
+                        onRemoveRole={() => removeRole.mutate({ userId: row.user_id })}
+                        onRemoveMember={() => removeMember.mutate({ userId: row.user_id })}
+                      />
                     ))}
                   </TableBody>
                 </Table>
@@ -188,6 +230,114 @@ function MembersContent() {
         </TabsContent>
       </Tabs>
     </>
+  );
+}
+
+function MemberRow({
+  row,
+  role,
+  dues,
+  allRoles,
+  onRoleChange,
+  onRemoveRole,
+  onRemoveMember,
+}: {
+  row: MembershipRow & { profile: ProfileRow };
+  role: LeadershipRoleRow | null;
+  dues: DuesRow | null;
+  allRoles: LeadershipRoleRow[];
+  onRoleChange: (roleId: string) => void;
+  onRemoveRole: () => void;
+  onRemoveMember: () => void;
+}) {
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [newRoleId, setNewRoleId] = useState<string | null>(role?.id ?? null);
+
+  const handleRemove = async () => {
+    if (window.confirm("Remove this member from the club?")) {
+      setIsRemoving(true);
+      try {
+        await onRemoveMember();
+      } finally {
+        setIsRemoving(false);
+      }
+    }
+  };
+
+  return (
+    <TableRow key={row.id} className="animate-in fade-in">
+      <TableCell className="font-medium">{row.profile.full_name || "Unnamed student"}</TableCell>
+      <TableCell>{gradeLabel(row.profile.grade)}</TableCell>
+      <TableCell>
+        {role ? (
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{role.name}</Badge>
+            <Select
+              value={newRoleId ?? ""}
+              onValueChange={(value) => {
+                setNewRoleId(value);
+                if (value) onRoleChange(value);
+              }}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Choose role" />
+              </SelectTrigger>
+              <SelectContent>
+                {allRoles.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <Badge variant="outline">Member</Badge>
+        )}
+      </TableCell>
+      <TableCell className="text-right">
+        {dues ? (
+          <Badge
+            variant={
+              dues.status === "paid"
+                ? "secondary"
+                : dues.status === "not_paid"
+                  ? "destructive"
+                  : "outline"
+            }
+          >
+            {dues.status === "paid" ? "Paid" : dues.status === "not_paid" ? "Due" : "Unknown"}
+          </Badge>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </TableCell>
+      <TableCell className="text-right text-xs text-muted-foreground">
+        {new Date(row.joined_at ?? row.created_at).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })}
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex gap-1">
+          {role ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onRemoveRole()}
+              disabled={isRemoving}
+            >
+              Remove role
+            </Button>
+          ) : null}
+          <Button size="sm" variant="destructive" onClick={handleRemove} disabled={isRemoving}>
+            {isRemoving ? <SkeletonSpinner /> : <X className="size-4" />}
+            Remove
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }
 
