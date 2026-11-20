@@ -28,12 +28,24 @@ import type {
   ClubSearchResult,
   CommitmentLevel,
   ClubType,
+  DuesRow,
   Json,
+  LeadershipRoleRow,
   MembershipRow,
   NotificationRow,
   ProfileRow,
   UpcomingEventResult,
 } from "@/lib/types/database";
+
+export type RoleAssignmentWithRole = {
+  id: string;
+  role_id: string;
+  club_id: string;
+  user_id: string;
+  assigned_by: string | null;
+  assigned_at: string;
+  leadership_roles: LeadershipRoleRow;
+};
 
 /**
  * Normalize an email address the same way the server does:
@@ -659,6 +671,106 @@ export function useReviewMembership() {
       // (PRD 9/12/46) -- both are automatic, so no extra work happens here.
       void queryClient.invalidateQueries({ queryKey: ["club"] });
       void queryClient.invalidateQueries({ queryKey: ["clubs"] });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Dues (PRD 24)
+// ---------------------------------------------------------------------------
+
+export function useDues(clubId: string) {
+  return useQuery({
+    queryKey: ["club", clubId, "dues"],
+    queryFn: async (): Promise<DuesRow[]> => {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from("dues")
+        .select("*")
+        .eq("club_id", clubId)
+        .order("due_date", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as DuesRow[];
+    },
+    enabled: Boolean(clubId),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Leadership role assignments (PRD 10)
+// ---------------------------------------------------------------------------
+
+export function useRoleAssignments(clubId: string) {
+  return useQuery({
+    queryKey: ["club", clubId, "role-assignments"],
+    queryFn: async (): Promise<Array<RoleAssignmentWithRole>> => {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from("role_assignments")
+        .select("*, leadership_roles(*)")
+        .eq("club_id", clubId);
+      if (error) throw error;
+      return (data ?? []) as unknown as Array<RoleAssignmentWithRole>;
+    },
+    enabled: Boolean(clubId),
+  });
+}
+
+export function useAssignMemberRole(clubId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { userId: string; roleId: string }) => {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.from("role_assignments").insert({
+        role_id: input.roleId,
+        club_id: clubId,
+        user_id: input.userId,
+        assigned_by: (await supabase.auth.getUser()).data.user?.id ?? null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["club", clubId, "role-assignments"] });
+      void queryClient.invalidateQueries({ queryKey: ["club", clubId, "members"] });
+    },
+  });
+}
+
+export function useRemoveMemberRole(clubId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { userId: string }) => {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase
+        .from("role_assignments")
+        .delete()
+        .eq("club_id", clubId)
+        .eq("user_id", input.userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["club", clubId, "role-assignments"] });
+      void queryClient.invalidateQueries({ queryKey: ["club", clubId, "members"] });
+    },
+  });
+}
+
+export function useRemoveMember(clubId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { userId: string }) => {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase
+        .from("memberships")
+        .update({ status: "removed" })
+        .eq("club_id", clubId)
+        .eq("user_id", input.userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["club", clubId, "members"] });
+      void queryClient.invalidateQueries({ queryKey: ["club", clubId, "role-assignments"] });
+      void queryClient.invalidateQueries({ queryKey: ["club", clubId, "dues"] });
     },
   });
 }

@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clubset — Finance Demo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #fdf7ee; /* warm cream */
+    color: #2a2420; /* warm ink */
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 1rem;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
+  }
+  .terracotta-badge {
+    @apply bg-terracotta-500/10 text-terracotta-600 border border-terracotta-200;
+  }
+  .emerald-badge {
+    @apply bg-emerald-500/10 text-emerald-600 border border-emerald-200;
+  }
+  .rose-badge {
+    @apply bg-rose-500/10 text-rose-600 border border-rose-200;
+  }
+  .sand-badge {
+    @apply bg-amber-500/10 text-amber-600 border border-amber-200;
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+  <div class="absolute inset-0 flex items-center justify-center">
+    <div class="max-w-4xl w-full p-8">
+      
+      <!-- Header -->
+      <header class="flex items-center justify-between px-6 py-4 border-b border-amber-100 bg-white/80 backdrop-blur sticky top-0 z-10">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-2xl flex items-center justify-center bg-terracotta-100 text-terracotta-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold text-ink tracking-tight">Clubset</h1>
+            <p class="text-xs text-terracotta-500 uppercase tracking-wider">Green Earth Club · Finance</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="h-10 w-10 rounded-full bg-white/50 border border-amber-100 text-terracotta-600 flex items-center justify-center hover:bg-terracotta-50 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+          </button>
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-terracotta-200 to-orange-200 flex items-center justify-center text-terracotta-700 font-bold text-xs shadow-sm border border-white">
+            AR
+          </div>
+        </div>
+      </header>
+
+      <main class="mt-12 space-y-10">
+        
+        <!-- Page Title -->
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-bold text-ink">Finance</h2>
+            <p class="text-sm text-terracotta-600">Your club's financial planning tools — track, plan, and manage money all in one place.</p>
+          </div>
+          <button class="px-4 py-2 rounded-lg bg-terracotta-600 text-white text-sm font-medium hover:bg-terracotta-700 transition-colors">
+            Add Money
+          </button>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid gap-4 sm:grid-cols-3">
+          <!-- Balance -->
+          <div class="glass-card p-5 rounded-2xl">
+            <div class="flex items-center gap-1.5 text-sm text-terracotta-600 mb-3">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2-3 .895-3-2-1.343-2-3-2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Balance
+            </div>
+            <div class="text-3xl font-bold text-ink">$2,847.50</div>
+          </div>
+          <!-- Income -->
+          <div class="glass-card p-5 rounded-2xl">
+            <div class="flex items-center gap-1.5 text-sm text-emerald-600 mb-3">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2-3 .895-3-2-1.343-2-3-2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Total income
+            </div>
+            <div class="text-3xl font-bold text-emerald-600">$3,200.00</div>
+          </div>
+          <!-- Expenses -->
+          <div class="glass-card p-5 rounded-2xl">
+            <div class="flex items-center gap-1.5 text-sm text-rose-600 mb-3">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2-3 .895-3-2-1.343-2-3-2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Total expenses
+            </div>
+            <div class="text-3xl font-bold text-rose-600">-$352.50</div>
+          </div>
+        </div>
+
+        <!-- Financial Tools Grid -->
+        <div class="mb-8">
+          <h3 class="text-lg font-bold text-ink mb-4">Financial Tools</h3>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-2">
+            
+            <!-- Budget Overview -->
+            <button class="glass-card p-5 rounded-2xl group flex items-start gap-4 cursor-pointer transition-all hover:border-terracotta-200 hover:shadow-md" onclick="openTool('budget')">
+              <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-terracotta-100 text-terracotta-600 shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v1m-6 9h1.264a1.627 1.627 0 000-3.254V11h-1.264a1.627 1.627 0 000-3.254V7h1.264a1.627 1.627 0 000-3.254V5a2 2 0 012-2h2a2 2 0 012 2v1.364c.273.006.545.012.826.012s.546-.006.826-.012V5a2 2 0 012-2h2a2 2 0 012 2v1.364c.273.006.545.012.826.012s.546-.006.826-.012V5a2 2 0 012-2h2a2 2 0 012 2v1.364c.273.006.545.012.826.012s.546-.006.826-.012V5a2 2 0 012-2h2a2 2 0 012 2v1m0 0v5.628c.273.006.545.012.826.012s.546-.006.826-.012V17a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2a2 2 0 012-2zm0-11.264h-1.264c-.273 0-.545-.012-.826-.012V3a2 2 0 00-2-2h-2a2 2 0 00-2 2v1.364c-.273.006-.545.012-.826.012s-.546-.006-.826-.012V5a2 2 0 00-2-2h-2a2 2 0 00-2 2v1.364c-.273.006-.545.012-.826.012s-.546-.006-.826-.012V5a2 2 0 00-2-2h-2a2 2 0 00-2 2v2h2a2 2 0 012 2v1m0 0h-1.264a1.627 1.627 0 000 3.254V17h1.264a1.627 1.627 0 000 3.254v1.728c.273.006.545.012.826.012s.546-.006.826-.012V17a2 2 0 002-2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2a2 2 0 01-2-2v-2a2 2 0 012-2h2a2 2 0 012 2v1.364c.273.006.545.012.826.012s.546-.006.826-.012V19h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2a2 2 0 01-2-2z"></path></svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="font-semibold text-ink">Budget Overview</p>
+                  <svg class="w-4 h-4 shrink-0 text-terracotta-400 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </div>
+                <p class="mt-1 text-sm text-terracotta-500">See where your club's money goes by category</p>
+              </div>
+            </button>
+
+            <!-- Fundraiser Tracker -->
+            <button class="glass-card p-5 rounded-2xl group flex items-start gap-4 cursor-pointer transition-all hover:border-terracotta-200 hover:shadow-md" onclick="openTool('fundraiser')">
+              <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-terracotta-100 text-terracotta-600 shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.684-7.684a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="font-semibold text-ink">Fundraiser Tracker</p>
+                  <svg class="w-4 h-4 shrink-0 text-terracotta-400 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </div>
+                <p class="mt-1 text-sm text-terracotta-500">Track fundraising campaigns and income sources</p>
+              </div>
+            </button>
+
+            <!-- Expense Ledger -->
+            <button class="glass-card p-5 rounded-2xl group flex items-start gap-4 cursor-pointer transition-all hover:border-terracotta-200 hover:shadow-md" onclick="openTool('expenses')">
+              <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-terracotta-100 text-terracotta-600 shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-2m3-2V9m9 4V9m0 0V9m0 0V9m0 0a2 2 0 00-2-2H9a2 2 0 00-2 2v2h4a2 2 0 012 2z"></path></svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="font-semibold text-ink">Expense Ledger</p>
+                  <svg class="w-4 h-4 shrink-0 text-terracotta-400 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </div>
+                <p class="mt-1 text-sm text-terracotta-500">Full spreadsheet of all club expenses</p>
+              </div>
+            </button>
+
+            <!-- Dues Tracker -->
+            <button class="glass-card p-5 rounded-2xl group flex items-start gap-4 cursor-pointer transition-all hover:border-terracotta-200 hover:shadow-md" onclick="openTool('dues')">
+              <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-terracotta-100 text-terracotta-600 shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a3 3 0 11-6 0 3 3 0 006 0z"></path></svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="font-semibold text-ink">Dues Tracker</p>
+                  <svg class="w-4 h-4 shrink-0 text-terracotta-400 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </div>
+                <p class="mt-1 text-sm text-terracotta-500">Track member dues and payment statuses</p>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tool Detail View -->
+        <div id="tool-view" class="hidden">
+          <div class="flex items-center gap-2 mb-6">
+            <button class="px-3 py-1.5 rounded-lg bg-slate-100 text-terracotta-600 text-sm font-medium hover:bg-terracotta-50 transition-colors" onclick="closeTool()">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+              Back to tools
+            </button>
+          </div>
+          <div id="tool-content"></div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    let currentTool = null;
+
+    function openTool(toolKey) {
+      document.getElementById('tool-view').classList.remove('hidden');
+      const content = document.getElementById('tool-content');
+      
+      if (toolKey === 'budget') {
+        content.innerHTML = `
+          <div class="grid gap-4 lg:grid-cols-2">
+            <!-- Expense Breakdown -->
+            <div class="glass-card p-5 rounded-2xl">
+              <div class="flex items-start gap-2 mb-4">
+                <div class="w-8 h-8 rounded-lg bg-terracotta-100 flex items-center justify-center text-terracotta-600">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2-3 .895-3-2-1.343-2-3-2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                  <p class="font-semibold text-ink">Expense Breakdown</p>
+                  <p class="text-xs text-terracotta-500">How your club's money is being spent</p>
+                </div>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="border-b border-amber-100">
+                      <th class="pb-2 text-left text-xs font-bold text-terracotta-600">Category</th>
+                      <th class="pb-2 text-right text-xs font-bold text-terracotta-600">Amount</th>
+                      <th class="pb-2 text-right text-xs font-bold text-terracotta-600">% of Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="border-b border-amber-50 py-3">
+                      <td class="font-medium text-ink">Supplies</td>
+                      <td class="text-right text-terracotta-600 font-medium">$145.00</td>
+                      <td class="text-right text-xs text-terracotta-500">41.1%</td>
+                    </tr>
+                    <tr class="border-b border-amber-50 py-3">
+                      <td class="font-medium text-ink">Food</td>
+                      <td class="text-right text-terracotta-600 font-medium">$89.50</td>
+                      <td class="text-right text-xs text-terracotta-500">25.4%</td>
+                    </tr>
+                    <tr class="border-b border-amber-50 py-3">
+                      <td class="font-medium text-ink">Transportation</td>
+                      <td class="text-right text-terracotta-600 font-medium">$75.00</td>
+                      <td class="text-right text-xs text-terracotta-500">21.3%</td>
+                    </tr>
+                    <tr class="border-b border-amber-50 py-3">
+                      <td class="font-medium text-ink">Competition Fees</td>
+                      <td class="text-right text-terracotta-600 font-medium">$43.00</td>
+                      <td class="text-right text-xs text-terracotta-500">12.2%</td>
+                    </tr>
+                    <tr class="border-t-2 border-terracotta-600 font-bold">
+                      <td>Total</td>
+                      <td class="text-right text-terracotta-600">$352.50</td>
+                      <td class="text-right text-xs text-terracotta-600">100%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Income Breakdown -->
+            <div class="glass-card p-5 rounded-2xl">
+              <div class="flex items-start gap-2 mb-4">
+                <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2-3 .895-3-2-1.343-2-3-2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                  <p class="font-semibold text-ink">Income Breakdown</p>
+                  <p class="text-xs text-emerald-500">Where your club's money comes from</p>
+                </div>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="border-b border-emerald-100">
+                      <th class="pb-2 text-left text-xs font-bold text-emerald-600">Source</th>
+                      <th class="pb-2 text-right text-xs font-bold text-emerald-600">Amount</th>
+                      <th class="pb-2 text-right text-xs font-bold text-emerald-600">% of Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="border-b border-emerald-50 py-3">
+                      <td class="font-medium text-ink">Dues</td>
+                      <td class="text-right text-emerald-600 font-medium">$1,200.00</td>
+                      <td class="text-right text-xs text-emerald-500">37.5%</td>
+                    </tr>
+                    <tr class="border-b border-emerald-50 py-3">
+                      <td class="font-medium text-ink">Fundraiser</td>
+                      <td class="text-right text-emerald-600 font-medium">$800.00</td>
+                      <td class="text-right text-xs text-emerald-500">25.0%</td>
+                    </tr>
+                    <tr class="border-b border-emerald-50 py-3">
+                      <td class="font-medium text-ink">Donation</td>
+                      <td class="text-right text-emerald-600 font-medium">$600.00</td>
+                      <td class="text-right text-xs text-emerald-500">18.8%</td>
+                    </tr>
+                    <tr class="border-b border-emerald-50 py-3">
+                      <td class="font-medium text-ink">Sponsorship</td>
+                      <td class="text-right text-emerald-600 font-medium">$400.00</td>
+                      <td class="text-right text-xs text-emerald-500">12.5%</td>
+                    </tr>
+                    <tr class="border-b border-emerald-50 py-3">
+                      <td class="font-medium text-ink">Grant</td>
+                      <td class="text-right text-emerald-600 font-medium">$200.00</td>
+                      <td class="text-right text-xs text-emerald-500">6.2%</td>
+                    </tr>
+                    <tr class="border-t-2 border-emerald-600 font-bold">
+                      <td>Total</td>
+                      <td class="text-right text-emerald-600">$3,200.00</td>
+                      <td class="text-right text-xs text-emerald-600">100%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (toolKey === 'fundraiser') {
+        content.innerHTML = `
+          <div class="glass-card p-5 rounded-2xl">
+            <div class="flex flex-wrap items-start justify-between gap-2 mb-4">
+              <div>
+                <p class="font-bold text-ink">Fundraiser Tracker</p>
+                <p class="text-xs text-terracotta-500">Track your fundraising campaigns</p>
+              </div>
+              <div class="text-right text-sm">
+                <p class="text-muted-foreground">Fundraisers:</p>
+                <p class="font-bold text-emerald-600">$800.00</p>
+                <p class="text-muted-foreground">Total income:</p>
+                <p class="font-bold text-emerald-600">$3,200.00</p>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="border-b border-emerald-100">
+                    <th class="pb-2 text-left text-xs font-bold text-emerald-600">Date</th>
+                    <th class="pb-2 text-left text-xs font-bold text-emerald-600">Description</th>
+                    <th class="pb-2 text-left text-xs font-bold text-emerald-600">Source</th>
+                    <th class="pb-2 text-right text-xs font-bold text-emerald-600">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="border-b border-emerald-50 py-3">
+                    <td class="whitespace-nowrap text-muted-foreground">Oct 25</td>
+                    <td class="font-medium text-ink">Bake Sale</td>
+                    <td><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-600 border border-emerald-200">Fundraiser</span></td>
+                    <td class="text-right font-semibold text-emerald-600">+$800.00</td>
+                  </tr>
+                  <tr class="border-b border-emerald-50 py-3">
+                    <td class="whitespace-nowrap text-muted-foreground">Oct 20</td>
+                    <td class="font-medium text-ink">Car Wash</td>
+                    <td><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-600 border border-emerald-200">Fundraiser</span></td>
+                    <td class="text-right font-semibold text-emerald-600">+$650.00</td>
+                  </tr>
+                  <tr class="border-b border-emerald-50 py-3">
+                    <td class="whitespace-nowrap text-muted-foreground">Oct 15</td>
+                    <td class="font-medium text-ink">Dues Payment</td>
+                    <td><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-600 border border-slate-200">Dues</span></td>
+                    <td class="text-right font-semibold text-emerald-600">+$300.00</td>
+                  </tr>
+                  <tr class="border-b border-emerald-50 py-3">
+                    <td class="whitespace-nowrap text-muted-foreground">Oct 10</td>
+                    <td class="font-medium text-ink">Sponsorship</td>
+                    <td><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-600 border border-emerald-200">Sponsorship</span></td>
+                    <td class="text-right font-semibold text-emerald-600">+$400.00</td>
+                  </tr>
+                  <tr class="border-t-2 border-emerald-600 font-bold">
+                    <td colSpan={3}>Total income</td>
+                    <td class="text-right text-emerald-600">$3,200.00</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      } else if (toolKey === 'expenses') {
+        content.innerHTML = `
+          <div class="glass-card p-5 rounded-2xl">
+            <div class="flex flex-wrap items-start justify-between gap-2 mb-4">
+              <div>
+                <p class="font-bold text-ink">Expense Ledger</p>
+                <p class="text-xs text-terracotta-500">Full spreadsheet of all club expenses</p>
+              </div>
+              <div class="text-right text-sm text-terracotta-600 font-bold">
+                Total: -$352.50
+              </div>
+            </div>
+            <div class="space-y-4">
+              <form class="flex flex-wrap items-end gap-2 rounded-lg border border-terracotta-200 p-3 bg-terracotta-50/50">
+                <div class="space-y-1">
+                  <label class="text-xs text-terracotta-600">Amount</label>
+                  <input type="number" min="0" step="0.01" placeholder="0.00" class="w-24 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-terracotta-200 focus:outline-none">
+                </div>
+                <div class="space-y-1">
+                  <label class="text-xs text-terracotta-600">Category</label>
+                  <select class="w-36 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-terracotta-200 focus:outline-none bg-white">
+                    <option>Supplies</option>
+                    <option>Food</option>
+                    <option>Transportation</option>
+                    <option>Competition Fees</option>
+                  </select>
+                </div>
+                <div class="min-w-0 flex-1 space-y-1">
+                  <label class="text-xs text-terracotta-600">Description</label>
+                  <input type="text" value="Robotics components" placeholder="What was it for?" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-terracotta-200 focus:outline-none">
+                </div>
+                <button type="submit" class="flex items-center gap-2 bg-terracotta-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-terracotta-700 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                  Add
+                </button>
+              </form>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="border-b border-terracotta-100">
+                      <th class="pb-2 text-left text-xs font-bold text-terracotta-600">Date</th>
+                      <th class="pb-2 text-left text-xs font-bold text-terracotta-600">Description</th>
+                      <th class="pb-2 text-left text-xs font-bold text-terracotta-600">Category</th>
+                      <th class="pb-2 text-right text-xs font-bold text-terracotta-600">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="border-b border-terracotta-50 py-3">
+                      <td class="whitespace-nowrap text-muted-foreground">Oct 28</td>
+                      <td class="font-medium text-ink">Room supplies</td>
+                      <td><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-terracotta-100 text-terracotta-600 border border-terracotta-200">Supplies</span></td>
+                      <td class="text-right font-semibold text-rose-600">-$45.00</td>
+                    </tr>
+                    <tr class="border-b border-terracotta-50 py-3">
+                      <td class="whitespace-nowrap text-muted-foreground">Oct 26</td>
+                      <td class="font-medium text-ink">Pizza for meeting</td>
+                      <td><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-terracotta-100 text-terracotta-600 border border-terracotta-200">Food</span></td>
+                      <td class="text-right font-semibold text-rose-600">-$89.50</td>
+                    </tr>
+                    <tr class="border-b border-terracotta-50 py-3">
+                      <td class="whitespace-nowrap text-muted-foreground">Oct 22</td>
+                      <td class="font-medium text-ink">Bus to competition</td>
+                      <td><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-terracotta-100 text-terracotta-600 border border-terracotta-200">Transportation</span></td>
+                      <td class="text-right font-semibold text-rose-600">-$75.00</td>
+                    </tr>
+                    <tr class="border-b border-terracotta-50 py-3">
+                      <td class="whitespace-nowrap text-muted-foreground">Oct 18</td>
+                      <td class="font-medium text-ink">Regional entry fee</td>
+                      <td><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-terracotta-100 text-terracotta-600 border border-terracotta-200">Competition Fees</span></td>
+                      <td class="text-right font-semibold text-rose-600">-$43.00</td>
+                    </tr>
+                    <tr class="border-b border-terracotta-50 py-3">
+                      <td class="whitespace-nowrap text-muted-foreground">Oct 12</td>
+                      <td class="font-medium text-ink">Poster boards</td>
+                      <td><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-terracotta-100 text-terracotta-600 border border-terracotta-200">Supplies</span></td>
+                      <td class="text-right font-semibold text-rose-600">-$100.00</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (toolKey === 'dues') {
+        content.innerHTML = `
+          <div class="glass-card p-5 rounded-2xl">
+            <div class="flex flex-wrap items-start justify-between gap-2 mb-4">
+              <div>
+                <p class="font-bold text-ink">Dues Tracker</p>
+                <p class="text-xs text-terracotta-500">Track member dues and payment statuses</p>
+              </div>
+              <div class="text-right text-sm">
+                <p class="text-muted-foreground">Collected</p>
+                <p class="font-bold text-emerald-600">$850.00</p>
+                <p class="text-muted-foreground">of</p>
+                <p class="font-bold text-ink">$1,200.00</p>
+                <p class="text-xs text-terracotta-500">(4 / 6 paid)</p>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="border-b border-terracotta-100">
+                    <th class="pb-2 text-left text-xs font-bold text-terracotta-600">Member</th>
+                    <th class="pb-2 text-right text-xs font-bold text-terracotta-600">Amount</th>
+                    <th class="pb-2 text-left text-xs font-bold text-terracotta-600">Due Date</th>
+                    <th class="pb-2 text-left text-xs font-bold text-terracotta-600">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="border-b border-terracotta-50 py-3">
+                    <td class="font-medium text-ink">Maya Chen</td>
+                    <td class="text-right font-semibold text-ink">$200.00</td>
+                    <td class="text-muted-foreground">Oct 15</td>
+                    <td><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-600 border border-emerald-200">Paid</span></td>
+                  </tr>
+                  <tr class="border-b border-terracotta-50 py-3">
+                    <td class="font-medium text-ink">Jordan Lee</td>
+                    <td class="text-right font-semibold text-ink">$200.00</td>
+                    <td class="text-muted-foreground">Oct 15</td>
+                    <td><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-600 border border-emerald-200">Paid</span></td>
+                  </tr>
+                  <tr class="border-b border-terracotta-50 py-3">
+                    <td class="font-medium text-ink">Sam Rivera</td>
+                    <td class="text-right font-semibold text-ink">$200.00</td>
+                    <td class="text-muted-foreground">Oct 20</td>
+                    <td><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-rose-100 text-rose-600 border border-rose-200">Not paid</span></td>
+                  </tr>
+                  <tr class="border-b border-terracotta-50 py-3">
+                    <td class="font-medium text-ink">Alex Rivera</td>
+                    <td class="text-right font-semibold text-ink">$200.00</td>
+                    <td class="text-muted-foreground">Oct 20</td>
+                    <td><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-rose-100 text-rose-600 border border-rose-200">Not paid</span></td>
+                  </tr>
+                  <tr class="border-b border-terracotta-50 py-3">
+                    <td class="font-medium text-ink">Taylor Park</td>
+                    <td class="text-right font-semibold text-ink">$200.00</td>
+                    <td class="text-muted-foreground">Oct 25</td>
+                    <td><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-600 border border-amber-200">Unknown</span></td>
+                  </tr>
+                  <tr class="border-b border-terracotta-50 py-3">
+                    <td class="font-medium text-ink">Riley Kim</td>
+                    <td class="text-right font-semibold text-ink">$200.00</td>
+                    <td class="text-muted-foreground">Oct 25</td>
+                    <td><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-600 border border-amber-200">Unknown</span></td>
+                  </tr>
+                  <tr class="border-t-2 border-terracotta-600 font-bold">
+                    <td>Total</td>
+                    <td class="text-right text-terracotta-600">$1,200.00</td>
+                    <td></td>
+                    <td class="text-right text-xs text-terracotta-500">4 / 6 paid</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function closeTool() {
+      document.getElementById('tool-view').classList.add('hidden');
+      document.getElementById('tool-content').innerHTML = '';
+    }
+  </script>
+</body>
+</html>

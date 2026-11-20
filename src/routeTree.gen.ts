@@ -29,6 +29,7 @@ import { Route as ClubsClubIdCalendarRouteImport } from './routes/clubs/$clubId/
 import { Route as ClubsClubIdChatRouteImport } from './routes/clubs/$clubId/chat'
 import { Route as ClubsClubIdDataRouteImport } from './routes/clubs/$clubId/data'
 import { Route as ClubsClubIdEventsRouteImport } from './routes/clubs/$clubId/events'
+import { Route as ClubsClubIdFinanceRouteImport } from './routes/clubs/$clubId/finance'
 import { Route as ClubsClubIdFormsRouteImport } from './routes/clubs/$clubId/forms'
 import { Route as ClubsClubIdFundsRouteImport } from './routes/clubs/$clubId/funds'
 import { Route as ClubsClubIdLeadershipRouteImport } from './routes/clubs/$clubId/leadership'
@@ -137,6 +138,11 @@ const ClubsClubIdEventsRoute = ClubsClubIdEventsRouteImport.update({
   path: '/clubs/$clubId/events',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClubsClubIdFinanceRoute = ClubsClubIdFinanceRouteImport.update({
+  id: '/clubs/$clubId/finance',
+  path: '/clubs/$clubId/finance',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClubsClubIdFormsRoute = ClubsClubIdFormsRouteImport.update({
   id: '/clubs/$clubId/forms',
   path: '/clubs/$clubId/forms',
@@ -183,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/clubs/$clubId/chat': typeof ClubsClubIdChatRoute
   '/clubs/$clubId/data': typeof ClubsClubIdDataRoute
   '/clubs/$clubId/events': typeof ClubsClubIdEventsRoute
+  '/clubs/$clubId/finance': typeof ClubsClubIdFinanceRoute
   '/clubs/$clubId/forms': typeof ClubsClubIdFormsRoute
   '/clubs/$clubId/funds': typeof ClubsClubIdFundsRoute
   '/clubs/$clubId/leadership': typeof ClubsClubIdLeadershipRoute
@@ -210,6 +217,7 @@ export interface FileRoutesByTo {
   '/clubs/$clubId/chat': typeof ClubsClubIdChatRoute
   '/clubs/$clubId/data': typeof ClubsClubIdDataRoute
   '/clubs/$clubId/events': typeof ClubsClubIdEventsRoute
+  '/clubs/$clubId/finance': typeof ClubsClubIdFinanceRoute
   '/clubs/$clubId/forms': typeof ClubsClubIdFormsRoute
   '/clubs/$clubId/funds': typeof ClubsClubIdFundsRoute
   '/clubs/$clubId/leadership': typeof ClubsClubIdLeadershipRoute
@@ -238,6 +246,7 @@ export interface FileRoutesById {
   '/clubs/$clubId/chat': typeof ClubsClubIdChatRoute
   '/clubs/$clubId/data': typeof ClubsClubIdDataRoute
   '/clubs/$clubId/events': typeof ClubsClubIdEventsRoute
+  '/clubs/$clubId/finance': typeof ClubsClubIdFinanceRoute
   '/clubs/$clubId/forms': typeof ClubsClubIdFormsRoute
   '/clubs/$clubId/funds': typeof ClubsClubIdFundsRoute
   '/clubs/$clubId/leadership': typeof ClubsClubIdLeadershipRoute
@@ -267,6 +276,7 @@ export interface FileRouteTypes {
     | '/clubs/$clubId/chat'
     | '/clubs/$clubId/data'
     | '/clubs/$clubId/events'
+    | '/clubs/$clubId/finance'
     | '/clubs/$clubId/forms'
     | '/clubs/$clubId/funds'
     | '/clubs/$clubId/leadership'
@@ -294,6 +304,7 @@ export interface FileRouteTypes {
     | '/clubs/$clubId/chat'
     | '/clubs/$clubId/data'
     | '/clubs/$clubId/events'
+    | '/clubs/$clubId/finance'
     | '/clubs/$clubId/forms'
     | '/clubs/$clubId/funds'
     | '/clubs/$clubId/leadership'
@@ -321,6 +332,7 @@ export interface FileRouteTypes {
     | '/clubs/$clubId/chat'
     | '/clubs/$clubId/data'
     | '/clubs/$clubId/events'
+    | '/clubs/$clubId/finance'
     | '/clubs/$clubId/forms'
     | '/clubs/$clubId/funds'
     | '/clubs/$clubId/leadership'
@@ -349,6 +361,7 @@ export interface RootRouteChildren {
   ClubsClubIdChatRoute: typeof ClubsClubIdChatRoute
   ClubsClubIdDataRoute: typeof ClubsClubIdDataRoute
   ClubsClubIdEventsRoute: typeof ClubsClubIdEventsRoute
+  ClubsClubIdFinanceRoute: typeof ClubsClubIdFinanceRoute
   ClubsClubIdFormsRoute: typeof ClubsClubIdFormsRoute
   ClubsClubIdFundsRoute: typeof ClubsClubIdFundsRoute
   ClubsClubIdLeadershipRoute: typeof ClubsClubIdLeadershipRoute
@@ -499,6 +512,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClubsClubIdEventsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/clubs/$clubId/finance': {
+      id: '/clubs/$clubId/finance'
+      path: '/clubs/$clubId/finance'
+      fullPath: '/clubs/$clubId/finance'
+      preLoaderRoute: typeof ClubsClubIdFinanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/clubs/$clubId/forms': {
       id: '/clubs/$clubId/forms'
       path: '/clubs/$clubId/forms'
@@ -558,6 +578,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClubsClubIdChatRoute: ClubsClubIdChatRoute,
   ClubsClubIdDataRoute: ClubsClubIdDataRoute,
   ClubsClubIdEventsRoute: ClubsClubIdEventsRoute,
+  ClubsClubIdFinanceRoute: ClubsClubIdFinanceRoute,
   ClubsClubIdFormsRoute: ClubsClubIdFormsRoute,
   ClubsClubIdFundsRoute: ClubsClubIdFundsRoute,
   ClubsClubIdLeadershipRoute: ClubsClubIdLeadershipRoute,

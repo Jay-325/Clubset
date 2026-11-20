@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Plus, Save, X } from "lucide-react";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/app-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,32 +28,24 @@ import {
   MEETING_DAYS,
   PRESET_INTERESTS,
 } from "@/lib/domain";
+import { useClubAccess } from "@/lib/hooks/use-club-access";
 import { useClubContext } from "@/lib/hooks/use-club";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { ClubRow, ClubType, CommitmentLevel } from "@/lib/types/database";
 
-/**
- * PRD 39: club settings live inside the club, not in a global settings page, so
- * whoever can manage them sees exactly what this club's members see.
- */
 export const Route = createFileRoute("/clubs/$clubId/settings")({
   component: SettingsPage,
 });
 
 function SettingsPage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <SettingsContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <SettingsContent />
+    </ClubShell>
   );
 }
 
-/** Radix Select cannot hold "" as a value, so "not set" needs a sentinel. */
 const UNSET = "__unset__";
-
-/** Widened so `includes` accepts an arbitrary string from `fields`. */
 const PRESET_FIELD_NAMES: readonly string[] = PRESET_INTERESTS;
 
 interface SettingsForm {
@@ -74,95 +67,17 @@ function SettingsContent() {
   const context = useClubContext(clubId);
   const queryClient = useQueryClient();
 
-  const club = context.data?.club ?? null;
+  if (context.isLoading) {
+    return <Skeleton className="h-72 w-full" />;
+  }
+
+  const club = context.data?.club;
   const permissions = context.data?.permissions ?? [];
   const isLinkedAdministrator = context.data?.isLinkedAdministrator ?? false;
-  const mayManage = can(permissions, "manage_settings") || isLinkedAdministrator;
+  const mayManage =
+    can(permissions, "manage_settings") || isLinkedAdministrator;
 
-  const [form, setForm] = useState<SettingsForm | null>(null);
-  const [customField, setCustomField] = useState("");
-  const [validation, setValidation] = useState<string | null>(null);
-
-  // Re-seed from the database whenever the stored row changes underneath us, so
-  // the editable copy can never drift away from what members actually see.
-  useEffect(() => {
-    if (club) setForm(fromClub(club));
-  }, [club]);
-
-  const save = useMutation({
-    mutationFn: async (next: SettingsForm) => {
-      const supabase = getSupabaseClient();
-      // clubs_meeting_fields_consistent (migration 02) requires meeting_day and
-      // meeting_time to be both null or both set, so "" is converted to null and
-      // both are always sent together -- never one without the other.
-      const meetingDay = next.meetingDay === "" ? null : next.meetingDay;
-      const meetingTime = next.meetingTime === "" ? null : next.meetingTime;
-      const welcomeMessage = next.welcomeMessage.trim();
-
-      const { error } = await supabase
-        .from("clubs")
-        .update({
-          name: next.name.trim(),
-          description: next.description.trim(),
-          type: next.type,
-          commitment: next.commitment,
-          room: next.room.trim(),
-          meeting_day: meetingDay,
-          meeting_time: meetingTime,
-          welcome_message: welcomeMessage === "" ? null : welcomeMessage,
-          fields: next.fields,
-          // PRD 12: whether a new member sees the chat's back catalogue.
-          new_members_get_chat_history: next.newMembersGetChatHistory,
-          // PRD 19: the club-wide default for RSVP on new events.
-          rsvp_enabled_by_default: next.rsvpEnabledByDefault,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", clubId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      setValidation(null);
-      void queryClient.invalidateQueries({ queryKey: ["club", clubId] });
-      void queryClient.invalidateQueries({ queryKey: ["club-context", clubId] });
-      void queryClient.invalidateQueries({ queryKey: ["clubs"] });
-    },
-  });
-
-  const update = (patch: Partial<SettingsForm>) => {
-    setForm((current) => (current === null ? current : { ...current, ...patch }));
-  };
-
-  const handleSave = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!form) return;
-    if (form.name.trim() === "") {
-      setValidation("The club needs a name so members can find it.");
-      return;
-    }
-    // The pair rule is enforced here too, so the leader gets a sentence they can
-    // act on instead of a database constraint error.
-    if ((form.meetingDay === "") !== (form.meetingTime === "")) {
-      setValidation(
-        "Pick both a meeting day and a meeting time, or clear both -- a club has a day and time, or neither.",
-      );
-      return;
-    }
-    setValidation(null);
-    save.mutate(form);
-  };
-
-  const addCustomField = () => {
-    const value = customField.trim();
-    if (value === "" || !form) return;
-    if (form.fields.some((field) => field.toLowerCase() === value.toLowerCase())) {
-      setCustomField("");
-      return;
-    }
-    update({ fields: [...form.fields, value] });
-    setCustomField("");
-  };
-
-  if (context.isLoading) {
+  if (!club || !context.data) {
     return <Skeleton className="h-72 w-full" />;
   }
 
@@ -191,11 +106,81 @@ function SettingsContent() {
     );
   }
 
-  if (!club || !form) {
-    return <Skeleton className="h-72 w-full" />;
-  }
+  const [form, setForm] = useState<SettingsForm | null>(null);
+  const [customField, setCustomField] = useState("");
+  const [validation, setValidation] = useState<string | null>(null);
 
-  const customFields = form.fields.filter((field) => !PRESET_FIELD_NAMES.includes(field));
+  useEffect(() => {
+    if (club) setForm(fromClub(club));
+  }, [club]);
+
+  const save = useMutation({
+    mutationFn: async (next: SettingsForm) => {
+      const supabase = getSupabaseClient();
+      const meetingDay = next.meetingDay === "" ? null : next.meetingDay;
+      const meetingTime = next.meetingTime === "" ? null : next.meetingTime;
+      const welcomeMessage = next.welcomeMessage.trim();
+
+      const { error } = await supabase
+        .from("clubs")
+        .update({
+          name: next.name.trim(),
+          description: next.description.trim(),
+          type: next.type,
+          commitment: next.commitment,
+          room: next.room.trim(),
+          meeting_day: meetingDay,
+          meeting_time: meetingTime,
+          welcome_message: welcomeMessage === "" ? null : welcomeMessage,
+          fields: next.fields,
+          new_members_get_chat_history: next.newMembersGetChatHistory,
+          rsvp_enabled_by_default: next.rsvpEnabledByDefault,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", clubId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setValidation(null);
+      void queryClient.invalidateQueries({ queryKey: ["club", clubId] });
+      void queryClient.invalidateQueries({ queryKey: ["club-context", clubId] });
+      void queryClient.invalidateQueries({ queryKey: ["clubs"] });
+    },
+  });
+
+  const update = (patch: Partial<SettingsForm>) => {
+    setForm((current) => (current === null ? current : { ...current, ...patch }));
+  };
+
+  const handleSave = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!form) return;
+    if (form!.name.trim() === "") {
+      setValidation("The club needs a name so members can find it.");
+      return;
+    }
+    if ((form!.meetingDay === "") !== (form!.meetingTime === "")) {
+      setValidation(
+        "Pick both a meeting day and a meeting time, or clear both -- a club has a day and time, or neither.",
+      );
+      return;
+    }
+    setValidation(null);
+    save.mutate(form);
+  };
+
+  const addCustomField = () => {
+    const value = customField.trim();
+    if (value === "" || !form) return;
+    if (form!.fields.some((field) => field.toLowerCase() === value.toLowerCase())) {
+      setCustomField("");
+      return;
+    }
+    update({ fields: [...form!.fields, value] });
+    setCustomField("");
+  };
+
+  const customFields = form!.fields.filter((field) => !PRESET_FIELD_NAMES.includes(field));
 
   return (
     <>
@@ -218,7 +203,7 @@ function SettingsContent() {
                 <Label htmlFor="club-name">Club name</Label>
                 <Input
                   id="club-name"
-                  value={form.name}
+                  value={form!.name}
                   onChange={(event) => update({ name: event.target.value })}
                   maxLength={120}
                 />
@@ -227,7 +212,7 @@ function SettingsContent() {
                 <Label htmlFor="club-room">Room</Label>
                 <Input
                   id="club-room"
-                  value={form.room}
+                  value={form!.room}
                   onChange={(event) => update({ room: event.target.value })}
                   placeholder="Room 214"
                   maxLength={80}
@@ -240,7 +225,7 @@ function SettingsContent() {
               <Textarea
                 id="club-description"
                 rows={3}
-                value={form.description}
+                value={form!.description}
                 onChange={(event) => update({ description: event.target.value })}
                 placeholder="What the club does and who it is for."
               />
@@ -251,7 +236,7 @@ function SettingsContent() {
               <Textarea
                 id="club-welcome"
                 rows={2}
-                value={form.welcomeMessage}
+                value={form!.welcomeMessage}
                 onChange={(event) => update({ welcomeMessage: event.target.value })}
                 placeholder="Shown once, when someone joins."
               />
@@ -270,7 +255,7 @@ function SettingsContent() {
             <div className="space-y-1.5">
               <Label htmlFor="club-type">What kind of club is it?</Label>
               <Select
-                value={form.type}
+                value={form!.type}
                 onValueChange={(value) => update({ type: value as ClubType })}
               >
                 <SelectTrigger id="club-type">
@@ -285,14 +270,14 @@ function SettingsContent() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                {CLUB_TYPES.find((option) => option.value === form.type)?.hint ?? ""}
+                {CLUB_TYPES.find((option) => option.value === form!.type)?.hint ?? ""}
               </p>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="club-commitment">How much time does it take?</Label>
               <Select
-                value={form.commitment}
+                value={form!.commitment}
                 onValueChange={(value) => update({ commitment: value as CommitmentLevel })}
               >
                 <SelectTrigger id="club-commitment">
@@ -307,7 +292,7 @@ function SettingsContent() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                {COMMITMENT_LEVELS.find((option) => option.value === form.commitment)?.hours ?? ""}
+                {COMMITMENT_LEVELS.find((option) => option.value === form!.commitment)?.hours ?? ""}
               </p>
             </div>
           </CardContent>
@@ -325,7 +310,7 @@ function SettingsContent() {
             <div className="space-y-1.5">
               <Label htmlFor="club-meeting-day">Meeting day</Label>
               <Select
-                value={form.meetingDay === "" ? UNSET : form.meetingDay}
+                value={form!.meetingDay === "" ? UNSET : form!.meetingDay}
                 onValueChange={(value) => update({ meetingDay: value === UNSET ? "" : value })}
               >
                 <SelectTrigger id="club-meeting-day">
@@ -345,7 +330,7 @@ function SettingsContent() {
             <div className="space-y-1.5">
               <Label htmlFor="club-meeting-time">Meeting time</Label>
               <Select
-                value={form.meetingTime === "" ? UNSET : form.meetingTime}
+                value={form!.meetingTime === "" ? UNSET : form!.meetingTime}
                 onValueChange={(value) => update({ meetingTime: value === UNSET ? "" : value })}
               >
                 <SelectTrigger id="club-meeting-time">
@@ -353,9 +338,9 @@ function SettingsContent() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={UNSET}>No regular meeting time</SelectItem>
-                  {COMMON_MEETING_TIMES.map((slot) => (
-                    <SelectItem key={slot.value} value={slot.value}>
-                      {slot.label}
+                  {COMMON_MEETING_TIMES.map((time) => (
+                    <SelectItem key={time.value} value={time.value}>
+                      {time.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -375,7 +360,7 @@ function SettingsContent() {
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2">
               {PRESET_FIELD_NAMES.map((interest) => {
-                const selected = form.fields.includes(interest);
+                const selected = form!.fields.includes(interest);
                 return (
                   <Button
                     key={interest}
@@ -385,8 +370,8 @@ function SettingsContent() {
                     onClick={() =>
                       update({
                         fields: selected
-                          ? form.fields.filter((field) => field !== interest)
-                          : [...form.fields, interest],
+                          ? form!.fields.filter((item) => item !== interest)
+                          : [...form!.fields, interest],
                       })
                     }
                   >
@@ -397,7 +382,7 @@ function SettingsContent() {
             </div>
 
             {customFields.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap gap-2">
                 <span className="text-xs text-muted-foreground">Added by this club:</span>
                 {customFields.map((field) => (
                   <span
@@ -409,7 +394,7 @@ function SettingsContent() {
                       type="button"
                       aria-label={`Remove ${field}`}
                       onClick={() =>
-                        update({ fields: form.fields.filter((entry) => entry !== field) })
+                        update({ fields: form!.fields.filter((entry) => entry !== field) })
                       }
                     >
                       <X className="size-3" />
@@ -425,8 +410,6 @@ function SettingsContent() {
                 onChange={(event) => setCustomField(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
-                    // Keep it a chip, not a form submit, so Save is not pressed
-                    // by accident while typing an interest.
                     event.preventDefault();
                     addCustomField();
                   }
@@ -446,7 +429,9 @@ function SettingsContent() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">How the club works</CardTitle>
-            <CardDescription>Two defaults that save every leader a decision later.</CardDescription>
+            <CardDescription>
+              Two defaults that save every leader a decision later.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-start justify-between gap-4">
@@ -457,7 +442,7 @@ function SettingsContent() {
                 </p>
               </div>
               <Switch
-                checked={form.newMembersGetChatHistory}
+                checked={form!.newMembersGetChatHistory}
                 onCheckedChange={(checked) => update({ newMembersGetChatHistory: checked })}
                 aria-label="New members get chat history"
               />
@@ -471,7 +456,7 @@ function SettingsContent() {
                 </p>
               </div>
               <Switch
-                checked={form.rsvpEnabledByDefault}
+                checked={form!.rsvpEnabledByDefault}
                 onCheckedChange={(checked) => update({ rsvpEnabledByDefault: checked })}
                 aria-label="RSVPs enabled by default"
               />
