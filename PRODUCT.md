@@ -8,70 +8,76 @@ web
 
 ## Users
 
-- **Students** at a secondary school (grade levels in the app are 9th–12th) browsing, joining, and taking part in clubs, usually on a phone between classes. They need to find a club that fits their interests and available time, then act without learning a system.
-- **Student club leaders** (president, vice president, officers) running the club from a phone at a meeting: members and join requests, events, attendance, funds, forms, data tables, announcements, and leadership handoff.
-- **School administrators**, a small allowlisted group doing oversight and verification — approving new clubs and viewing school-wide activity — not day-to-day club operations.
+Three roles inside one school:
 
-Confirmed: no faculty-advisor, staff-wide, or parent role is in scope. Administrator accounts are the only staff-facing role and exist for oversight.
+- **Students** — the primary users. They discover clubs that fit their interests, ask to join, see what is coming up, RSVP to meetings, attend, and follow the clubs they are in.
+- **Club leaders / officers** — students who hold per-club permissions. They create events, take attendance, review join requests, send announcements, run the club chat, track dues and spending, build forms and data tables, and run leadership applications.
+- **School administrators** — school staff with oversight of every club in their school: they verify new clubs and can act on any club. They are a small, static group, not self-service accounts.
+
+No faculty-advisor, staff-wide, or parent role is in scope. There is also no public marketing surface: every route sits behind sign-in.
+
+Success for a student is simple: they found a club worth joining and showed up. Success for the product is measured the same way — members marked present at club events each week.
 
 ## Product Purpose
 
-Clubset is a student-friendly platform that manages a school's clubs in one place: discovery, membership, events, attendance, communication, leadership applications, finances, forms, and shared data. It exists so club life does not live across group chats, spreadsheets, sign-in sheets, and cash boxes.
+Clubset is a student-friendly platform for running school club life in one place: discovery, membership, events, attendance, communication, leadership, finances, forms, and shared data.
 
-Success is stated in `.lovable/north-star/north-star.md`: students find clubs that fit them and take part in club life, measured by **members marked present at club events each week**.
+It exists because club life is normally scattered across a group chat, a spreadsheet, a forms tool, a shared drive, and a payment app, and none of them know about each other. Clubset replaces that with one system where an event, its RSVPs, and its attendance are the same record, and a member's data lives in one place.
 
 ## Positioning
 
-One system for the whole club lifecycle instead of a patchwork of tools, with the complicated work done behind the scenes so students only make simple decisions (README). The mechanism is visible in the product:
-
-- A single club record carries membership, roles, events, attendance, funds, forms, and data, so entering something once makes it available everywhere (for example, an RSVP creates the expected-attendance record).
-- Fixed, plain-language vocabulary (interests, club types, commitment levels, suggested roles, data-table templates) replaces free-text configuration, so a student never has to invent a category.
-- Progressive complexity: a member sees what they can use, and management surfaces appear only when a permission is held.
+The whole of a school's club life in one system, with the complexity hidden. Neighboring products do one slice well — chat, forms, event RSVPs, club directories — and require a student to assemble the rest. Clubset's claim is that the same system already knows who is a member, who came last week, and who is allowed to change what, so a student only makes simple decisions.
 
 ## Operating Context
 
-- The school year and its weekly meeting rhythm; clubs recruit, meet, take attendance, collect dues, run events, and hand over leadership annually.
-- Creating a club takes three student verifications, then administrator approval, before it becomes active.
-- Leadership applications use eligibility requirements (time in club, attendance rate, events attended, volunteer hours) that read **finalized** attendance, so an RSVP never counts as showing up.
-- Users reach the product through student sign-up/sign-in (email/password or Google) or the administrator email-link path; every signed-in route sits behind `RequireAuth`, and there is no public marketing site.
-- Every new account is linked to the deployment's school at sign-up, and administrator identities come from a developer-managed, private allowlist — administrator access is never granted inside the app.
+- Used on a school year rhythm: clubs meet weekly or fortnightly; events cluster around term dates.
+- The signature flow is **event → RSVP → expected attendance → meeting happens → attendance finalized**, and that history feeds a student's participation record.
+- Clubs are typed (volunteer, competitive, recreational), carry commitment levels in weekly hours, and meet on set days and times, so a student can compare fit before joining.
+- Interests are chosen from a preset list (Business, Art, Environment, Technology, Sports, Volunteering, Music, Academic, Gaming, Media, Health & Wellness, Community Service) plus student-added ones.
+- Leadership changes hands through an application and election flow inside the club, not through an administrator editing a list.
+- Clubs hold and spend money (dues, budgets, expenses, balances) and record it in the product.
+- Members are onboarded once (school, grade level, interests) and thereafter land on a personal home page.
+- School administrators are activated by an emailed link after their address is checked against a private allowlist; students sign up normally and are linked to the deployment's school.
 
 ## Capabilities and Constraints
 
-Confirmed capabilities: club discovery with search, filters, and recommendations that explain why a club was suggested; club home, announcements, chat, calendar with RSVP, events, attendance, funds (budgets, dues, transactions), forms, data tables, members, leadership and role permissions, notifications, onboarding, settings, and an administrator dashboard.
+Confirmed from the implementation:
 
-Constraints and undecided facts:
+- Club discovery with search and filters; recommended clubs from stated interests; joining via join request.
+- Club workspaces: announcements, chat, calendar, funds (dues, budgets, expenses), members, events, attendance, forms, data tables, leadership, settings.
+- Per-club permissions (manage membership, events, attendance, forms, data tables, leadership, finances, settings, send announcements), granted through club roles rather than a single "admin" switch.
+- Progressive disclosure is a product rule, not a visual preference: management sections appear only when the user actually holds the permission. Members see announcements, chat, calendar, RSVP, and funds.
+- Authorization is enforced server-side in Postgres (RLS and RPCs); the client decides only what to show.
+- Administrators have management reach over every club in their school — a deliberate, accepted broad privilege.
+- Administrator accounts are allowlist-only and the allowlist is developer-managed; the application never reveals whether an address is on it. No real staff names or addresses are committed to the repository.
+- Guest (anonymous) sessions are refused; only real signed-in accounts act.
+- Authentication: Google one-click, email link, and email/password; rate-limited; passwords checked against known breaches.
 
-- **Deployment scope (confirmed):** one school per deployment today; multi-school is planned soon. Cross-school discovery and isolation are not built yet, and no school-switching model exists.
-- **Access control is server-side.** Postgres RLS and RPCs decide every read and write; UI permission helpers only decide what to show. No design or client change may replace RLS with client filtering.
-- **Security commitments from `AGENTS.md`:** no service-role key in client code or `VITE_*`; the administrator allowlist is private and developer-managed; activation is the only path to `account_type = 'administrator'`; functions used inside policies keep `EXECUTE` for every role that queries the table, while writing functions are revoked from `anon`.
-- **Migrations only**, additive and idempotent, with new timestamped files; no hand-run DDL on the live project.
-- Stack in place: TanStack Start + React 19, Vite/Nitro built for a Cloudflare Worker (`wrangler.jsonc`), Tailwind CSS v4 + shadcn/ui, Supabase for Postgres, Auth, Storage, and Realtime.
-- Not decided: the multi-school isolation model (per-deployment default school versus shared database with school-scoped access).
+Open / inferred, not confirmed by a product owner:
+
+- **One school per deployment.** Recorded as confirmed in an earlier revision of this file (multi-school was noted as planned, with cross-school discovery, isolation, and a school switcher explicitly unbuilt). The README, auth flow, and seed data agree, but the schema carries `school_id` everywhere and keeps administrators scoped per school, so a shared multi-school instance is technically possible. Confirm with the owner before designing multi-school behaviour.
 
 ## Brand Commitments
 
-- The name **Clubset**.
-- A student-friendly, plain-word voice: product copy explains a choice in ordinary language rather than naming a system concept.
-- An otters mascot character ships with the app (`src/components/otter/OtterBuddy.tsx`, `public/assets/otter-idle.webp`, `public/assets/otter-hover.webp`) and is the incumbent brand character.
-- No logo beyond the favicon, and no external brand guidelines exist.
+- Name: **Clubset**. The wordmark is the name; no separate logo asset exists.
+- **Otter mascot.** `public/assets/otter-idle.webp` and `otter-hover.webp`, rendered by `src/components/otter/OtterBuddy.tsx`; a standalone `otter-preview.html` exists. The otter is the product's personality.
+- **Purple identity.** Purple is the brand accent and is treated as fixed; the contrast audit explicitly preserved it and adjusted lightness only.
 
 ## Evidence on Hand
 
-- **Pre-pilot/prototype (confirmed):** there are no real users, testimonials, adoption numbers, case studies, press, or partner schools. Future work must not cite any as proof.
-- Internal-only artifacts: the north-star metric, migration suite and schema audit, security investigation/remediation reports, an accessibility contrast audit, and standalone demo HTML pages.
-- The contrast audit's ratios are computed from design tokens, not measured in a browser, and it records that authenticated routes were not checked with a session.
-- Absent and not to be fabricated: pricing, customer logos, testimonials, benchmarks, and any claim of live school adoption.
+- Product principle quoted in the README and treated as binding: *"Clubset should do the complicated work behind the scenes so students only have to make simple decisions."*
+- Real implementation, tokens, and components in `src/`; design tokens in `src/styles.css`; shadcn/ui primitives in `src/components/ui/`.
+- Security and accessibility evidence exists as reports at the repo root (`SECURITY_NOTES.md`, `SECURITY_INVESTIGATION_REPORT.md`, `ACCESSIBILITY_CONTRAST_AUDIT.md`, `APPLICATION_REGRESSION_REPORT.md`).
+- **Absent, do not fabricate:** no customers, testimonials, case studies, press, benchmark numbers, pricing, or school partnerships are recorded anywhere. No school name is committed either — the deployment's school is data, not copy.
 
 ## Product Principles
 
-1. Do the complicated work behind the scenes so a student only makes simple decisions.
-2. Show people only what they can use; reveal management surfaces when a permission is held.
-3. Speak in plain words — no system vocabulary in the student's path.
-4. Enter it once, reuse it everywhere; a club's data should not be asked for twice.
-5. Trust finalized records, not intentions: attendance and eligibility reflect what was confirmed.
-6. Security and permissions live in the database; the interface displays them and never enforces them alone.
+1. **Do the complicated work behind the scenes.** A student should never learn the model to use the product; presets beat free text, plain language beats configuration.
+2. **One record, many surfaces.** An event, its RSVPs, and its attendance are the same thing; membership drives every permission. Never duplicate state across features.
+3. **Show only what a person can act on.** Visibility follows permission, and permission is always re-checked server-side.
+4. **Students own their club; administrators oversee it.** Administrators verify and can intervene, but the club's leaders run it.
+5. **Privacy is the default posture.** Minimum data exposure, no oracle that reveals staff membership, no real personal data in the repository.
 
 ## Accessibility & Inclusion
 
-No product-specific standard has been confirmed by the owners. The repository's contrast audit uses WCAG 2.1 AA as its working baseline and states its results are unverified in-browser; treat in-browser verification as outstanding rather than done.
+Target: **WCAG 2.1 AA**. Token contrast was audited and corrected for both themes (4.5:1 text, 3:1 non-text UI and focus rings), with one documented residual: `--border` on the light `--accent` hover surface stays below 3:1. That audit was calculated from token values and has not been verified in a real browser; treat in-browser confirmation as outstanding work. Keyboard operation and focus visibility are expected throughout, since the product is a form- and dialog-heavy app used during a school day.
