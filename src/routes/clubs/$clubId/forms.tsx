@@ -1,14 +1,32 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { ClipboardList, FilePlus2, Plus, Send, Trash2 } from "lucide-react";
+import { ClipboardList, Download, FilePlus2, Plus, Send, Trash2 } from "lucide-react";
 
 import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -20,12 +38,21 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton, SkeletonSpinner } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { can } from "@/lib/auth/permissions";
 import { QUESTION_TYPE_LABELS } from "@/lib/domain";
 import { useClubContext } from "@/lib/hooks/use-club";
 import { useViewerId } from "@/lib/queries";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 import type {
   FormQuestionRow,
   FormResponseRow,
@@ -102,6 +129,9 @@ function FormsContent() {
   const [builderError, setBuilderError] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [responseError, setResponseError] = useState<string | null>(null);
+  const [viewingResponse, setViewingResponse] = useState<
+    (FormResponseRow & { profiles: { full_name: string } | null }) | null
+  >(null);
 
   const viewer = useViewerId();
 
@@ -142,16 +172,22 @@ function FormsContent() {
 
   // RLS lets a member read only their own response, so filtering by user_id is
   // the same check the database makes -- it just keeps the rule in one place.
+  // Leaders (manage_forms) can read every response for their club's forms.
   const responses = useQuery({
     queryKey: ["club", clubId, "form-responses", activeFormId],
-    queryFn: async (): Promise<FormResponseRow[]> => {
+    queryFn: async (): Promise<
+      Array<FormResponseRow & { profiles: { full_name: string } | null }>
+    > => {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from("form_responses")
-        .select("*")
-        .eq("form_id", activeFormId ?? "");
+        .select("*, profiles(full_name)")
+        .eq("form_id", activeFormId ?? "")
+        .order("submitted_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as FormResponseRow[];
+      return (data ?? []) as unknown as Array<
+        FormResponseRow & { profiles: { full_name: string } | null }
+      >;
     },
     enabled: Boolean(activeFormId),
   });
@@ -160,6 +196,65 @@ function FormsContent() {
     void queryClient.invalidateQueries({ queryKey: ["club", clubId, "forms"] });
     void queryClient.invalidateQueries({ queryKey: ["club", clubId, "form-questions"] });
     void queryClient.invalidateQueries({ queryKey: ["club", clubId, "form-responses"] });
+  };
+
+  // ---------------------------------------------------------------------------
+  // CSV export (PRD 31: client-side export, no server-side dependency)
+  // ---------------------------------------------------------------------------
+
+  /** Escape a CSV field per RFC 4180, plus formula-injection protection. */
+  function csvEscape(value: string): string {
+    const needsQuotes =
+      value.includes(",") ||
+      value.includes('"') ||
+      value.includes("\n") ||
+      value.includes("\r") ||
+      /^[=+\-@\t]/.test(value);
+    if (!needsQuotes) return value;
+    // Formula-injection: prefix dangerous leading chars with a tab so
+    // spreadsheet apps treat the cell as text, not a formula.
+    const dangerous = /^[=+\-@\t]/.test(value);
+    const safe = dangerous ? "\t" + value : value;
+    return `"${safe.replace(/"/g, '""')}"`;
+  }
+
+  const exportCsv = () => {
+    if (!activeForm || !questionRows.length) {
+      toast("Nothing to export.");
+      return;
+    }
+    const responseList = responses.data ?? [];
+    const headers = ["Submitter", "Submitted at", ...questionRows.map((q) => q.question)];
+    const rows = responseList.map((r) => {
+      const answers =
+        (r.answers as Record<string, string | string[] | number | boolean | null>) ?? {};
+      const submitter = r.profiles?.full_name ?? "Unknown";
+      const submittedAt = new Date(r.submitted_at).toLocaleString();
+      const values = [
+        submitter,
+        submittedAt,
+        ...questionRows.map((q) => {
+          const raw = answers[q.id];
+          if (raw === null || raw === undefined) return "";
+          if (Array.isArray(raw)) return raw.join(", ");
+          if (typeof raw === "boolean") return raw ? "Yes" : "No";
+          return String(raw);
+        }),
+      ];
+      return values.map((v) => csvEscape(String(v))).join(",");
+    });
+    const csv = [headers.map((h) => csvEscape(h)).join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${activeForm.title.replace(/[^a-z0-9]+/gi, "_")}_responses.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast(`${rows.length} response${rows.length === 1 ? "" : "s"} exported.`);
   };
 
   const createForm = useMutation({
@@ -235,7 +330,40 @@ function FormsContent() {
   const questionRows = questions.data ?? [];
   const viewerId = viewer.data ?? null;
   const alreadyResponded = (responses.data ?? []).some((response) => response.user_id === viewerId);
+  const responsesData = responses.data ?? [];
   const availability = activeForm ? availabilityOf(activeForm) : "draft";
+
+  // ---------------------------------------------------------------------------
+  // Response detail (PRD 31: leaders review individual submissions)
+  // ---------------------------------------------------------------------------
+
+  /** Flatten a response into question/answer pairs for display and CSV. */
+  const responseDetail = useMemo(() => {
+    if (!viewingResponse || !questionRows.length) return null;
+    const answers =
+      (viewingResponse.answers as Record<string, string | string[] | number | boolean | null>) ??
+      {};
+    const questionAnswers = questionRows.map((question) => {
+      const raw = answers[question.id];
+      let answer = "";
+      if (raw === null || raw === undefined) {
+        answer = "—";
+      } else if (Array.isArray(raw)) {
+        answer = raw.join(", ");
+      } else if (typeof raw === "boolean") {
+        answer = raw ? "Yes" : "No";
+      } else if (typeof raw === "number") {
+        answer = String(raw);
+      } else {
+        answer = String(raw);
+      }
+      return {
+        question: question.question,
+        answer,
+      };
+    });
+    return { ...viewingResponse, questionAnswers };
+  }, [viewingResponse, questionRows]);
 
   const selectForm = (formId: string) => {
     setSelectedId(formId);
@@ -480,11 +608,7 @@ function FormsContent() {
               ) : null}
 
               <Button type="submit" disabled={createForm.isPending}>
-                {createForm.isPending ? (
-                  <SkeletonSpinner />
-                ) : (
-                  <ClipboardList className="size-4" />
-                )}
+                {createForm.isPending ? <SkeletonSpinner /> : <ClipboardList className="size-4" />}
                 Save as draft
               </Button>
             </form>
@@ -538,11 +662,7 @@ function FormsContent() {
                           disabled={publish.isPending}
                           onClick={() => publish.mutate(activeForm.id)}
                         >
-                          {publish.isPending ? (
-                            <SkeletonSpinner />
-                          ) : (
-                            <Send className="size-4" />
-                          )}
+                          {publish.isPending ? <SkeletonSpinner /> : <Send className="size-4" />}
                           Publish
                         </Button>
                       ) : null}
@@ -604,21 +724,105 @@ function FormsContent() {
                       ) : null}
 
                       <Button type="submit" disabled={respond.isPending || availability !== "open"}>
-                        {respond.isPending ? (
-                          <SkeletonSpinner />
-                        ) : (
-                          <Send className="size-4" />
-                        )}
+                        {respond.isPending ? <SkeletonSpinner /> : <Send className="size-4" />}
                         {alreadyResponded ? "Update my response" : "Submit"}
                       </Button>
                     </form>
                   )}
+
+                  {mayManageForms ? (
+                    <Card className="mt-6">
+                      <CardHeader>
+                        <CardTitle className="text-base">Responses</CardTitle>
+                        <CardDescription>
+                          {responsesData.length} submission{responsesData.length === 1 ? "" : "s"}
+                        </CardDescription>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={exportCsv}
+                          disabled={responsesData.length === 0}
+                        >
+                          <Download className="size-4" />
+                          Download CSV
+                        </Button>
+                      </CardHeader>
+                      <CardContent>
+                        {responses.isLoading ? (
+                          <Skeleton className="h-40 w-full" />
+                        ) : responsesData.length === 0 ? (
+                          <p className="py-6 text-center text-sm text-muted-foreground">
+                            No responses yet. Members will appear here once they submit.
+                          </p>
+                        ) : (
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Submitter</TableHead>
+                                <TableHead>Submitted at</TableHead>
+                                <TableHead className="text-right" />
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {responsesData.map((r) => (
+                                <TableRow key={r.id}>
+                                  <TableCell className="font-medium">
+                                    {r.profiles?.full_name ?? "Unknown"}
+                                  </TableCell>
+                                  <TableCell>{new Date(r.submitted_at).toLocaleString()}</TableCell>
+                                  <TableCell className="text-right">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setViewingResponse(r)}
+                                    >
+                                      View
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ) : null}
                 </CardContent>
               </Card>
             ) : null}
           </>
         )}
       </div>
+
+      {viewingResponse && responseDetail ? (
+        <Dialog
+          open={Boolean(viewingResponse)}
+          onOpenChange={(open) => {
+            if (!open) setViewingResponse(null);
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Response details</DialogTitle>
+              <DialogDescription>
+                Submitted by {viewingResponse.profiles?.full_name ?? "Unknown"} on{" "}
+                {new Date(viewingResponse.submitted_at).toLocaleString()}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogContent className="space-y-2">
+              {responseDetail.questionAnswers.map((qa, index) => (
+                <div key={index} className="space-y-1">
+                  <Label className="text-sm font-medium">{qa.question}</Label>
+                  <p className="text-sm text-muted-foreground">{qa.answer}</p>
+                </div>
+              ))}
+            </DialogContent>
+            <DialogFooter>
+              <Button onClick={() => setViewingResponse(null)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </>
   );
 }

@@ -2,7 +2,7 @@
 
 Date: 2026-11-20
 Branch: `main` @ `b060eb4` (clean working tree)
-Status: M1 implemented and green (2026-11-20). M2 implemented and green (2026-11-21). M3 implemented and green (2026-11-21). M4–M5 planned, not yet started.
+Status: M1 implemented and green (2026-11-20). M2 implemented and green (2026-11-21). M3 implemented and green (2026-11-21). M4 implemented and green (2026-11-21). M5 planned, not yet started.
 
 ## Intent
 
@@ -151,13 +151,29 @@ milestone depends on an unapproved one. No new dependencies; no new tables.
   cross-club insert denied (42501); row cannot be re-parented to another club's
   table (42501); insert into non-existent table denied (42501).
 
-### M4 — Form response review (frontend only)
+### M4 — Form response review (frontend only) — COMPLETE (2026-11-21)
 
-- Leaders (`manage_forms`) see a responses table for the active form: one row
-  per responder, one column per question, plus submitted-at.
-- "Download CSV" built in the client from the already-fetched rows.
-- pgTAP: a leader reads responses for their club's form; a member reads only
-  their own; a leader of another club reads none.
+- Added a **Responses** table to the active form card (`src/routes/clubs/$clubId/forms.tsx`),
+  visible only to leaders with `manage_forms`: one row per responder (submitter name,
+  submitted-at), plus a "View" button to inspect individual submissions.
+- Added a **Response details dialog** showing question-by-question answers with
+  human-friendly labels (`QUESTION_TYPE_LABELS`), handling all 7 question types
+  (short_answer, long_answer, multiple_choice, checkbox, yes_no, number, date),
+  and showing "—" for unanswered questions.
+- Added **client-side CSV export** (`Download CSV` button): RFC 4180 escaping
+  (commas, quotes, newlines, Unicode), formula-injection protection (tab prefix
+  for fields starting with `=`, `+`, `-`, `@`), predictable filename
+  (`{form-title}_responses.csv`), empty-set handling, and toast feedback.
+- Responses query uses embedded select (`.select("*, profiles(full_name)")`) to
+  resolve submitter names in one request, matching the existing `useClubMembers`
+  pattern.
+- All writes/reads go through the authorized Supabase client; RLS
+  `form_responses_select` already enforces: member reads own response only,
+  `manage_forms` holder reads all responses for their club's forms,
+  cross-club access denied. No new migration needed.
+- pgTAP (`supabase/tests/form_response_review.sql`, 4 tests): leader reads all
+  responses for their club's form; member reads only their own; member cannot
+  read other members' responses; cross-club leader denied.
 
 ### M5 — Reliability states
 
