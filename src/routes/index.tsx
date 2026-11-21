@@ -7,6 +7,7 @@ import {
   MapPin,
   Search,
   Sparkles,
+  Plus,
   Users,
   ChevronRight,
 } from "lucide-react";
@@ -179,14 +180,22 @@ function MainContent() {
           <section className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Your clubs</h2>
-              {myClubs.data && myClubs.data.length > 0 ? (
+              <div className="flex items-center gap-2">
                 <Link
-                  to="/my-clubs"
+                  to="/clubs/new"
                   className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
                 >
-                  Manage all <ChevronRight className="size-3" />
+                  <Plus className="size-3" /> Start a club
                 </Link>
-              ) : null}
+                {myClubs.data && myClubs.data.length > 0 ? (
+                  <Link
+                    to="/my-clubs"
+                    className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
+                  >
+                    Manage all <ChevronRight className="size-3" />
+                  </Link>
+                ) : null}
+              </div>
             </div>
 
             {myClubs.isLoading ? (

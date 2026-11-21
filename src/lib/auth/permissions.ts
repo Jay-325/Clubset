@@ -59,7 +59,12 @@ export function managementSections(
     { key: "chat", label: "Chat", path: `/clubs/${base}/chat`, permission: null },
     { key: "calendar", label: "Calendar", path: `/clubs/${base}/calendar`, permission: null },
     { key: "funds", label: "Funds", path: `/clubs/${base}/funds`, permission: null },
-    { key: "finance", label: "Finance", path: `/clubs/${base}/finance`, permission: null },
+    {
+      key: "finance",
+      label: "Finance",
+      path: `/clubs/${base}/finance`,
+      permission: "manage_finances",
+    },
     {
       key: "members",
       label: "Members",
@@ -116,7 +121,7 @@ export function quickActions(context: ClubContext): Array<{
       key: "create_event",
       label: "Create Event",
       description: "Add a meeting or activity",
-      path: `${base}/events/new`,
+      path: `${base}/events`,
       permission: "manage_events",
     },
     {
@@ -137,7 +142,7 @@ export function quickActions(context: ClubContext): Array<{
       key: "join_requests",
       label: "Review Join Requests",
       description: "Accept or decline new members",
-      path: `${base}/members?tab=requests`,
+      path: `${base}/members`,
       permission: "manage_membership",
     },
     {
@@ -151,7 +156,7 @@ export function quickActions(context: ClubContext): Array<{
       key: "create_form",
       label: "Create Form",
       description: "Collect information from members",
-      path: `${base}/forms/new`,
+      path: `${base}/forms`,
       permission: "manage_forms",
     },
     {
@@ -165,14 +170,14 @@ export function quickActions(context: ClubContext): Array<{
       key: "add_expense",
       label: "Add Expense",
       description: "Record something the club bought",
-      path: `${base}/funds?new=expense`,
+      path: `${base}/funds`,
       permission: "manage_finances",
     },
     {
       key: "data_table",
       label: "Create Data Table",
       description: "Start from a template",
-      path: `${base}/data/new`,
+      path: `${base}/data`,
       permission: "manage_data_tables",
     },
     {

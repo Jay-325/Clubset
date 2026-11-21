@@ -120,49 +120,54 @@ function ClubSummary({
   const isPriority = club.membership.is_priority;
 
   return (
-    <Card className={cn(isPriority ? "border-primary/40" : undefined, className)} style={style}>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-lg">{club.name}</CardTitle>
-          <div className="flex shrink-0 items-center gap-1">
-            <Badge variant="outline">{CLUB_TYPE_LABELS[club.type]}</Badge>
-            {/* PRD 22: pinning is organization only -- it grants nothing. */}
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-pressed={isPriority}
-              aria-label={isPriority ? `Unpin ${club.name}` : `Pin ${club.name}`}
-              disabled={isPending}
-              onClick={() => onTogglePriority(!isPriority)}
-              className={isPriority ? "text-primary" : "text-muted-foreground"}
-            >
-              <Star className={isPriority ? "size-4 fill-current" : "size-4"} />
-            </Button>
+    <Link to="/clubs/$clubId" params={{ clubId: club.id }} className="block">
+      <Card className={cn(isPriority ? "border-primary/40" : undefined, className)} style={style}>
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-2">
+            <CardTitle className="text-lg">{club.name}</CardTitle>
+            <div className="flex shrink-0 items-center gap-1">
+              <Badge variant="outline">{CLUB_TYPE_LABELS[club.type]}</Badge>
+              {/* PRD 22: pinning is organization only -- it grants nothing. */}
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-pressed={isPriority}
+                aria-label={isPriority ? `Unpin ${club.name}` : `Pin ${club.name}`}
+                disabled={isPending}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onTogglePriority(!isPriority);
+                }}
+                className={isPriority ? "text-primary" : "text-muted-foreground"}
+              >
+                <Star className={isPriority ? "size-4 fill-current" : "size-4"} />
+              </Button>
+            </div>
           </div>
-        </div>
-        {club.description ? (
-          <CardDescription className="line-clamp-2">{club.description}</CardDescription>
-        ) : null}
-      </CardHeader>
+          {club.description ? (
+            <CardDescription className="line-clamp-2">{club.description}</CardDescription>
+          ) : null}
+        </CardHeader>
 
-      <CardContent className="space-y-2 text-sm">
-        <p className="flex items-center gap-1.5 text-muted-foreground">
-          <Clock className="size-3.5 shrink-0" />
-          {club.meeting_day && club.meeting_time
-            ? `${club.meeting_day}s at ${club.meeting_time.slice(0, 5)}`
-            : "Meeting time not set"}
-        </p>
-        {club.room ? (
+        <CardContent className="space-y-2 text-sm">
           <p className="flex items-center gap-1.5 text-muted-foreground">
-            <MapPin className="size-3.5 shrink-0" />
-            Room {club.room}
+            <Clock className="size-3.5 shrink-0" />
+            {club.meeting_day && club.meeting_time
+              ? `${club.meeting_day}s at ${club.meeting_time.slice(0, 5)}`
+              : "Meeting time not set"}
           </p>
-        ) : null}
-        <p className="flex items-center gap-1.5 text-muted-foreground">
-          <Users className="size-3.5 shrink-0" />
-          {COMMITMENT_LABELS[club.commitment]}
-        </p>
-      </CardContent>
-    </Card>
+          {club.room ? (
+            <p className="flex items-center gap-1.5 text-muted-foreground">
+              <MapPin className="size-3.5 shrink-0" />
+              Room {club.room}
+            </p>
+          ) : null}
+          <p className="flex items-center gap-1.5 text-muted-foreground">
+            <Users className="size-3.5 shrink-0" />
+            {COMMITMENT_LABELS[club.commitment]}
+          </p>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

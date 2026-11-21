@@ -5,6 +5,7 @@ import {
   LayoutGrid,
   Menu,
   Settings,
+  ShieldCheck,
   Users,
   Bell,
   LogOut,
@@ -89,11 +90,6 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-/** Returns the nav item matching the current route, or undefined. */
-function activeNavItem(pathname: string): NavItem | undefined {
-  return NAV_ITEMS.find((item) => item.to === pathname);
-}
-
 /** Mobile-only hamburger that opens the off-canvas sidebar sheet. */
 function MobileNavTrigger() {
   const { openMobile, setOpenMobile } = useSidebar();
@@ -117,7 +113,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const active = activeNavItem(location.pathname);
+  const adminItem =
+    profile?.account_type === "administrator"
+      ? ({ to: "/admin", label: "Admin", icon: ShieldCheck } as unknown as NavItem)
+      : null;
+  const navItems = [...NAV_ITEMS, adminItem].filter(Boolean) as NavItem[];
+  const active = navItems.find((item) => item.to === location.pathname);
 
   return (
     <SidebarProvider defaultOpen open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -135,7 +136,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <SidebarContent className="flex-1 flex-col min-h-0 overflow-y-auto">
           <SidebarMenu className="gap-1">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const isActive = active?.to === item.to;
               return (
                 <SidebarMenuItem key={item.to}>
