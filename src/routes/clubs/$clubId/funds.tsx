@@ -1,6 +1,6 @@
 import { createFileRoute, useParams, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Plus, Receipt, TrendingDown, TrendingUp } from "lucide-react";
+import { Plus, TrendingDown, TrendingUp } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
@@ -184,12 +184,6 @@ function FundsContent() {
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {row.category} · {row.occurred_on}
-                          {row.receipt_path ? (
-                            <span className="ml-2 inline-flex items-center gap-1">
-                              <Receipt className="size-3" />
-                              receipt
-                            </span>
-                          ) : null}
                         </p>
                       </div>
                       <span

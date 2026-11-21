@@ -75,10 +75,11 @@ Baseline verified this session:
 
 ### Known-incomplete, deliberately deferred
 
-Receipt upload (the `receipts` bucket is never created by a migration), chat
-banner creation, chat message moderation, editing a role's permissions after
-creation, eligibility-requirement configuration, email notifications, event
-edit/cancel, and CSV export beyond forms.
+Receipt management — intentionally excluded from current product scope (no
+`receipts` bucket, no upload/download UI), chat banner creation, chat message
+moderation, editing a role's permissions after creation, eligibility-requirement
+configuration, email notifications, event edit/cancel, and CSV export beyond
+forms.
 
 ## Approaches considered
 

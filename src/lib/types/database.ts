@@ -262,7 +262,6 @@ export type TransactionRow = {
   category: string;
   description: string;
   occurred_on: string;
-  receipt_path: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -640,7 +639,7 @@ export type Database = {
       role_messages: TableDefinition<RoleMessageRow, Optional<RoleMessageRow, "id" | "is_read">>;
       transactions: TableDefinition<
         TransactionRow,
-        Optional<TransactionRow, "id" | "category" | "description" | "occurred_on" | "receipt_path">
+        Optional<TransactionRow, "id" | "category" | "description" | "occurred_on">
       >;
       budgets: TableDefinition<
         BudgetRow,
@@ -791,7 +790,6 @@ export type Database = {
           category: string;
           description?: string;
           occurred_on?: string;
-          receipt_path?: string | null;
         };
         Returns: TransactionRow;
       };

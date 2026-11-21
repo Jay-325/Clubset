@@ -1694,7 +1694,6 @@ export type Database = {
           description: string
           id: string
           occurred_on: string
-          receipt_path: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
         }
@@ -1707,7 +1706,6 @@ export type Database = {
           description?: string
           id?: string
           occurred_on?: string
-          receipt_path?: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
         }
@@ -1720,7 +1718,6 @@ export type Database = {
           description?: string
           id?: string
           occurred_on?: string
-          receipt_path?: string | null
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
         }
@@ -1855,7 +1852,6 @@ export type Database = {
           category: string
           description?: string
           occurred_on?: string
-          receipt_path?: string
           target_club: string
           tx_type: Database["public"]["Enums"]["transaction_type"]
         }
@@ -1868,7 +1864,6 @@ export type Database = {
           description: string
           id: string
           occurred_on: string
-          receipt_path: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
         }
