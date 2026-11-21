@@ -2,14 +2,17 @@ import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState, type CSSProperties } from "react";
 import type { FormEvent } from "react";
-import { Plus, Sparkles, Table2, X } from "lucide-react";
+import { CirclePlus, Edit, Plus, Sparkles, Table2, Trash2, X } from "lucide-react";
 
 import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton, SkeletonSpinner } from "@/components/ui/skeleton";
 import {
   Table,
@@ -25,12 +28,15 @@ import { staggerStyle } from "@/lib/motion";
 import { can } from "@/lib/auth/permissions";
 import { TABLE_TEMPLATES } from "@/lib/domain";
 import { useClubContext } from "@/lib/hooks/use-club";
+import { useClubEvents, useClubMembers } from "@/lib/queries";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 import type {
   DataTableColumnRow,
   DataTableDataRow,
   DataTableRow,
   Json,
+  MembershipRow,
   ProfileRow,
   TablesInsert,
 } from "@/lib/types/database";
@@ -136,6 +142,14 @@ function DataContent() {
   });
 
   const dataRows = rows.data ?? [];
+
+  const members = useClubMembers(clubId);
+  const events = useClubEvents(clubId);
+
+  const [addRowOpen, setAddRowOpen] = useState(false);
+  const [editRowOpen, setEditRowOpen] = useState(false);
+  const [editingRow, setEditingRow] = useState<DataTableDataRow | null>(null);
+  const [deleteRowId, setDeleteRowId] = useState<string | null>(null);
 
   // PRD 27: a row stores a member id, not a frozen copy of their name, so the
   // name is resolved at read time against profiles.
@@ -244,6 +258,69 @@ function DataContent() {
     const name = proposalName.trim() === "" ? proposal.name : proposalName.trim();
     createTable.mutate({ name, templateKey: proposal.templateKey });
   };
+
+  // ---------------------------------------------------------------------------
+  // Row mutations (PRD 26/44: fill in tables, no spreadsheet knowledge needed)
+  // ---------------------------------------------------------------------------
+
+  const insertRow = useMutation({
+    mutationFn: async (input: {
+      tableId: string;
+      memberId: string | null;
+      data: Record<string, unknown>;
+    }) => {
+      const supabase = getSupabaseClient();
+      const { data: userData } = await supabase.auth.getUser();
+      const createdBy = userData.user?.id;
+      if (!createdBy) throw new Error("You need to be signed in to add a row.");
+
+      const { error } = await supabase.from("data_table_rows").insert(
+        [
+          {
+            table_id: input.tableId,
+            member_id: input.memberId,
+            data: input.data,
+            created_by: createdBy,
+          },
+        ] as unknown as never[]
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast("Row added");
+    },
+  });
+
+  const updateRow = useMutation({
+    mutationFn: async (input: {
+      rowId: string;
+      memberId: string | null;
+      data: Record<string, unknown>;
+    }) => {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.from("data_table_rows")
+        .update({ member_id: input.memberId, data: input.data as unknown as Json, updated_at: new Date().toISOString() })
+        .eq("id", input.rowId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast("Row updated");
+    },
+  });
+
+  const deleteRow = useMutation({
+    mutationFn: async (rowId: string) => {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.from("data_table_rows").delete().eq("id", rowId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast("Row deleted");
+    },
+  });
 
   if (context.isLoading) {
     return <Skeleton className="h-72 w-full" />;
@@ -471,6 +548,18 @@ function DataContent() {
                       )?.name ?? "Custom"}
                     </Badge>
                   ) : null}
+                  {activeTableId && (
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setEditingRow(null);
+                        setAddRowOpen(true);
+                      }}
+                    >
+                      <CirclePlus className="size-4" />
+                      Add row
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -488,6 +577,7 @@ function DataContent() {
                         {(columns.data ?? []).map((column) => (
                           <TableHead key={column.id}>{column.name}</TableHead>
                         ))}
+                        <TableHead className="text-right" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -507,6 +597,25 @@ function DataContent() {
                                 : (cellText(row.data, column.name) ?? "—")}
                             </TableCell>
                           ))}
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setEditingRow(row);
+                                setEditRowOpen(true);
+                              }}
+                            >
+                              <Edit className="size-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => setDeleteRowId(row.id)}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -517,6 +626,42 @@ function DataContent() {
           </>
         )}
       </div>
+
+      {activeTableId && columns.data ? (
+        <>
+          <AddRowDialog
+            open={addRowOpen}
+            onOpenChange={setAddRowOpen}
+            tableId={activeTableId}
+            columns={columns.data}
+            members={members.data ?? []}
+            events={events.data ?? []}
+            invalidate={invalidate}
+          />
+          {editRowOpen && editingRow && (
+            <EditRowDialog
+              open={editRowOpen}
+              onOpenChange={setEditRowOpen}
+              tableId={activeTableId}
+              row={editingRow}
+              columns={columns.data}
+              members={members.data ?? []}
+              events={events.data ?? []}
+              invalidate={invalidate}
+            />
+          )}
+          {deleteRowId && (
+            <DeleteRowDialog
+              open={Boolean(deleteRowId)}
+              onOpenChange={(open) => {
+                if (!open) setDeleteRowId(null);
+              }}
+              rowId={deleteRowId}
+              invalidate={invalidate}
+            />
+          )}
+        </>
+      ) : null}
     </>
   );
 }
@@ -578,4 +723,497 @@ function insertTable(row: TablesInsert<"data_tables">) {
     .from("data_tables")
     .insert(row as unknown as never[])
     .select("id");
+}
+
+// ---------------------------------------------------------------------------
+// Row dialogs (PRD 26/44: fill in tables, no spreadsheet knowledge needed)
+// ---------------------------------------------------------------------------
+
+type RowDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  tableId: string;
+  columns: DataTableColumnRow[];
+  members: Array<MembershipRow & { profile: ProfileRow }>;
+  events: Array<{ id: string; title: string }>;
+  invalidate: () => void;
+};
+
+function columnInput({
+  column,
+  value,
+  onChange,
+}: {
+  column: DataTableColumnRow;
+  value: string | null;
+  onChange: (value: string) => void;
+}) {
+  if (column.column_type === "boolean") {
+    return (
+      <Select
+        value={value ?? ""}
+        onValueChange={(next: string) => onChange(next)}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Select" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="true">Yes</SelectItem>
+          <SelectItem value="false">No</SelectItem>
+        </SelectContent>
+      </Select>
+    );
+  }
+  if (column.column_type === "date") {
+    return (
+      <Input
+        type="date"
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    );
+  }
+  if (column.column_type === "number") {
+    return (
+      <Input
+        type="number"
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    );
+  }
+  return (
+    <Input
+      value={value ?? ""}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  );
+}
+
+function MemberOrEventSelect({
+  column,
+  value,
+  onChange,
+  options,
+  label,
+}: {
+  column: DataTableColumnRow;
+  value: string | null;
+  onChange: (value: string) => void;
+  options: Array<{ id: string; label: string }>;
+  label: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={`row-dialog-${column.id}`}>{label}</Label>
+      <Select
+        value={value ?? ""}
+        onValueChange={(next: string) => onChange(next)}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder={`Select a ${label}`} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.id} value={option.id}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function AddRowDialog({
+  open,
+  onOpenChange,
+  tableId,
+  columns,
+  members,
+  events,
+  invalidate,
+}: RowDialogProps) {
+  const [formData, setFormData] = useState<Record<string, string | null>>({});
+  const [memberId, setMemberId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const memberColumn = columns.find(
+    (c) => c.name === "Member" && c.column_type === "member",
+  );
+  const dataColumns = columns.filter(
+    (c) => !(c.name === "Member" && c.column_type === "member"),
+  );
+
+  const insertRow = useMutation({
+    mutationFn: async () => {
+      const supabase = getSupabaseClient();
+      const { data: userData } = await supabase.auth.getUser();
+      const createdBy = userData.user?.id;
+      if (!createdBy) throw new Error("You need to be signed in to add a row.");
+
+      for (const column of dataColumns) {
+        if (column.is_required) {
+          const value = formData[column.name];
+          if (value === null || value === "") {
+            throw new Error(`${column.name} is required.`);
+          }
+        }
+      }
+
+      if (memberColumn && !memberId) {
+        throw new Error("Member is required.");
+      }
+
+      const data: Record<string, unknown> = {};
+      for (const column of dataColumns) {
+        const value = formData[column.name];
+        if (value === null || value === "") continue;
+        if (column.column_type === "number") {
+          data[column.name] = Number(value);
+        } else if (column.column_type === "boolean") {
+          data[column.name] = value === "true";
+        } else {
+          data[column.name] = value;
+        }
+      }
+
+      const { error } = await supabase.from("data_table_rows").insert(
+        [
+          {
+            table_id: tableId,
+            member_id: memberId,
+            data,
+            created_by: createdBy,
+          },
+        ] as unknown as never[],
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast("Row added");
+      setFormData({});
+      setMemberId(null);
+      setError(null);
+    },
+  });
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    insertRow.mutate();
+  };
+
+  const memberOptions = (members ?? []).map((m) => ({
+    id: m.user_id,
+    label: m.profile?.full_name ?? "Member",
+  }));
+  const eventOptions = (events ?? []).map((e) => ({ id: e.id, label: e.title }));
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add row</DialogTitle>
+          <DialogDescription>
+            Fill in the values for each column below.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          {error ? (
+            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </p>
+          ) : null}
+
+          {memberColumn ? (
+            <MemberOrEventSelect
+              column={memberColumn}
+              value={memberId}
+              onChange={setMemberId}
+              options={memberOptions}
+              label="Member"
+            />
+          ) : null}
+
+          {dataColumns.map((column) => {
+            if (column.column_type === "member") {
+              return (
+                <MemberOrEventSelect
+                  key={column.id}
+                  column={column}
+                  value={formData[column.name] ?? null}
+                  onChange={(next: string) =>
+                    setFormData((prev) => ({ ...prev, [column.name]: next }))
+                  }
+                  options={memberOptions}
+                  label={column.name}
+                />
+              );
+            }
+            if (column.column_type === "event") {
+              return (
+                <MemberOrEventSelect
+                  key={column.id}
+                  column={column}
+                  value={formData[column.name] ?? null}
+                  onChange={(next: string) =>
+                    setFormData((prev) => ({ ...prev, [column.name]: next }))
+                  }
+                  options={eventOptions}
+                  label={column.name}
+                />
+              );
+            }
+            return (
+              <div key={column.id} className="space-y-2">
+                <Label htmlFor={`row-dialog-${column.id}`}>{column.name}</Label>
+                {column.is_required && (
+                  <span className="text-destructive" aria-hidden>
+                    *
+                  </span>
+                )}
+                {columnInput({
+                  column,
+                  value: formData[column.name] ?? null,
+                  onChange: (next: string) =>
+                    setFormData((prev) => ({ ...prev, [column.name]: next })),
+                })}
+              </div>
+            );
+          })}
+
+          <Button type="submit" disabled={insertRow.isPending}>
+            {insertRow.isPending ? <SkeletonSpinner /> : null}
+            Add row
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditRowDialog({
+  open,
+  onOpenChange,
+  tableId,
+  columns,
+  members,
+  events,
+  invalidate,
+  row,
+}: RowDialogProps & { row: DataTableDataRow }) {
+  const [formData, setFormData] = useState<Record<string, string | null>>({});
+  const [memberId, setMemberId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const memberColumn = columns.find(
+    (c) => c.name === "Member" && c.column_type === "member",
+  );
+  const dataColumns = columns.filter(
+    (c) => !(c.name === "Member" && c.column_type === "member"),
+  );
+
+  // Initialize form from existing row data
+  useMemo(() => {
+    const next: Record<string, string | null> = {};
+    for (const column of dataColumns) {
+      const value = jsonMap(row.data)[column.name];
+      next[column.name] =
+        typeof value === "string" || typeof value === "number" || typeof value === "boolean"
+          ? String(value)
+          : value === null || value === undefined
+            ? null
+            : JSON.stringify(value);
+    }
+    setFormData(next);
+    setMemberId(row.member_id ?? null);
+    setError(null);
+  }, [row, dataColumns]);
+
+  const updateRow = useMutation({
+    mutationFn: async () => {
+      const supabase = getSupabaseClient();
+
+      for (const column of dataColumns) {
+        if (column.is_required) {
+          const value = formData[column.name];
+          if (value === null || value === "") {
+            throw new Error(`${column.name} is required.`);
+          }
+        }
+      }
+
+      if (memberColumn && !memberId) {
+        throw new Error("Member is required.");
+      }
+
+      const data: Record<string, unknown> = {};
+      for (const column of dataColumns) {
+        const value = formData[column.name];
+        if (value === null || value === "") continue;
+        if (column.column_type === "number") {
+          data[column.name] = Number(value);
+        } else if (column.column_type === "boolean") {
+          data[column.name] = value === "true";
+        } else {
+          data[column.name] = value;
+        }
+      }
+
+      const { error } = await supabase.from("data_table_rows")
+        .update({ member_id: memberId, data: data as unknown as Json, updated_at: new Date().toISOString() })
+        .eq("id", row.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast("Row updated");
+      setError(null);
+    },
+  });
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    updateRow.mutate();
+  };
+
+  const memberOptions = (members ?? []).map((m) => ({
+    id: m.user_id,
+    label: m.profile?.full_name ?? "Member",
+  }));
+  const eventOptions = (events ?? []).map((e) => ({ id: e.id, label: e.title }));
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit row</DialogTitle>
+          <DialogDescription>
+            Update the values below.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          {error ? (
+            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </p>
+          ) : null}
+
+          {memberColumn ? (
+            <MemberOrEventSelect
+              column={memberColumn}
+              value={memberId}
+              onChange={setMemberId}
+              options={memberOptions}
+              label="Member"
+            />
+          ) : null}
+
+          {dataColumns.map((column) => {
+            if (column.column_type === "member") {
+              return (
+                <MemberOrEventSelect
+                  key={column.id}
+                  column={column}
+                  value={formData[column.name] ?? null}
+                  onChange={(next: string) =>
+                    setFormData((prev) => ({ ...prev, [column.name]: next }))
+                  }
+                  options={memberOptions}
+                  label={column.name}
+                />
+              );
+            }
+            if (column.column_type === "event") {
+              return (
+                <MemberOrEventSelect
+                  key={column.id}
+                  column={column}
+                  value={formData[column.name] ?? null}
+                  onChange={(next: string) =>
+                    setFormData((prev) => ({ ...prev, [column.name]: next }))
+                  }
+                  options={eventOptions}
+                  label={column.name}
+                />
+              );
+            }
+            return (
+              <div key={column.id} className="space-y-2">
+                <Label htmlFor={`row-dialog-${column.id}`}>{column.name}</Label>
+                {column.is_required && (
+                  <span className="text-destructive" aria-hidden>
+                    *
+                  </span>
+                )}
+                {columnInput({
+                  column,
+                  value: formData[column.name] ?? null,
+                  onChange: (next: string) =>
+                    setFormData((prev) => ({ ...prev, [column.name]: next })),
+                })}
+              </div>
+            );
+          })}
+
+          <Button type="submit" disabled={updateRow.isPending}>
+            {updateRow.isPending ? <SkeletonSpinner /> : null}
+            Save
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteRowDialog({
+  open,
+  onOpenChange,
+  rowId,
+  invalidate,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  rowId: string;
+  invalidate: () => void;
+}) {
+  const deleteRow = useMutation({
+    mutationFn: async () => {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.from("data_table_rows").delete().eq("id", rowId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast("Row deleted");
+    },
+  });
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete row?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. The row will be removed from the table.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => onOpenChange(false)}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              deleteRow.mutate();
+              onOpenChange(false);
+            }}
+            className="bg-destructive text-destructive-foreground"
+            disabled={deleteRow.isPending}
+          >
+            {deleteRow.isPending ? <SkeletonSpinner /> : null}
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 }

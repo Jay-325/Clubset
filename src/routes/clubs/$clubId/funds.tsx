@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { staggerStyle } from "@/lib/motion";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useClubContext } from "@/lib/hooks/use-club";
+import { useClubMembers } from "@/lib/queries";
 import { can } from "@/lib/auth/permissions";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/domain";
 import type { DuesRow, ProfileRow, TransactionRow } from "@/lib/types/database";
@@ -197,7 +198,8 @@ function FundsContent() {
         ) : null}
 
         {canManage ? (
-          <TabsContent value="dues" className="mt-4">
+          <TabsContent value="dues" className="mt-4 space-y-6">
+            <SetUpDues clubId={clubId} />
             <DuesPanel clubId={clubId} />
           </TabsContent>
         ) : null}
@@ -320,17 +322,210 @@ function QuickAdd({ clubId }: { clubId: string }) {
           </div>
 
           <Button type="submit" disabled={!valid || mutation.isPending}>
-            {mutation.isPending ? (
-              <SkeletonSpinner />
-            ) : (
-              <Plus className="size-4" />
-            )}
+            {mutation.isPending ? <SkeletonSpinner /> : <Plus className="size-4" />}
             Save
           </Button>
 
           {mutation.error ? (
             <p className="form-message animate-in fade-in text-sm text-destructive duration-150">
               {mutation.error.message}
+            </p>
+          ) : null}
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** PRD 24: a leader sets up dues for members so the club can collect them. */
+function SetUpDues({ clubId }: { clubId: string }) {
+  const queryClient = useQueryClient();
+  const members = useClubMembers(clubId);
+
+  // Which members already have a dues record (one per member per club).
+  const existingDues = useQuery({
+    queryKey: ["club", clubId, "dues-setup-existing"],
+    queryFn: async (): Promise<string[]> => {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase.from("dues").select("user_id").eq("club_id", clubId);
+      if (error) throw error;
+      return (data ?? []).map((row) => row.user_id);
+    },
+  });
+
+  const [target, setTarget] = useState<"all" | "one">("all");
+  const [memberId, setMemberId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [dueDate, setDueDate] = useState("");
+
+  const createDues = useMutation({
+    mutationFn: async () => {
+      const supabase = getSupabaseClient();
+      const amountVal = Number(amount);
+      if (!amountVal || amountVal <= 0) {
+        throw new Error("Amount must be greater than zero.");
+      }
+
+      const active = members.data ?? [];
+      const existing = new Set(existingDues.data ?? []);
+      const targets: string[] = [];
+
+      if (target === "all") {
+        for (const m of active) {
+          if (!existing.has(m.user_id)) targets.push(m.user_id);
+        }
+        if (targets.length === 0) {
+          throw new Error("Every active member already has a dues record.");
+        }
+      } else {
+        if (!memberId) throw new Error("Select a member.");
+        if (existing.has(memberId)) {
+          throw new Error("This member already has a dues record.");
+        }
+        targets.push(memberId);
+      }
+
+      const { error } = await supabase.from("dues").insert(
+        targets.map((user_id) => ({
+          club_id: clubId,
+          user_id,
+          amount: amountVal,
+          status: "unknown",
+          due_date: dueDate || null,
+        })) as unknown as never[],
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setAmount("");
+      setDueDate("");
+      setMemberId("");
+      toast("Dues set up");
+      void queryClient.invalidateQueries({ queryKey: ["club", clubId, "dues"] });
+      void queryClient.invalidateQueries({ queryKey: ["club", clubId, "dues-setup-existing"] });
+    },
+  });
+
+  const activeMembers = members.data ?? [];
+  const existingIds = new Set(existingDues.data ?? []);
+  const availableAll = activeMembers.filter((m) => !existingIds.has(m.user_id)).length;
+  const canCreate = (() => {
+    const amountVal = Number(amount);
+    if (!amountVal || amountVal <= 0) return false;
+    if (target === "all") return availableAll > 0;
+    return Boolean(memberId) && !existingIds.has(memberId);
+  })();
+
+  if (members.isLoading || existingDues.isLoading) {
+    return <Skeleton className="h-64 w-full" />;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Set up dues</CardTitle>
+        <CardDescription>
+          Create a dues record for members. Marking a member paid records the income and updates the
+          balance automatically.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (canCreate) createDues.mutate();
+          }}
+        >
+          <div className="space-y-2">
+            <Label>Set up dues for</Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={target === "all" ? "default" : "outline"}
+                onClick={() => setTarget("all")}
+                disabled={createDues.isPending}
+              >
+                All active members
+              </Button>
+              <Button
+                type="button"
+                variant={target === "one" ? "default" : "outline"}
+                onClick={() => setTarget("one")}
+                disabled={createDues.isPending}
+              >
+                One member
+              </Button>
+            </div>
+          </div>
+
+          {target === "one" ? (
+            <div className="space-y-2">
+              <Label htmlFor="dues-member">Member</Label>
+              <Select value={memberId} onValueChange={setMemberId} disabled={createDues.isPending}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a member" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeMembers.map((m) => (
+                    <SelectItem
+                      key={m.user_id}
+                      value={m.user_id}
+                      disabled={existingIds.has(m.user_id)}
+                    >
+                      {m.profile?.full_name ?? "Member"}
+                      {existingIds.has(m.user_id) ? " (already has dues)" : null}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="dues-amount">Amount per member</Label>
+              <Input
+                id="dues-amount"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                placeholder="25.00"
+                disabled={createDues.isPending}
+              />
+              <p className="text-xs text-muted-foreground">
+                One dues record per member; amount must be greater than zero.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dues-due-date">Due date</Label>
+              <Input
+                id="dues-due-date"
+                type="date"
+                value={dueDate}
+                onChange={(event) => setDueDate(event.target.value)}
+                disabled={createDues.isPending}
+              />
+            </div>
+          </div>
+
+          <Button type="submit" disabled={!canCreate || createDues.isPending}>
+            {createDues.isPending ? <SkeletonSpinner /> : null}
+            Set up dues
+          </Button>
+
+          {createDues.error ? (
+            <p className="form-message animate-in fade-in mt-2 text-sm text-destructive duration-150">
+              {createDues.error.message}
+            </p>
+          ) : null}
+
+          {target === "all" && availableAll === 0 && activeMembers.length > 0 ? (
+            <p className="text-xs text-muted-foreground">
+              All active members already have a dues record.
             </p>
           ) : null}
         </form>

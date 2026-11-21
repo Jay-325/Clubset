@@ -2,7 +2,7 @@
 
 Date: 2026-11-20
 Branch: `main` @ `b060eb4` (clean working tree)
-Status: M1 implemented and green (2026-11-20). M2–M5 planned, not yet started.
+Status: M1 implemented and green (2026-11-20). M2 implemented and green (2026-11-21). M3 implemented and green (2026-11-21). M4–M5 planned, not yet started.
 
 ## Intent
 
@@ -120,22 +120,36 @@ milestone depends on an unapproved one. No new dependencies; no new tables.
 - Guardrail test: assert every path produced by `managementSections` and
   `quickActions` is a real route path, so this class of bug cannot return.
 
-### M2 — Dues lifecycle (frontend only)
+### M2 — Dues lifecycle (frontend only) — COMPLETE (2026-11-21)
 
-- Add a "Set up dues" form on the Funds page: amount, due date, and either all
-  active members or one member. Inserts into `dues` (already authorized for
-  `manage_finances`).
-- Invalidates `["club", clubId, "dues"]` so both Funds and Finance refresh.
-- pgTAP: leader can insert; ordinary member cannot; cross-club insert denied.
+- Added a "Set up dues" form on the Funds page (`src/routes/clubs/$clubId/funds.tsx`): amount (> 0), due date (optional), and targeting of either all active members or one member.
+- Inserts into `dues` via direct table write, authorized by the existing RLS `dues_write` policy (`manage_finances` or club admin). No new migration needed — RLS already permits this.
+- Skips members who already have a dues record (unique `(club_id, user_id)` constraint).
+- Invalidates `["club", clubId, "dues"]` on success so both Funds and Finance refresh.
+- pgTAP (`supabase/tests/dues_lifecycle.sql`): leader can insert; ordinary member denied (42501); cross-club insert denied (42501); negative amount rejected (23514); new record defaults to `unknown` status.
+- Statuses: Paid / Not Paid / Unknown (existing `dues_status` enum, no new concepts).
 
-### M3 — Data-table rows (frontend only)
 
-- Add/edit/delete a row on the active table, with one input per column, a member
-  picker for `member` columns, and dates/numbers typed by column type.
-- Writes go to `data_table_rows` (already authorized for
-  `manage_data_tables`); existing `invalidate()` refreshes the grid.
-- pgTAP: leader can write; member cannot; a row inserted into another club's
-  table is denied and invisible.
+### M3 — Data-table rows (frontend only) — COMPLETE (2026-11-21)
+
+- Added `AddRowDialog`, `EditRowDialog`, and `DeleteRowDialog` components to
+  `src/routes/clubs/$clubId/data.tsx`, plus an "Add row" button in the table
+  header and edit/delete action buttons on each row.
+- Inputs are generated dynamically from column definitions: `text` → text input,
+  `number` → number input, `date` → date picker, `boolean` → yes/no select,
+  `member` → club member picker, `event` → club event picker. Required fields
+  are marked with `*` and validated client-side before submission.
+- The "Member" column maps to `row.member_id`; all other columns are stored in
+  the `data` jsonb bag.
+- Writes go to `data_table_rows` via direct table insert/update/delete,
+  authorized by the existing RLS `data_table_rows_write` policy
+  (`manage_data_tables` or club admin). No new migration needed.
+- `invalidate()` refreshes `data-table-columns`, `data-table-rows`,
+  `data-table-member-names`, and `data-tables` after every mutation.
+- pgTAP (`supabase/tests/data_table_rows.sql`, 8 tests): leader can insert,
+  update, and delete rows; member without `manage_data_tables` denied (42501);
+  cross-club insert denied (42501); row cannot be re-parented to another club's
+  table (42501); insert into non-existent table denied (42501).
 
 ### M4 — Form response review (frontend only)
 
