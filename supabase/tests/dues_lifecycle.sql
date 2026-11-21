@@ -13,7 +13,7 @@ begin;
 set local search_path = public, extensions;
 create extension if not exists pgtap;
 
-select plan(5);
+select plan(6);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures: two clubs in one school, a leader and a member in club A
@@ -124,7 +124,7 @@ select throws_ok(
 reset role;
 
 -- ---------------------------------------------------------------------------
--- D. Amount must be >= 0 (check constraint)
+-- D. Amount must be > 0 (check constraint)
 -- ---------------------------------------------------------------------------
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000c501"}', true);
@@ -141,6 +141,20 @@ select throws_ok(
   '23514',
   null,
   'a negative amount is rejected by the check constraint'
+);
+
+select throws_ok(
+  $$insert into public.dues (club_id, user_id, amount, status, due_date)
+    values (
+      '00000000-0000-0000-0000-00000000c510',
+      '00000000-0000-0000-0000-00000000c501',
+      0.00,
+      'unknown'::public.dues_status,
+      null
+    )$$,
+  '23514',
+  null,
+  'a zero amount is rejected by the check constraint'
 );
 reset role;
 

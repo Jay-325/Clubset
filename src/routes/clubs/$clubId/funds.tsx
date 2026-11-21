@@ -1,5 +1,5 @@
-import { createFileRoute, useParams } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useParams, useSearch } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Plus, Receipt, TrendingDown, TrendingUp } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -36,6 +36,12 @@ import { toast } from "sonner";
  * synchronization step (PRD 24/46). Adding an entry is four fields and Save.
  */
 export const Route = createFileRoute("/clubs/$clubId/funds")({
+  // The "Add Expense" quick action links here with ?new=expense so the
+  // expense-entry tab opens directly (PRD 11). The flag is validated here
+  // instead of read off the URL by hand.
+  validateSearch: (search: Record<string, unknown>) => ({
+    new: search["new"] === "expense" ? ("expense" as const) : undefined,
+  }),
   component: FundsPage,
 });
 
@@ -51,12 +57,23 @@ function FundsPage() {
 
 function FundsContent() {
   const { clubId } = useParams({ from: "/clubs/$clubId/funds" });
+  const search = useSearch({ from: "/clubs/$clubId/funds" });
   const context = useClubContext(clubId);
 
   const canManage =
     can(context.data?.permissions ?? [], "manage_finances") ||
     (context.data?.isLinkedAdministrator ?? false) ||
     (context.data?.isAdministrator ?? false);
+
+  // The "Add Expense" quick action links here with ?new=expense so the
+  // expense-entry tab opens directly. defaultValue only sets the initial tab
+  // on mount, so we keep the controlled tab in sync with the URL for client
+  // side navigation (PRD 11).
+  const [tab, setTab] = useState(canManage && search.new === "expense" ? "add" : "overview");
+
+  useEffect(() => {
+    setTab(canManage && search.new === "expense" ? "add" : "overview");
+  }, [search.new, canManage]);
 
   const finances = useQuery({
     queryKey: ["club", clubId, "finances"],
@@ -136,7 +153,7 @@ function FundsContent() {
         </Card>
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           {canManage ? <TabsTrigger value="add">Add money</TabsTrigger> : null}

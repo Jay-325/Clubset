@@ -92,8 +92,14 @@ describe("permission link targets", () => {
     const context = clubContext(ALL_MANAGE_PERMISSIONS);
     for (const action of quickActions(context)) {
       expect(action.path).not.toContain("?tab=requests");
-      expect(action.path).not.toContain("?new=expense");
     }
+  });
+
+  it("the Add Expense quick action carries ?new=expense so the funds page opens the expense tab", () => {
+    const context = clubContext(ALL_MANAGE_PERMISSIONS);
+    const addExpense = quickActions(context).find((action) => action.key === "add_expense");
+    expect(addExpense).toBeDefined();
+    expect(addExpense?.path).toContain("?new=expense");
   });
 
   it("Finance is gated behind manage_finances and hidden from plain members", () => {

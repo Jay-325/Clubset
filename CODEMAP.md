@@ -1,6 +1,6 @@
 # CODEMAP
 
-_Generated: 2026-11-07T00:00:00Z_
+_Generated: 2026-11-21_
 
 ## Tree
 
@@ -180,8 +180,18 @@ clubset/
 │       ├── 20261106000000_restrict_anonymous_authenticated_role.sql  # RE-CREATED clubs_select_school PERMISSIVE (VULN-001 root cause)
 │       ├── 20261107000000_add_auth_rate_limiting.sql
 │       ├── 20261107000001_fix_clubs_select_school_policy.sql   # NEW — restrictive clubs_select_school (VULN-001 fix)
-│       ├── 20261107000002_revoke_admin_allowlist_client_grants.sql  # NEW — revoke admin_allowlist grants (VULN-002 fix)
-│       └── 20261107000003_restrict_profile_column_exposure.sql   # NEW — profiles_public view, profiles_select_self, is_user_administrator() (VULN-003 fix)
+│       ├── 20261107000002_revoke_admin_allowlist_client_grants.sql  # NEW — revoke admin_allowlist client grants (VULN-002 fix)
+│       ├── 20261107000003_restrict_profile_column_exposure.sql   # NEW — profiles_public view, profiles_select_self, is_user_administrator() (VULN-003 fix)
+│       ├── 20261111014718_lock_rate_limits_table.sql               # locks public.rate_limits behind a definer RPC
+│       ├── 20261112000000_grant_profile_self_update_columns.sql    # lets students save their own profile columns
+│       ├── 20261117000000_student_only_club_creation_and_verification.sql  # student-only club creation and verification
+│       ├── 20261117000100_provision_and_revoke_founder_on_club_decision.sql  # provision/revoke founder on club approval/rejection
+│       ├── 20261117000200_fix_finalize_attendance_definer.sql      # finalize_attendance() back to SECURITY DEFINER
+│       ├── 20261118000000_fix_form_response_direct_write.sql       # closes form-response direct table-write bypass
+│       ├── 20261118000001_role_assignment_club_integrity.sql       # ties role_assignments.club_id to leadership_roles.club_id
+│       ├── 20261118000002_same_school_profile_visibility.sql       # same-school profile visibility via profiles_public view
+│       ├── 20261121000000_fix_rsvp_notification_link.sql           # RSVP notification link_path → /clubs/{club}/events
+│       └── 20261121000001_force_positive_dues_amounts.sql          # dues amount check constraint amount > 0
 ├── tsconfig.json
 ├── vite.config.ts
 ├── vitest.config.ts

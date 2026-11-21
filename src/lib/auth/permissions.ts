@@ -170,7 +170,7 @@ export function quickActions(context: ClubContext): Array<{
       key: "add_expense",
       label: "Add Expense",
       description: "Record something the club bought",
-      path: `${base}/funds`,
+      path: `${base}/funds?new=expense`,
       permission: "manage_finances",
     },
     {
