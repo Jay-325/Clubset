@@ -37,7 +37,13 @@ import {
   useRemoveMemberRole,
   useRemoveMember,
 } from "@/lib/queries";
-import type { DuesRow, GradeLevel, LeadershipRoleRow, MembershipRow, ProfileRow } from "@/lib/types/database";
+import type {
+  DuesRow,
+  GradeLevel,
+  LeadershipRoleRow,
+  MembershipRow,
+  ProfileRow,
+} from "@/lib/types/database";
 import type { RoleAssignmentWithRole } from "@/lib/queries";
 import { toast } from "sonner";
 
@@ -156,7 +162,8 @@ function MembersContent() {
                         dues={memberDuesMap.get(row.user_id) ?? null}
                         allRoles={assignments.map((a) => a.leadership_roles).filter(Boolean)}
                         onRoleChange={(newRoleId) =>
-                          assignRole.mutate({ userId: row.user_id, roleId: newRoleId })}
+                          assignRole.mutate({ userId: row.user_id, roleId: newRoleId })
+                        }
                         onRemoveRole={() => removeRole.mutate({ userId: row.user_id })}
                         onRemoveMember={() => removeMember.mutate({ userId: row.user_id })}
                       />
@@ -199,8 +206,12 @@ function MembersContent() {
                       key={row.id}
                       profile={row.profile}
                       busy={review.isPending}
-                      onAccept={() => review.mutate({ membershipId: row.id, accept: true })}
-                      onDecline={() => review.mutate({ membershipId: row.id, accept: false })}
+                      onAccept={() =>
+                        review.mutate({ membershipId: row.id, accept: true, clubId: row.club_id })
+                      }
+                      onDecline={() =>
+                        review.mutate({ membershipId: row.id, accept: false, clubId: row.club_id })
+                      }
                     />
                   ))}
                 </ul>
@@ -311,12 +322,7 @@ function MemberRow({
               Remove role
             </Button>
           ) : null}
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={handleRemove}
-            disabled={isRemoving}
-          >
+          <Button size="sm" variant="destructive" onClick={handleRemove} disabled={isRemoving}>
             {isRemoving ? <SkeletonSpinner /> : <X className="size-4" />}
             Remove
           </Button>

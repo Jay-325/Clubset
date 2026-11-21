@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
 
-import { AppShell } from "@/components/app-shell";
+import { AppShell, RequireAuth } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,16 @@ export const Route = createFileRoute("/onboarding")({
 });
 
 function OnboardingPage() {
+  return (
+    <RequireAuth>
+      <AppShell>
+        <OnboardingContent />
+      </AppShell>
+    </RequireAuth>
+  );
+}
+
+function OnboardingContent() {
   const { profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const updateProfile = useUpdateProfile();
@@ -41,6 +51,7 @@ function OnboardingPage() {
   const [commitmentHours, setCommitmentHours] = useState<number | null>(
     profile?.commitment_hours ?? null,
   );
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const toggleInterest = (interest: string) => {
     setInterests((current) =>
@@ -52,14 +63,21 @@ function OnboardingPage() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    await updateProfile.mutateAsync({
-      full_name: fullName,
-      grade,
-      interests,
-      commitment_hours: commitmentHours,
-    });
-    await refreshProfile();
-    void navigate({ to: "/" });
+    setSubmitError(null);
+    try {
+      await updateProfile.mutateAsync({
+        full_name: fullName,
+        grade,
+        interests,
+        commitment_hours: commitmentHours,
+      });
+      await refreshProfile();
+      void navigate({ to: "/" });
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Could not save your profile. Please try again.",
+      );
+    }
   };
 
   return (
@@ -75,6 +93,11 @@ function OnboardingPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {submitError ? (
+                <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive mb-4">
+                  {submitError}
+                </p>
+              ) : null}
               <div className="space-y-2">
                 <Label htmlFor="name">Your name</Label>
                 <Input

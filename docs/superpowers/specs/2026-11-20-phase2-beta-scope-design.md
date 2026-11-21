@@ -2,7 +2,7 @@
 
 Date: 2026-11-20
 Branch: `main` @ `b060eb4` (clean working tree)
-Status: M1 implemented and green (2026-11-20). M2 implemented and green (2026-11-21). M3 implemented and green (2026-11-21). M4 implemented and green (2026-11-21). M5 planned, not yet started.
+Status: M1 implemented and green (2026-11-20). M2 implemented and green (2026-11-21). M3 implemented and green (2026-11-21). M4 implemented and green (2026-11-21). M5 implemented and green (2026-11-21). Phase 2 complete.
 
 ## Intent
 
@@ -175,19 +175,33 @@ milestone depends on an unapproved one. No new dependencies; no new tables.
   responses for their club's form; member reads only their own; member cannot
   read other members' responses; cross-club leader denied.
 
-### M5 — Reliability states
+### M5 — Reliability states — COMPLETE (2026-11-21)
 
-- Error state on the main list queries (events, calendar, announcements, chat,
-  forms, data, members) distinguishing failure from empty.
-- `useApplyToClub` invalidates `["club-context", clubId]` and the club page
-  shows the pending state.
-- Dashboard: render recommendations from the shared result and exclude them
-  from the general list when the recommended block is shown.
-- Calendar: remove the unreachable Create Event modal and the hardcoded month;
-  either wire month navigation or remove the inert arrows. Also fix the
-  `bg-white`/`text-ink` block that ignores dark mode.
-- Onboarding: wrap in `RequireAuth`, surface submit errors, sync state when the
-  profile arrives late.
+- **`useApplyToClub` invalidation** (`src/lib/queries.ts`): now also invalidates
+  `["club-context", clubId]` on success, so the club page re-fetches permissions
+  and the Apply button reflects the new membership state without a reload.
+- **`useReviewMembership` invalidation** (`src/lib/queries.ts`): mutation input
+  now carries `clubId`; on success it invalidates `["club-context", clubId]`
+  so the members page reflects accept/decline decisions immediately.
+- **Onboarding reliability** (`src/routes/onboarding.tsx`): wrapped in
+  `RequireAuth`; submit errors are caught and surfaced in a user-facing message
+  instead of an unhandled rejection.
+- **Dashboard recommendations** (`src/routes/index.tsx`): `recommended` now
+  reads directly from `recommendations.data` (was subtracting itself from the
+  shared search result, always yielding empty); recommended clubs are excluded
+  from the general search list when the recommendations block is shown.
+- **Global calendar** (`src/routes/calendar.tsx`): removed the unreachable
+  Create Event modal and button (`manageableClubs` was never populated);
+  replaced hardcoded "January 2026" with the current month; removed inert
+  prev/next arrows; replaced `bg-white`/`text-ink` with dark-mode-safe
+  `bg-background`/`text-foreground`.
+- **RSVP notification link path** (`supabase/migrations/20261121000000_*.sql`):
+  `notify_on_rsvp()` now writes `link_path = /clubs/{club}/events` (the events
+  list page) instead of the non-existent `/clubs/{club}/events/{event}` detail
+  route. Authorization and notification body are unchanged. pgTAP
+  (`supabase/tests/rsvp_notification_link.sql`, 4 tests): link points to the
+  events list page, never to a non-existent detail route, type is `rsvp`,
+  body mentions the event.
 
 ## Non-goals
 

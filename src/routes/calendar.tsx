@@ -67,11 +67,9 @@ function CalendarPage() {
 }
 
 function CalendarContent() {
-  const [manageableClubs, setManageableClubs] = useState<Array<{ id: string; name: string }>>([]);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-
   const upcoming = useUpcomingEvents(100);
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(undefined);
+  const currentMonth = new Date().toLocaleDateString(undefined, { month: "long", year: "numeric" });
 
   const groups = useMemo(() => {
     const byDay = new Map<string, { date: Date; events: UpcomingEventResult[] }>();
@@ -98,50 +96,16 @@ function CalendarContent() {
         title="Calendar"
         description="Every event from your clubs, in one place."
         actions={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSelectedDay(undefined)}
-              disabled={!selectedDay}
-            >
-              Show all days
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => setShowCreateForm(true)}
-              disabled={!manageableClubs.length}
-            >
-              <Plus className="size-4 mr-2" />
-              Create Event
-            </Button>
-          </>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSelectedDay(undefined)}
+            disabled={!selectedDay}
+          >
+            Show all days
+          </Button>
         }
       />
-
-      {/* Create Event Modal */}
-      {showCreateForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setShowCreateForm(false)}
-          />
-          <div className="relative z-50 w-full max-w-2xl bg-white rounded-2xl border border-slate-200 p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-ink">Create Event</h2>
-              <Button variant="ghost" size="icon" onClick={() => setShowCreateForm(false)}>
-                <X className="size-5" />
-              </Button>
-            </div>
-            <CreateEventForm
-              clubs={manageableClubs}
-              onClose={() => setShowCreateForm(false)}
-              onComplete={() => setShowCreateForm(false)}
-            />
-          </div>
-        </div>
-      )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* ---- Agenda (the primary view) ---- */}
@@ -187,15 +151,7 @@ function CalendarContent() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold">January 2026</h3>
-                <div className="flex items-center gap-1">
-                  <Button variant="outline" size="icon" className="h-8 w-8 p-0">
-                    <span className="sr-only">Previous month</span>
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8 p-0">
-                    <span className="sr-only">Next month</span>
-                  </Button>
-                </div>
+                <h3 className="text-sm font-semibold">{currentMonth}</h3>
               </div>
               <Calendar
                 mode="single"

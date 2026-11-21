@@ -108,9 +108,12 @@ function MainContent() {
     (profile?.interests.length ?? 0) > 0;
 
   const recommended = useMemo(() => {
-    const discovered = new Set((clubSearch.data ?? []).map((result) => result.id));
-    return (recommendations.data ?? []).filter((club) => !discovered.has(club.id));
-  }, [recommendations.data, clubSearch.data]);
+    return recommendations.data ?? [];
+  }, [recommendations.data]);
+
+  const recommendedIds = useMemo(() => {
+    return new Set(recommended.map((club) => club.id));
+  }, [recommended]);
 
   const pinnedClubs = useMemo(
     () =>
@@ -368,15 +371,17 @@ function MainContent() {
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {(clubSearch.data ?? []).map((club, index) => (
-              <ClubCard
-                key={club.id}
-                club={club}
-                onOpen={() => navigate({ to: "/clubs/$clubId", params: { clubId: club.id } })}
-                className="animate-in fade-in"
-                style={staggerStyle(index)}
-              />
-            ))}
+            {(clubSearch.data ?? [])
+              .filter((club) => !showRecommendations || !recommendedIds.has(club.id))
+              .map((club, index) => (
+                <ClubCard
+                  key={club.id}
+                  club={club}
+                  onOpen={() => navigate({ to: "/clubs/$clubId", params: { clubId: club.id } })}
+                  className="animate-in fade-in"
+                  style={staggerStyle(index)}
+                />
+              ))}
           </div>
         )}
       </section>

@@ -609,9 +609,12 @@ export function useApplyToClub() {
       const { error } = await supabase.from("memberships").insert({ club_id: clubId });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, clubId) => {
       void queryClient.invalidateQueries({ queryKey: ["clubs"] });
       void queryClient.invalidateQueries({ queryKey: ["club"] });
+      // PRD 9/53: invalidate the club-context query so the club page re-fetches
+      // permissions and the Apply button reflects the new membership state.
+      void queryClient.invalidateQueries({ queryKey: ["club-context", clubId] });
     },
   });
 }
@@ -658,7 +661,7 @@ export function useClubMembers(clubId: string) {
 export function useReviewMembership() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { membershipId: string; accept: boolean }) => {
+    mutationFn: async (input: { membershipId: string; accept: boolean; clubId: string }) => {
       const supabase = getSupabaseClient();
       const { error } = await supabase.rpc("review_membership", {
         target_membership: input.membershipId,
@@ -666,11 +669,14 @@ export function useReviewMembership() {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       // Accepting a member unlocks internal club access and the group chat
       // (PRD 9/12/46) -- both are automatic, so no extra work happens here.
       void queryClient.invalidateQueries({ queryKey: ["club"] });
       void queryClient.invalidateQueries({ queryKey: ["clubs"] });
+      // Re-fetch the club page so the membership state (and join-request badge)
+      // reflects the decision without requiring a page reload.
+      void queryClient.invalidateQueries({ queryKey: ["club-context", variables.clubId] });
     },
   });
 }
