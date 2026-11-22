@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { staggerStyle } from "@/lib/motion";
 import { useClubContext } from "@/lib/hooks/use-club";
+import { useClubAccess } from "@/lib/hooks/use-club-access";
 import { useViewerId } from "@/lib/queries";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { AnnouncementRow, ProfileRow, TablesInsert } from "@/lib/types/database";

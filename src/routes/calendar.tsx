@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, type FormEvent } from "react";
 import { AlertTriangle, CalendarDays, Clock, MapPin, Plus, X } from "lucide-react";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -58,11 +59,9 @@ function dayKey(date: Date): string {
 
 function CalendarPage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <CalendarContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <CalendarContent />
+    </ClubShell>
   );
 }
 

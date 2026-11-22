@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Plus, TrendingDown, TrendingUp } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { useClubAccess } from "@/lib/hooks/use-club-access";
+
 import { ClubShell } from "@/components/club/ClubShell";
 import { PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
@@ -59,10 +61,7 @@ function FundsContent() {
   const search = useSearch({ from: "/clubs/$clubId/funds" });
   const context = useClubContext(clubId);
 
-  const canManage =
-    can(context.data?.permissions ?? [], "manage_finances") ||
-    (context.data?.isLinkedAdministrator ?? false) ||
-    (context.data?.isAdministrator ?? false);
+  const { club, mayManage: canManage } = useClubAccess(clubId, "manage_finances");
 
   // The "Add Expense" quick action links here with ?new=expense so the
   // expense-entry tab opens directly. defaultValue only sets the initial tab

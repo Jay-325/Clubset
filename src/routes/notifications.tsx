@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Bell } from "lucide-react";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,11 +18,9 @@ export const Route = createFileRoute("/notifications")({
 
 function NotificationsPage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <NotificationsContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <NotificationsContent />
+    </ClubShell>
   );
 }
 

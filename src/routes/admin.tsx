@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -38,11 +39,9 @@ export const Route = createFileRoute("/admin")({
 
 function AdminPage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <AdminContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <AdminContent />
+    </ClubShell>
   );
 }
 

@@ -26,6 +26,7 @@ import {
   SUGGESTED_ROLES,
 } from "@/lib/domain";
 import { useClubContext } from "@/lib/hooks/use-club";
+import { useClubAccess } from "@/lib/hooks/use-club-access";
 import { useViewerId } from "@/lib/queries";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type {
@@ -81,9 +82,7 @@ function LeadershipContent() {
   const context = useClubContext(clubId);
   const queryClient = useQueryClient();
 
-  const permissions = context.data?.permissions ?? [];
-  const isLinkedAdministrator = context.data?.isLinkedAdministrator ?? false;
-  const mayManage = can(permissions, "manage_leadership") || isLinkedAdministrator;
+  const { club, mayManage } = useClubAccess(clubId, "manage_leadership");
 
   const [roleName, setRoleName] = useState("");
   const [roleDescription, setRoleDescription] = useState("");

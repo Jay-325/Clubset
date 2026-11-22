@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Clock, MapPin, Star, Users } from "lucide-react";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,11 +30,9 @@ export const Route = createFileRoute("/my-clubs")({
 
 function MyClubsPage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <MyClubsContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <MyClubsContent />
+    </ClubShell>
   );
 }
 
