@@ -2,7 +2,8 @@ import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { AlertTriangle, CalendarDays, Clock, MapPin } from "lucide-react";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,11 +25,9 @@ export const Route = createFileRoute("/clubs/$clubId/calendar")({
 
 function CalendarPage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <CalendarContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <CalendarContent />
+    </ClubShell>
   );
 }
 

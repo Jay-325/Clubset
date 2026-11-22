@@ -3,7 +3,8 @@ import { useMemo, useState, type CSSProperties } from "react";
 import { Check, Undo2, UserX } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +24,7 @@ import { FadeIn } from "@/components/ui/motion";
 import { staggerStyle } from "@/lib/motion";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useClubContext } from "@/lib/hooks/use-club";
-import { can } from "@/lib/auth/permissions";
+import { useClubAccess } from "@/lib/hooks/use-club-access";
 import { useAttendanceForEvent, useFinalizeAttendance, useVetoRsvp } from "@/lib/queries";
 import { ATTENDANCE_STATUS_HINTS, ATTENDANCE_STATUS_LABELS } from "@/lib/domain";
 import type { AttendanceRow, EventRow, ProfileRow } from "@/lib/types/database";
@@ -42,11 +43,9 @@ export const Route = createFileRoute("/clubs/$clubId/attendance")({
 
 function AttendancePage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <AttendanceContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <AttendanceContent />
+    </ClubShell>
   );
 }
 
@@ -73,12 +72,10 @@ function AttendanceContent() {
     enabled: Boolean(clubId),
   });
 
-  const permissions = context.data?.permissions ?? [];
-  const isOverseer =
-    (context.data?.isLinkedAdministrator ?? false) || (context.data?.isAdministrator ?? false);
+  const { club, mayManage } = useClubAccess(clubId, "manage_attendance");
 
   // PRD 45: members see only their own attendance, never the club roster.
-  if (!can(permissions, "manage_attendance") && !isOverseer) {
+  if (!mayManage) {
     return <MemberOwnAttendance clubId={clubId} />;
   }
 

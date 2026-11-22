@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { MapPin, ShieldCheck, Users } from "lucide-react";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,11 +35,9 @@ export const Route = createFileRoute("/clubs/$clubId/")({
 
 function ClubPage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <ClubContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <ClubContent />
+    </ClubShell>
   );
 }
 

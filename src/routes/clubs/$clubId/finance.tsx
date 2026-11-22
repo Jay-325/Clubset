@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +41,7 @@ import { cn } from "@/lib/utils";
 import { staggerStyle } from "@/lib/motion";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useClubContext } from "@/lib/hooks/use-club";
-import { can } from "@/lib/auth/permissions";
+import { useClubAccess } from "@/lib/hooks/use-club-access";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/domain";
 import type { DuesRow, ProfileRow, TransactionRow } from "@/lib/types/database";
 import { toast } from "sonner";
@@ -57,11 +58,9 @@ export const Route = createFileRoute("/clubs/$clubId/finance")({
 
 function FinancePage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <FinanceContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <FinanceContent />
+    </ClubShell>
   );
 }
 
@@ -112,10 +111,7 @@ function FinanceContent() {
   const context = useClubContext(clubId);
   const [activeTool, setActiveTool] = useState<ToolKey | null>(null);
 
-  const canManage =
-    can(context.data?.permissions ?? [], "manage_finances") ||
-    (context.data?.isLinkedAdministrator ?? false) ||
-    (context.data?.isAdministrator ?? false);
+  const { club, mayManage: canManage } = useClubAccess(clubId, "manage_finances");
 
   const finances = useQuery({
     queryKey: ["club", clubId, "finances"],

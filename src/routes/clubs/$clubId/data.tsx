@@ -4,7 +4,8 @@ import { useMemo, useState, type CSSProperties } from "react";
 import type { FormEvent } from "react";
 import { CirclePlus, Edit, Plus, Sparkles, Table2, Trash2, X } from "lucide-react";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -25,9 +26,9 @@ import {
 import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/ui/motion";
 import { staggerStyle } from "@/lib/motion";
-import { can } from "@/lib/auth/permissions";
 import { TABLE_TEMPLATES } from "@/lib/domain";
 import { useClubContext } from "@/lib/hooks/use-club";
+import { useClubAccess } from "@/lib/hooks/use-club-access";
 import { useClubEvents, useClubMembers } from "@/lib/queries";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -52,11 +53,9 @@ export const Route = createFileRoute("/clubs/$clubId/data")({
 
 function DataPage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <DataContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <DataContent />
+    </ClubShell>
   );
 }
 
@@ -82,11 +81,7 @@ function DataContent() {
   const context = useClubContext(clubId);
   const queryClient = useQueryClient();
 
-  const permissions = context.data?.permissions ?? [];
-  const isLinkedAdministrator = context.data?.isLinkedAdministrator ?? false;
-  // The database accepts a linked club administrator everywhere the templates
-  // are applied, so the page gate follows the same rule (PRD 38/41).
-  const mayManage = can(permissions, "manage_data_tables") || isLinkedAdministrator;
+  const { club, mayManage } = useClubAccess(clubId, "manage_data_tables");
 
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [intent, setIntent] = useState("");

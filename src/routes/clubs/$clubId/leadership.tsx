@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { Check, Crown, ShieldCheck, Sparkles, UserCheck, X } from "lucide-react";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,11 +54,9 @@ export const Route = createFileRoute("/clubs/$clubId/leadership")({
 
 function LeadershipPage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <LeadershipContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <LeadershipContent />
+    </ClubShell>
   );
 }
 

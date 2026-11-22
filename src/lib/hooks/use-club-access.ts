@@ -1,7 +1,6 @@
 import { useClubContext } from "@/lib/hooks/use-club";
 import { can } from "@/lib/auth/permissions";
 import type { ClubPermission } from "@/lib/types/database";
-import type { LeadershipRoleRow } from "@/lib/types/database";
 
 /**
  * Hook for club pages that need access control.

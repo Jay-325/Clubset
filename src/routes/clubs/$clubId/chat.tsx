@@ -4,7 +4,8 @@ import type { FormEvent } from "react";
 import { Send, ShieldAlert } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,11 +27,9 @@ export const Route = createFileRoute("/clubs/$clubId/chat")({
 
 function ChatPage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <ChatContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <ChatContent />
+    </ClubShell>
   );
 }
 

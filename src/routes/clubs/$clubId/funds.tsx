@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { Plus, TrendingDown, TrendingUp } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,11 +48,9 @@ export const Route = createFileRoute("/clubs/$clubId/funds")({
 
 function FundsPage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <FundsContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <FundsContent />
+    </ClubShell>
   );
 }
 

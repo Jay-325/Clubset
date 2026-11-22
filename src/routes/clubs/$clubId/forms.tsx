@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { ClipboardList, Download, FilePlus2, Plus, Send, Trash2 } from "lucide-react";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,11 +76,9 @@ export const Route = createFileRoute("/clubs/$clubId/forms")({
 
 function FormsPage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <FormsContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <FormsContent />
+    </ClubShell>
   );
 }
 

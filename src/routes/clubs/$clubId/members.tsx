@@ -2,7 +2,8 @@ import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { Check, ShieldAlert, X } from "lucide-react";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,7 +45,6 @@ import type {
   MembershipRow,
   ProfileRow,
 } from "@/lib/types/database";
-import type { RoleAssignmentWithRole } from "@/lib/queries";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/clubs/$clubId/members")({
@@ -53,11 +53,9 @@ export const Route = createFileRoute("/clubs/$clubId/members")({
 
 function MembersPage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <MembersContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <MembersContent />
+    </ClubShell>
   );
 }
 
@@ -365,12 +363,4 @@ function RequestRow({
 
 function gradeLabel(grade: GradeLevel | null): string {
   return grade ? GRADE_LABELS[grade] : "Grade not set";
-}
-
-function formatDate(value: string): string {
-  return new Date(value).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 }

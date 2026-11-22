@@ -20,7 +20,6 @@ import {
 import { Skeleton, SkeletonSpinner } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { can } from "@/lib/auth/permissions";
 import {
   CLUB_TYPES,
   COMMITMENT_LEVELS,
@@ -71,11 +70,8 @@ function SettingsContent() {
     return <Skeleton className="h-72 w-full" />;
   }
 
-  const club = context.data?.club;
-  const permissions = context.data?.permissions ?? [];
-  const isLinkedAdministrator = context.data?.isLinkedAdministrator ?? false;
-  const mayManage =
-    can(permissions, "manage_settings") || isLinkedAdministrator;
+  const { club, membership, permissions, isAdministrator, isLinkedAdministrator, mayManage } =
+    useClubAccess(clubId, "manage_settings");
 
   if (!club || !context.data) {
     return <Skeleton className="h-72 w-full" />;

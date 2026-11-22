@@ -3,7 +3,8 @@ import { useEffect, useState, type CSSProperties } from "react";
 import type { FormEvent } from "react";
 import { AlertTriangle, Clock, MapPin, Plus } from "lucide-react";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +22,6 @@ import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/ui/motion";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { can } from "@/lib/auth/permissions";
 import { staggerStyle } from "@/lib/motion";
 import { EVENT_KINDS, EVENT_KIND_LABELS, EVENT_PRIORITY_LABELS } from "@/lib/domain";
 import { useClubContext } from "@/lib/hooks/use-club";
@@ -43,11 +43,9 @@ export const Route = createFileRoute("/clubs/$clubId/events")({
 
 function EventsPage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <EventsContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <EventsContent />
+    </ClubShell>
   );
 }
 
@@ -56,10 +54,7 @@ function EventsContent() {
   const context = useClubContext(clubId);
   const events = useClubEvents(clubId);
 
-  const mayManage =
-    context.data !== null &&
-    context.data !== undefined &&
-    can(context.data.permissions, "manage_events");
+  const { club, mayManage } = useClubAccess(clubId, "manage_events");
 
   const allEvents = events.data ?? [];
   const now = Date.now();

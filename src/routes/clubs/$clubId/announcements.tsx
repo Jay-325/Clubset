@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Bell, Megaphone, Pin, Plus, Trash2 } from "lucide-react";
 
-import { AppShell, PageHeader, RequireAuth } from "@/components/app-shell";
+import { ClubShell } from "@/components/club/ClubShell";
+import { PageHeader } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +16,6 @@ import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/ui/motion";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { can } from "@/lib/auth/permissions";
 import { staggerStyle } from "@/lib/motion";
 import { useClubContext } from "@/lib/hooks/use-club";
 import { useViewerId } from "@/lib/queries";
@@ -40,11 +40,9 @@ export const Route = createFileRoute("/clubs/$clubId/announcements")({
 
 function AnnouncementsPage() {
   return (
-    <RequireAuth>
-      <AppShell>
-        <AnnouncementsContent />
-      </AppShell>
-    </RequireAuth>
+    <ClubShell>
+      <AnnouncementsContent />
+    </ClubShell>
   );
 }
 
@@ -54,9 +52,7 @@ function AnnouncementsContent() {
   const context = useClubContext(clubId);
   const queryClient = useQueryClient();
 
-  const permissions = context.data?.permissions ?? [];
-  const isLinkedAdministrator = context.data?.isLinkedAdministrator ?? false;
-  const maySend = can(permissions, "send_announcements") || isLinkedAdministrator;
+  const { club, mayManage: maySend } = useClubAccess(clubId, "send_announcements");
 
   const [composing, setComposing] = useState(false);
   const [title, setTitle] = useState("");
