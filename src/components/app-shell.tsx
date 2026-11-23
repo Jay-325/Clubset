@@ -1,4 +1,4 @@
-import { Link, useRouter, useLocation } from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
 import {
   CalendarDays,
   Compass,
@@ -18,6 +18,9 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip } from "@/components/ui/tooltip";
+import { useUnreadNotificationCount } from "@/lib/queries";
+import { useMarkNotificationRead } from "@/lib/queries";
 import { OtterBuddy } from "@/components/otter/OtterBuddy";
 import { cn } from "@/lib/utils";
 import { FadeIn } from "@/components/ui/motion";
@@ -218,15 +221,62 @@ export function AppShell({ children }: { children: ReactNode }) {
                 aria-label="Notifications"
                 className="h-11 w-11"
               >
-                <Link to="/notifications">
-                  <Bell className="size-4" />
-                  {unreadCount > 0 ? (
-                    <Badge className="absolute -right-0.5 -top-0.5 h-3 min-w-3 px-1 text-[9px]">
-                      {unreadCount}
-                    </Badge>
-                  ) : null}
-                </Link>
+                <Bell className="size-4" />
+                {unreadCount > 0 ? (
+                  <Badge className="absolute -right-0.5 -top-0.5 h-3 min-w-3 px-1 text-[9px]">
+                    {unreadCount}
+                  </Badge>
+                ) : null}
               </Button>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Bell className="size-4" />
+                </TooltipTrigger>
+                <TooltipContent className="w-48 p-2 text-sm">
+                  <p className="font-medium">Notifications</p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {unreadCount > 0 ? (
+                      {unreadCount} unread
+                    ) : (
+                      "No new notifications"
+                    )}
+                  </p>
+                  {unreadCount > 0 ? (
+                    <Button
+                      variant="outline"
+                      size="default"
+                      className="w-full text-left"
+                      onClick={() => router.push("/notifications")}
+                    >
+                      View all {unreadCount}
+                    </Button>
+                  ) : null}
+                </TooltipContent>
+              </Tooltip>
+                  <Bell className="size-4" />
+                </TooltipTrigger>
+                <TooltipContent className="w-48 p-2 text-sm">
+                  <p className="font-medium">Notifications</p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {unreadCount > 0 ? (
+                      {unreadCount} unread
+                    ) : (
+                      "No new notifications"
+                    )}
+                  </p>
+                  {unreadCount > 0 ? (
+                    <Button
+                      variant="outline"
+                      size="default"
+                      className="w-full text-left"
+                      onClick={() => router.push("/notifications")}
+                    >
+                      View all {unreadCount}
+                    </Button>
+                  ) : null}
+                </TooltipContent>
+              </Tooltip>
 
               {profile ? (
                 <div className="flex items-center gap-2 pl-2">
